@@ -1,0 +1,172 @@
+{
+ "model_id": "B0_identity",
+ "description": "Identity baseline: estimate = Aqua MODIS count.",
+ "status": "ok",
+ "error": null,
+ "target": "viirs_snpp_count (type 0, cell-month)",
+ "prediction": "estimated_viirs_reference_detections",
+ "unit": "expected S-NPP VIIRS type-0 detections per 5 km cell per UTC calendar month; AOI value = sum over the AOI's cells",
+ "features": [
+  "aqua_count"
+ ],
+ "feature_order": [
+  "aqua_count"
+ ],
+ "feature_definitions": {
+  "aqua_count": "Aqua MODIS type-0 detections in the 5 km cell and UTC calendar month (transform log1p)"
+ },
+ "train_years": [
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2020
+ ],
+ "val_years": [
+  2021,
+  2022
+ ],
+ "test_years": [
+  2023,
+  2024
+ ],
+ "spatial_holdout": "20% of 100 km blocks excluded from train",
+ "info": {
+  "formula": "est = aqua_count"
+ },
+ "val_summary": {
+  "cell_month": {
+   "n": 10972320,
+   "mae": 0.21715480408883445,
+   "rmse": 3.955175086203375,
+   "bias": -0.209301770272832,
+   "poisson_deviance": 3.433383715491148,
+   "sum_obs": 2646877.0,
+   "sum_pred": 350351.0
+  },
+  "aoi_month": {
+   "n": 288,
+   "mae": 8895.729166666666,
+   "rmse": 24560.949724755035,
+   "bias": -8895.645833333334,
+   "poisson_deviance": 24585.77577594354,
+   "sum_obs": 2954353.0,
+   "sum_pred": 392407.0
+  }
+ },
+ "test_summary": {
+  "cell_month": {
+   "n": 10972320,
+   "mae": 0.29001259533079604,
+   "rmse": 3.5313193592922074,
+   "bias": -0.27929307566676875,
+   "poisson_deviance": 4.081515731335887,
+   "sum_obs": 3538421.0,
+   "sum_pred": 473928.0
+  },
+  "aoi_month": {
+   "n": 288,
+   "mae": 11218.461805555555,
+   "rmse": 43400.42035162697,
+   "bias": -11218.315972222223,
+   "poisson_deviance": 30249.614767443873,
+   "sum_obs": 3736806.0,
+   "sum_pred": 505931.0
+  }
+ },
+ "interval": {
+  "q_low": 1.3946276922907188,
+  "q_high": 2.4060984545890594,
+  "n_val_aoi_months": 72,
+  "formula": "low=(\u0177+1)\u00b7exp(q_low)\u22121, high=(\u0177+1)\u00b7exp(q_high)\u22121, clipped \u22650",
+  "nominal": 0.8,
+  "fitted_on": "validation AOI-months of the gated non-overlapping regions BGD, AUS-NSW, USA-CA (one pooled interval, applied to every AOI)",
+  "test_coverage": 0.7638888888888888,
+  "n_test_aoi_months": 72,
+  "test_coverage_by_aoi": {
+   "AUS": {
+    "coverage": 1.0,
+    "n": 24,
+    "kind": "country",
+    "gated": false
+   },
+   "AUS-NSW": {
+    "coverage": 0.75,
+    "n": 24,
+    "kind": "admin1",
+    "gated": true
+   },
+   "BGD": {
+    "coverage": 0.625,
+    "n": 24,
+    "kind": "country",
+    "gated": true
+   },
+   "BGD-A": {
+    "coverage": 0.375,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-B": {
+    "coverage": 0.625,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-C": {
+    "coverage": 0.5833333333333334,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-D": {
+    "coverage": 0.16666666666666666,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-E": {
+    "coverage": 0.2916666666666667,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-F": {
+    "coverage": 0.25,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-G": {
+    "coverage": 0.375,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "USA": {
+    "coverage": 1.0,
+    "n": 24,
+    "kind": "country",
+    "gated": false
+   },
+   "USA-CA": {
+    "coverage": 0.9166666666666666,
+    "n": 24,
+    "kind": "admin1",
+    "gated": true
+   }
+  }
+ },
+ "selected": false,
+ "synthetic_training_data": false,
+ "intended_use": "Retrospective harmonised fire-activity calendar (VIIRS S-NPP scale) for 2003\u20132012; comparison for 2012+.",
+ "limitations": "FIRMS detections are not burned area; no cloud-cover denominator (coverage_fraction null); relationship may drift with land use; Terra kept separate.",
+ "app_recompute": {
+  "weights": "models/B0_identity/weights.json",
+  "how": "est = aqua_count"
+ }
+}

@@ -1,17 +1,17 @@
-# Claude Code master prompt v2 — Lumos Fire Calendar app
+# Claude Code master prompt v2 — Parallax Fire app
 
-Paste everything below the line into Claude Code at the root of an empty repo. Copy this whole package into the repo first. If you have run the notebooks, also add `lumos_app_bundle.zip` from Notebook B.
+Paste everything below the line into Claude Code at the root of an empty repo. Copy this whole package into the repo first. If you have run the notebooks, also add `parallax_app_bundle.zip` from Notebook B.
 
 ---
 
-You are the lead engineer for **Lumos Fire Calendar**, a NASA Space Apps 2026 entry (*Harmonization of MODIS and VIIRS Hot Spots*). Owner: **M. Al Shahriar Hameem**, Team Lumos, Dhaka. Do not invent other contributors.
+You are the lead engineer for **Parallax Fire**, a NASA Space Apps 2026 entry (*Harmonization of MODIS and VIIRS Hot Spots*). Owner: **M. Al Shahriar Hameem**, __TEAM_PARALLAX__, Dhaka. Do not invent other contributors.
 
 ## Read first (source of truth, in this order)
 1. `CONTRACT.md`: frozen data contract: v1.0, the v1.1 amendments (§7), the v1.2 addendum and region registry (§8-9, three regions) and the 10 Oct 2026 data-source corrections and USA caveats (§10). Never rename its fields. Treat the AOI list as data from `regions.json`, never hard-code it.
 2. `PRD.md` (v2): product, app requirements (§6), acceptance criteria (§8), status (§9).
 3. `docs/PRD_v1_original.md`: extra detail and caveats; v2 wins on conflicts.
 4. `notebooks/` (Kaggle A fetcher and B trainer, already built and tested) and `notebooks/TEST_REPORT.md`.
-5. `apps/web/public/data/<snapshot_id>/`: a **synthetic** bundle produced by Notebook B on the test fixture (`fixtures/`). It has the exact real format, and every value has `value_status:"demo"`. Use it for development and tests. A real bundle (`lumos_app_bundle.zip`) replaces it when available. Real data does not exist yet: no claim of accuracy or calibration for any region.
+5. `apps/web/public/data/<snapshot_id>/`: a **synthetic** bundle produced by Notebook B on the test fixture (`fixtures/`). It has the exact real format, and every value has `value_status:"demo"`. Use it for development and tests. A real bundle (`parallax_app_bundle.zip`) replaces it when available. Real data does not exist yet: no claim of accuracy or calibration for any region.
 
 Do not re-ask decisions already made: PWA (one codebase for Windows/macOS/iOS/Android browsers), free static hosting, no paid APIs, three regions: Bangladesh (`BGD` + 7 divisions, default selection), Australia (`AUS` + `AUS-NSW`) and the United States (`USA` + `USA-CA`, California). Detailed AOIs (cells and B1 features) are `BGD`, `AUS-NSW` and `USA-CA`; whole-country `AUS` and `USA` are aggregate-only. Global map navigation.
 
@@ -73,4 +73,4 @@ Base-path-safe build for **GitHub Pages**: a workflow that builds `apps/web` and
 - install-as-app instructions for Windows/macOS (Chrome/Edge/Safari), Android (Chrome) and iOS (Safari → Share → Add to Home Screen).
 
 ## Finish with
-Implemented features, test results, screenshots, measured performance, data status (synthetic vs real snapshot id), limitations, and exact next steps (e.g. "run Notebook A, then B, then `node scripts/import_bundle.mjs lumos_app_bundle.zip`").
+Implemented features, test results, screenshots, measured performance, data status (synthetic vs real snapshot id), limitations, and exact next steps (e.g. "run Notebook A, then B, then `node scripts/import_bundle.mjs parallax_app_bundle.zip`").

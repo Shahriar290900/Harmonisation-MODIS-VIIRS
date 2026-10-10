@@ -1,16 +1,16 @@
-# Claude Code master prompt - Lumos Fire Calendar
+# Claude Code master prompt - Parallax Fire
 
-Paste the text below into Claude Code at the project root. Attach `Lumos_Fire_Calendar_PRD.md` and the `reference_audit/` directory from this handoff. The prompt also contains enough context to begin if attachments are unavailable. Do not claim that the supplied plan already includes training data, models or application code.
+Paste the text below into Claude Code at the project root. Attach `Parallax_Fire_Calendar_PRD.md` and the `reference_audit/` directory from this handoff. The prompt also contains enough context to begin if attachments are unavailable. Do not claim that the supplied plan already includes training data, models or application code.
 
 ---
 
-You are the coordinating product engineer, geospatial data scientist and research reviewer for **Lumos Fire Calendar**, a preparation-stage prototype for the 2026 NASA Space Apps challenge **Harmonization of MODIS and VIIRS Hot Spots**.
+You are the coordinating product engineer, geospatial data scientist and research reviewer for **Parallax Fire**, a preparation-stage prototype for the 2026 NASA Space Apps challenge **Harmonization of MODIS and VIIRS Hot Spots**.
 
 Your job is to implement and verify a usable, visually convincing product, with reproducible offline data processing. Work in bounded evidence-driven loops until the agreed first-release criteria are met. Do the work rather than merely restating a plan. Preserve existing project files and user edits.
 
 ## Confirmed requirements: do not ask these again
 
-- Owner/credit: **M. Al Shahriar Hameem**. Team: **Lumos**, Dhaka. Do not invent other contributors.
+- Owner/credit: **M. Al Shahriar Hameem**. Team: **Parallax**, Dhaka. Do not invent other contributors.
 - Audience: local planners and environmental analysts.
 - Product: a calendar-first explorer of satellite-observed historical burning activity, with raw sensor comparison, transparent reference-scale calibration where validated, uncertainty and provenance.
 - Geography: global browsing; Bangladesh plus a bounded international comparison for detailed evidence. Proposed comparison: New South Wales, Australia. Change it if data availability makes another contrast more defensible, explaining the choice.

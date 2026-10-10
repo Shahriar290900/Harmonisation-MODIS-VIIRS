@@ -1,11 +1,11 @@
-# HANDOFF FOR THE NEXT AGENT — Lumos Fire Calendar (written 10 Oct 2026, ~20:00 Dhaka)
+# HANDOFF FOR THE NEXT AGENT — Parallax Fire (written 10 Oct 2026, ~20:00 Dhaka)
 
 You are taking over a half-finished job. Read this whole file before touching anything. It is written so an agent with **no memory of the previous session** can continue safely. Facts here were observed in the previous session; anything marked UNVERIFIED was not.
 
 ---------------------------------------------------------------------------
 ## 0. TL;DR (what state are we in)
 
-- Project: **Lumos Fire Calendar** — NASA Space Apps 2026 challenge "Harmonization of MODIS and VIIRS Hot Spots". Owner: **M. Al Shahriar Hameem**, Team **Lumos**, Dhaka. Owner's email: shahriar.hameem@gmail.com. Kaggle username: `shahriarhameem`. GitHub repo (PRIVATE): `https://github.com/Shahriar290900/Harmonisation-MODIS-VIIRS`.
+- Project: **Parallax Fire** — NASA Space Apps 2026 challenge "Harmonization of MODIS and VIIRS Hot Spots". Owner: **M. Al Shahriar Hameem**, Team **Parallax**, Dhaka. Owner's email: shahriar.hameem@gmail.com. Kaggle username: `shahriarhameem`. GitHub repo (PRIVATE): `https://github.com/Shahriar290900/Harmonisation-MODIS-VIIRS`.
 - The package (React/Vite PWA + two Kaggle notebooks + docs) pre-existed and passed tests on **synthetic data only**. Nothing has ever run on real FIRMS data, on the Blackwell GPU, or on real phones.
 - This session **extended scope from {Bangladesh, Australia/NSW} to {Bangladesh, Australia/NSW, USA/California}**, probed Kaggle (T4x2 and RTX PRO 6000) through the API, reviewed the NASA research pack, ran a review loop, and then started a **second fix round** (see §6) that may be only partly finished when you read this.
 - **The owner runs the Kaggle notebooks himself** (A = fetch, B = train). He said: "just give me the notebook, I will run it". Do **not** start long GPU runs for him. Your job is to make the notebooks + docs correct and tell him exactly which two files to upload (`KAGGLE_HANDOFF.md`).
@@ -30,27 +30,27 @@ You are taking over a half-finished job. Read this whole file before touching an
 - macOS 12.7.6, Intel i5-5350U, **8 GB RAM, ~10 GB free disk (volume 89% full)**, Python 3.12.2, Node 20.20.2, npm 10.8.2, git 2.37.1. No `gh`, no `pdftotext`. Brave installed.
 - Everything heavy runs on **Kaggle**. Local runs are tests only; use generous timeouts (unit tests ~80 s; full e2e ~25+ min).
 - Local helper venvs live in the previous session's scratchpad (`/private/tmp/claude-501/.../scratchpad/`): `kgenv` (kaggle CLI 2.2.4), `pdfenv` (pypdf). They may be gone. Re-create: `python3 -m venv kgenv && kgenv/bin/pip install kaggle` (do **not** write `~/.kaggle/*`).
-- Repo root (git, branch `main`): `/Users/aburoshderokonuddawla/Desktop/Lumos_Fire_Calendar_Complete`. App: `lumos_app/`. `npm ci` was run in `lumos_app/` (node_modules git-ignored).
+- Repo root (git, branch `main`): `/Users/aburoshderokonuddawla/Desktop/Parallax_Fire_Calendar_Complete`. App: `parallax_app/`. `npm ci` was run in `parallax_app/` (node_modules git-ignored).
 
 ---------------------------------------------------------------------------
 ## 3. Repo layout (what is where)
 
 ```
-Lumos_Fire_Calendar_Complete/            (git root; remote origin = private GitHub repo)
+Parallax_Fire_Calendar_Complete/            (git root; remote origin = private GitHub repo)
   README.md, START_HERE.md, RUNBOOK.md, KAGGLE_HANDOFF.md   owner-facing docs
   HANDOFF_FOR_NEXT_AGENT.md                                   <- this file
   NASA_MODIS_VIIRS_2026.pdf       research pack (owner's), 17 pp, 70 links
   modis satellite image.png       Aqua/Terra render the owner supplied (candidate for the 3D explainer; unused so far)
   Screenshot*.png                 IGNORED, contain a token — never commit
-  kaggle_notebooks/               the two notebooks to upload + STEP_INDEX.md (copies of lumos_app/notebooks/*.ipynb; must be byte-identical)
+  kaggle_notebooks/               the two notebooks to upload + STEP_INDEX.md (copies of parallax_app/notebooks/*.ipynb; must be byte-identical)
   prompts/                        master prompt + per-step Claude Code prompts
   references/                     original PRD (md/pdf) + original master prompt
-  lumos_app/
+  parallax_app/
     PRD.md  CONTRACT.md  STATUS.md  README.md  docs/ (RUNBOOK, SOURCE_CHECK, PRD_v1_original, research/, kaggle/)
-    notebooks/   lumos_A_fetch.py/.ipynb, lumos_B_train.py/.ipynb, build_ipynb_A.py, build_ipynb_B.py, STEP_INDEX.md, TEST_REPORT.md, tests/
+    notebooks/   parallax_A_fetch.py/.ipynb, parallax_B_train.py/.ipynb, build_ipynb_A.py, build_ipynb_B.py, STEP_INDEX.md, TEST_REPORT.md, tests/
     fixtures/    make_fixture_bundle.py, extract_ne_subset.py, ne_subset/, out/ (synthetic Kaggle-A-like bundle, now 3 countries), out_b/ (ignored; synthetic B output)
     apps/web/    React 18 + Vite 6 + TS 5.7 PWA (MapLibre, d3, three.js, GSAP, zod, vite-plugin-pwa); public/data/<snapshot>/ = static JSON served by the app
-    scripts/     import_bundle.mjs, bundle_schema.mjs   (loads Notebook B's lumos_app_bundle.zip into apps/web/public/data/)
+    scripts/     import_bundle.mjs, bundle_schema.mjs   (loads Notebook B's parallax_app_bundle.zip into apps/web/public/data/)
     tests/       unit (vitest) + e2e (Playwright)
     review/, review_app/, review_exp/    earlier review-loop reports
     review_loop/ (ignored) heartbeats of this session's agents + FINDINGS_ROUND1.json (31 review findings)
@@ -58,7 +58,7 @@ Lumos_Fire_Calendar_Complete/            (git root; remote origin = private GitH
     docs/kaggle/     CLI_NOTES.md, ACCOUNT_PROBE.md, KAGGLE_DOCS_FINDINGS.md, KAGGLE_ENV.md (the big env report + launch runbook R0–R8), probes/
 ```
 
-Data flow: **Notebook A** (Kaggle, Internet ON) downloads FIRMS yearly country CSVs + Natural Earth + wheelhouse → `/kaggle/working/lumos_bundle` (becomes the notebook output). **Notebook B** (Kaggle, Internet OFF, GPU) reads A's output → ingest → 5 km equal-area cell×month panel → B0/B1/B2(XGBoost)/D1(MLP) (+ research Q1/Q2) → `lumos_app_bundle.zip`. The app imports that zip with `npm run import-bundle -- <zip>`.
+Data flow: **Notebook A** (Kaggle, Internet ON) downloads FIRMS yearly country CSVs + Natural Earth + wheelhouse → `/kaggle/working/parallax_bundle` (becomes the notebook output). **Notebook B** (Kaggle, Internet OFF, GPU) reads A's output → ingest → 5 km equal-area cell×month panel → B0/B1/B2(XGBoost)/D1(MLP) (+ research Q1/Q2) → `parallax_app_bundle.zip`. The app imports that zip with `npm run import-bundle -- <zip>`.
 
 ---------------------------------------------------------------------------
 ## 4. Decisions already made by the owner (do not re-ask)
@@ -81,14 +81,14 @@ FIRMS / data (checked 10 Oct 2026 from the owner's Mac, `docs/research/notes/R5_
 - Fu et al. 2020 (MDPI Remote Sensing 12:2870) first author is **Yuyun Fu** (the research pack's "Xu" is wrong). Burned-area products (MCD64A1, VNP64A1, GlobFire) are **not independent** of active-fire detections → secondary checks only. A single global MODIS→VIIRS multiplier is not defensible (MODIS omission 86.2% vs ASTER).
 - UNVERIFIED: real submission deadline (pack says 7 Oct 2026; PRD says project window from 14 Nov), the FRP slopes 1.22–1.32, Li 2018 coefficients, Schroeder 2014 numbers, the pack's "Type field bug" claim, overpass times.
 
-Kaggle (measured by probe kernels `shahriarhameem/lumos-probe-t4` and `lumos-probe-rtx`, `docs/kaggle/probes/*/output/`, report `docs/kaggle/KAGGLE_ENV.md`):
+Kaggle (measured by probe kernels `shahriarhameem/parallax-probe-t4` and `parallax-probe-rtx`, `docs/kaggle/probes/*/output/`, report `docs/kaggle/KAGGLE_ENV.md`):
 - Both: Python **3.13.15**, **torch 2.11.0+cu128 with sm_120 (Blackwell) kernels**, xgboost 3.4.1 GPU fit OK, transformers 5.16.1, numpy 2.1.3, pandas 2.3.3, sklearn 1.6.1, onnx 1.22.0 present; **`onnxruntime`, `onnxscript`, `pennylane`, `pennylane-lightning` NOT preinstalled.** `/kaggle/working` = **19.5 GiB** on both (UI's 57.6 GiB figure is not the output limit).
 - T4 x2: 2× Tesla T4 (14.56 GiB each, cc 7.5), 4 CPU, **31 GiB RAM**, Internet ON worked (pip download pennylane OK, FIRMS HEAD 200). `machine_shape: NvidiaTeslaT4`. bf16 untested on T4.
 - RTX PRO 6000 Blackwell: 94.97 GiB VRAM, cc 12.0, 48 CPU, **177 GiB RAM**, bf16 matmul OK (~346 TFLOPs), Internet OFF verified (pip/DNS fail). Obtained by pushing a **script kernel** with `machine_shape: NvidiaRtxPro6000`, `enable_gpu: true`, `enable_internet: false`, `competition_sources: ["arc-prize-2026-arc-agi-3"]`. `/kaggle/input` then contains only `competitions/`.
 - Quota (via `kaggle quota`): GPU 30 h/week (≈0.08 h used by the probes), TPU 20 h; refresh 2026-10-17.
 - **POLICY RISK (UNVERIFIED):** a search summary of the ARC competition page says using its RTX machines for non-competition work could lead to suspension/ban. The page itself could not be read. Owner knows and said he will choose.
 - Kaggle CLI 2.2.4 specifics: auth via `KAGGLE_API_TOKEN` env var (token string or file path); metadata fields on push: `id, title, code_file, language, kernel_type(script|notebook), is_private, enable_gpu, enable_tpu, enable_internet(default TRUE!), machine_shape, dataset_sources, competition_sources, kernel_sources, model_sources, docker_image, docker_image_pinning_type(original|latest)`; `kaggle kernels push -p <dir> [-t SECONDS] [--accelerator NAME]` starts a run immediately; `kernels status`, `kernels output -p <dir> [--file-pattern]`, `kernels pull -m` (shows applied settings); no cancel command in CLI. Unrelated owner notebooks exist (final-qllm, qml-qllm, …): **never push over them**. The owner's draft "Internet OFF with RTX PRO 6000" UI notebook (contains imported Notebook B) is not visible via API (403): don't touch.
-- Full command templates and a launch runbook (R0–R8) are in `lumos_app/docs/kaggle/KAGGLE_ENV.md` §7.
+- Full command templates and a launch runbook (R0–R8) are in `parallax_app/docs/kaggle/KAGGLE_ENV.md` §7.
 
 ---------------------------------------------------------------------------
 ## 6. What was done (chronological) and the current in-flight state
@@ -98,13 +98,13 @@ DONE and committed-or-on-disk (verify with `git status` / `git log`):
 2. **W0 contract:** CONTRACT.md §8 (v1.2 addendum) + §9 (Region registry, 12 AOIs), PRD.md updated for three regions.
 3. **W2 Notebook A:** `COUNTRIES = ["Bangladesh","Australia","United_States"]`, USA bbox for NRT, 117-file guide text, fixtures regenerated with synthetic USA (`fixtures/out`, 17 MB), `test_notebook_A.py` passes (53 s).
 4. **W3 Notebook B:** USA/US-CA AOIs, ISO map, exports; fixture end-to-end run produced a synthetic 3-region bundle (`fixtures/out_b`, ignored).
-5. **W4A/W4B app:** `apps/web/src/data/regions.ts` (data-driven regions, display kinds, focus, no-cells hints), landing/gallery/globe/map made generic, B0/B1 "Fallback in use" notice, test timeout fixes; new synthetic snapshot `apps/web/public/data/lumos-20261010T094200Z-e3d5f980` imported (old `…20261009T182337Z-9e1ef412` deleted); **unit tests 446 pass** (378 + others per heartbeats), `npm run build` OK, first view ≈ 0.53 MB gz; **e2e 95 pass / 39 skip / 1 timing fail (L05) that passes alone with widened timeout (600 s)**.
+5. **W4A/W4B app:** `apps/web/src/data/regions.ts` (data-driven regions, display kinds, focus, no-cells hints), landing/gallery/globe/map made generic, B0/B1 "Fallback in use" notice, test timeout fixes; new synthetic snapshot `apps/web/public/data/parallax-20261010T094200Z-e3d5f980` imported (old `…20261009T182337Z-9e1ef412` deleted); **unit tests 446 pass** (378 + others per heartbeats), `npm run build` OK, first view ≈ 0.53 MB gz; **e2e 95 pass / 39 skip / 1 timing fail (L05) that passes alone with widened timeout (600 s)**.
 6. **W5 docs:** README.md, KAGGLE_HANDOFF.md (first version), RUNBOOK edits.
 7. **Research crew** (5 agents): `docs/research/` — ledger (34 fetched, 9 blocked, 21 todo, 4 skipped, 2 unreachable), notes, FINDINGS.md (compiled by the coordinator; subagents cannot write report files — the harness refuses; have them return text).
 8. **Kaggle probe crew** (10 agents): both probes ran; `docs/kaggle/KAGGLE_ENV.md` (+ diffs P1–P9, runbook R0–R8) verified by a monitor (3 minor evidence nits).
-9. **Review panel** (3 reviewers) produced **31 findings** → `lumos_app/review_loop/FINDINGS_ROUND1.json` (git-ignored; if missing, recreate by re-reviewing). The automatic resolve/verify rounds **failed** (account session limit), so fixes were launched manually as round 2.
+9. **Review panel** (3 reviewers) produced **31 findings** → `parallax_app/review_loop/FINDINGS_ROUND1.json` (git-ignored; if missing, recreate by re-reviewing). The automatic resolve/verify rounds **failed** (account session limit), so fixes were launched manually as round 2.
 
-STATUS UPDATE (~20:15 Dhaka): **NB-A (Notebook A) and DOCS finished** — verified on disk: A `.ipynb` copies byte-identical, A code cells compile, `test_notebook_A.py` reported `ALL TESTS PASSED` (agent-run; re-run it yourself, it rebuilds the ipynb with new random cell ids so **re-copy `lumos_app/notebooks/lumos_A_fetch.ipynb` to `kaggle_notebooks/` after every test run**), WHEELS = pennylane, pennylane-lightning, onnxruntime, onnxscript, guide says 117 requests = 111 ok + 6 missing (2025). Docs agent rewrote RUNBOOK (both copies identical), KAGGLE_HANDOFF.md, STATUS.md, CONTRACT §10, SOURCE_CHECK C1–C15, master prompts, scrubbed docs/kaggle. **Docs caveats:** KAGGLE_HANDOFF/RUNBOOK say "B turns bf16 off on T4" — that is only true once Notebook B's P5 lands; the Aqua date 2002-07-03 may still be 07-04 in notebook code; notebook guide cells/STEP_INDEX wording for 1.11 and the checks should be aligned to 111 ok / 6 missing (A agent says it did this — verify). **NB-B (Notebook B) was still running** when this was written — check `git status`, mtimes of `lumos_app/notebooks/lumos_B_train.py`, and whether `lumos_app/fixtures/out_b/` was regenerated after ~19:50.
+STATUS UPDATE (~20:15 Dhaka): **NB-A (Notebook A) and DOCS finished** — verified on disk: A `.ipynb` copies byte-identical, A code cells compile, `test_notebook_A.py` reported `ALL TESTS PASSED` (agent-run; re-run it yourself, it rebuilds the ipynb with new random cell ids so **re-copy `parallax_app/notebooks/parallax_A_fetch.ipynb` to `kaggle_notebooks/` after every test run**), WHEELS = pennylane, pennylane-lightning, onnxruntime, onnxscript, guide says 117 requests = 111 ok + 6 missing (2025). Docs agent rewrote RUNBOOK (both copies identical), KAGGLE_HANDOFF.md, STATUS.md, CONTRACT §10, SOURCE_CHECK C1–C15, master prompts, scrubbed docs/kaggle. **Docs caveats:** KAGGLE_HANDOFF/RUNBOOK say "B turns bf16 off on T4" — that is only true once Notebook B's P5 lands; the Aqua date 2002-07-03 may still be 07-04 in notebook code; notebook guide cells/STEP_INDEX wording for 1.11 and the checks should be aligned to 111 ok / 6 missing (A agent says it did this — verify). **NB-B (Notebook B) was still running** when this was written — check `git status`, mtimes of `parallax_app/notebooks/parallax_B_train.py`, and whether `parallax_app/fixtures/out_b/` was regenerated after ~19:50.
 
 Original description of the three round-2 agents (the NB-B part is still the open spec if it died):
 - **Agent NB-A (Notebook A fixes):** wheel list → `pennylane, pennylane-lightning, onnxruntime, onnxscript` (P1); disk guard (P7); 2025-files truth (111 ok / 6 missing); Aleutians bbox comment; S-NPP-ceases note; rebuild `.ipynb`; update/run `test_notebook_A.py`.
@@ -116,38 +116,38 @@ If any of them died/hit a limit, re-issue its task from the lists above (they ar
 ---------------------------------------------------------------------------
 ## 7. Remaining work (ordered). Finding IDs refer to `FINDINGS_ROUND1.json` (severity, file)
 
-1. **[HIGH] Pooled release stage** (`lumos_B_train.py` ~1891–1906, ~2401; app `ui/TopBar.tsx`, `experience/landing/StageTag.tsx`). One pooled stage over 12 nested AOIs (BGD+7 divisions, AUS+NSW, USA+CA double-counted; absolute MAE dominated by whole-country AUS/USA). Required: evaluate per region on **non-overlapping units** (BGD country, AUS-NSW, USA-CA; whole-country AUS/USA reported separately, not gated); `validated_calibration` only if the selected model beats **both** B0_identity and B0_month_ratio on test in **every** gated region **and** each region's 80% interval coverage is within ±10 points; else `observed_comparison`; manifest stage = weakest; synthetic ⇒ `ui_prototype`. **App side:** show stage per region; adapt to new `metrics.json` shape.
+1. **[HIGH] Pooled release stage** (`parallax_B_train.py` ~1891–1906, ~2401; app `ui/TopBar.tsx`, `experience/landing/StageTag.tsx`). One pooled stage over 12 nested AOIs (BGD+7 divisions, AUS+NSW, USA+CA double-counted; absolute MAE dominated by whole-country AUS/USA). Required: evaluate per region on **non-overlapping units** (BGD country, AUS-NSW, USA-CA; whole-country AUS/USA reported separately, not gated); `validated_calibration` only if the selected model beats **both** B0_identity and B0_month_ratio on test in **every** gated region **and** each region's 80% interval coverage is within ±10 points; else `observed_comparison`; manifest stage = weakest; synthetic ⇒ `ui_prototype`. **App side:** show stage per region; adapt to new `metrics.json` shape.
 2. **[MED] Interval coverage stamping:** `interval_empirical_holdout_coverage` currently one pooled test number on every AOI-month record (also train/backcast years) and shown in `ui/Evidence.tsx:65` and `data/explain.ts:94`. Make it region-level (null with reason where unmeasured); app text must say what it measures.
 3. **[MED] USA caveats in the app UI/copy** (Evidence, Story, Explainer): Alaska/Hawaii included, non-wildfire/prescribed/agricultural burning, type 1/2/3 excluded, 5 km grid unmeasured for USA. (Docs agent covers docs.)
 4. **[MED] Absolute local path leak** in the public snapshot (`metrics.json`, `models/Q2_qllm/model_card.json` Q2 "skipped: no local LLM … under /Users/…"). Fixed in Notebook B (round 2); **the snapshot must be re-imported** from the regenerated bundle, then grep `apps/web/public/data` for `/Users/`.
-5. **[MED] Repo hygiene** (done by coordinator: `.gitignore` for `__pycache__`, `Screenshot*.png`, `fixtures/out_b/`, `review_loop/`, kaggle heartbeat/messages/probe outputs). Still decide: commit `NASA_MODIS_VIIRS_2026.pdf` (516 KB; reference it in README) and `modis satellite image.png` (move to `references/`); `artifacts/` new e2e screenshots (~40 MB dir; keep ≤ the 20 tracked ones or commit selectively); `lumos_app/fixtures/out/` USA CSVs (≈16 MB synthetic, intended).
+5. **[MED] Repo hygiene** (done by coordinator: `.gitignore` for `__pycache__`, `Screenshot*.png`, `fixtures/out_b/`, `review_loop/`, kaggle heartbeat/messages/probe outputs). Still decide: commit `NASA_MODIS_VIIRS_2026.pdf` (516 KB; reference it in README) and `modis satellite image.png` (move to `references/`); `artifacts/` new e2e screenshots (~40 MB dir; keep ≤ the 20 tracked ones or commit selectively); `parallax_app/fixtures/out/` USA CSVs (≈16 MB synthetic, intended).
 6. **[LOW, app]** Explainer mini-chart fixed 3.2× factor needs a visible "illustrative, not data" label (`ui/Explainer.tsx` ~39–48, `landing/Story.tsx` 168–242); Story "We can claim" card (`Story.tsx` 376–400) states capabilities as if measured — add "on this demo snapshot" qualifiers; `data/explain.ts` wording: "error" not "accuracy", "presumed vegetation fire" (type 0); Gallery sparkline (`Gallery.tsx` ~177–198) must not draw partial/missing months as complete; USA gallery silhouette/MapPanel fit uses a bbox spanning Alaska+Hawaii (fit to CONUS or a state); CSV export of partial months with hard `0` lower bounds (mark as lower bound or null).
 7. **[LOW, B]** `regions.json features_exported` must reflect files actually written; USA real-scale memory unmeasured (guard + log); Aleutians comment (A).
-8. **Re-import the new B bundle** into the app (`npm run import-bundle -- lumos_app/fixtures/out_b/lumos_app_bundle.zip`), keep `index.json` valid and `synthetic:true`, run `npm run build && npm test`, targeted e2e (`app.spec.ts`, `landing.spec.ts`), and a quick manual load of `#aoi=USA-CA`, `#aoi=AUS-NSW`, `#aoi=BGD` (Brave if showing the owner).
+8. **Re-import the new B bundle** into the app (`npm run import-bundle -- parallax_app/fixtures/out_b/parallax_app_bundle.zip`), keep `index.json` valid and `synthetic:true`, run `npm run build && npm test`, targeted e2e (`app.spec.ts`, `landing.spec.ts`), and a quick manual load of `#aoi=USA-CA`, `#aoi=AUS-NSW`, `#aoi=BGD` (Brave if showing the owner).
 9. **Re-review** (read-only reviewer + honesty reviewer + repo reviewer, max 3 in parallel) → resolve → verify; loop max 3 rounds; stop when no high/medium findings.
 10. **Checkpoint:** commit on a branch (not `main` until reviewed), push with the owner's temporary token (§4). Create a tag only on the owner's request.
-11. **Offline rehearsal (optional, needs the owner's go-ahead and fresh Kaggle token):** `docs/kaggle/probes/lumos-probe-offline/` rehearses Notebook B's offline install on a T4 with Internet OFF against A's real output — only possible **after the owner has run Notebook A**.
-12. After the owner runs A and B on Kaggle and returns `lumos_app_bundle.zip`: **Phase 3/4 of RUNBOOK** — `python3 -I lumos_app/notebooks/tests/check_bundle.py <unzipped bundle>` (no `--fixture`), import into the app, update copy by release stage, real-data review loop, then (only with go-ahead) GitHub Pages workflow with `BASE_PATH=/Harmonisation-MODIS-VIIRS/`.
+11. **Offline rehearsal (optional, needs the owner's go-ahead and fresh Kaggle token):** `docs/kaggle/probes/parallax-probe-offline/` rehearses Notebook B's offline install on a T4 with Internet OFF against A's real output — only possible **after the owner has run Notebook A**.
+12. After the owner runs A and B on Kaggle and returns `parallax_app_bundle.zip`: **Phase 3/4 of RUNBOOK** — `python3 -I parallax_app/notebooks/tests/check_bundle.py <unzipped bundle>` (no `--fixture`), import into the app, update copy by release stage, real-data review loop, then (only with go-ahead) GitHub Pages workflow with `BASE_PATH=/Harmonisation-MODIS-VIIRS/`.
 
 ---------------------------------------------------------------------------
 ## 8. Owner-facing guidance for running Kaggle (summary; full text in KAGGLE_HANDOFF.md)
 
-- **Notebook A** (`kaggle_notebooks/lumos_A_fetch.ipynb`): new Kaggle notebook named `lumos_A_fetch`, Internet **ON**, CPU, **Save Version → Save & Run All**. Expect `111 ok, 6 missing (2025), error=0`, `key leak check: passed`. ~8–40 min (unmeasured). Optional secret `FIRMS_MAP_KEY` only for the NRT layer.
-- **Notebook B** (`kaggle_notebooks/lumos_B_train.ipynb`): new notebook, Internet **OFF**, add A's latest output (Add Input → Notebook Output), environment = default/latest (do **not** pick old pinned images; torch 2.11 sm_120 verified on the CLI-assigned image).
+- **Notebook A** (`kaggle_notebooks/parallax_A_fetch.ipynb`): new Kaggle notebook named `parallax_A_fetch`, Internet **ON**, CPU, **Save Version → Save & Run All**. Expect `111 ok, 6 missing (2025), error=0`, `key leak check: passed`. ~8–40 min (unmeasured). Optional secret `FIRMS_MAP_KEY` only for the NRT layer.
+- **Notebook B** (`kaggle_notebooks/parallax_B_train.ipynb`): new notebook, Internet **OFF**, add A's latest output (Add Input → Notebook Output), environment = default/latest (do **not** pick old pinned images; torch 2.11 sm_120 verified on the CLI-assigned image).
   - **Option (a) T4 x2, no competition** — safe for the account; 31 GiB RAM/4 CPUs (USA+Australia panels may be tight — UNMEASURED); B uses one T4; bf16 off on T4.
   - **Option (b) RTX PRO 6000** — only via a notebook with competition `arc-prize-2026-arc-agi-3` added as input and Internet OFF; 177 GiB RAM; policy risk above is the owner's call.
   - First-run time caps: XGB 45, DL 45, QLLM 45 minutes (QLLM only if a model is attached; otherwise skipped honestly). Uses part of the 30 h weekly GPU quota.
-- What to bring back: `lumos_app_bundle.zip` (never any token / MAP_KEY / Kaggle credentials). On failure: the exact failing log lines and the cell number.
+- What to bring back: `parallax_app_bundle.zip` (never any token / MAP_KEY / Kaggle credentials). On failure: the exact failing log lines and the cell number.
 
 ---------------------------------------------------------------------------
 ## 9. Definition of "ready to run" — all must be TRUE before telling the owner to start
 
 Run from the repo root unless noted; use long timeouts.
-1. `cmp lumos_app/notebooks/lumos_A_fetch.ipynb kaggle_notebooks/lumos_A_fetch.ipynb` and the same for B → identical; `kaggle_notebooks/STEP_INDEX.md` == `lumos_app/notebooks/STEP_INDEX.md`.
+1. `cmp parallax_app/notebooks/parallax_A_fetch.ipynb kaggle_notebooks/parallax_A_fetch.ipynb` and the same for B → identical; `kaggle_notebooks/STEP_INDEX.md` == `parallax_app/notebooks/STEP_INDEX.md`.
 2. Code cells of both notebooks compile (`python3 -I -c "import json,sys;nb=json.load(open(sys.argv[1]));compile('\n'.join(''.join(c['source']) for c in nb['cells'] if c['cell_type']=='code'),'nb','exec')" <nb>` — beware cell magics `!`/`%`; if present, strip those lines in the check).
-3. `cd /tmp && python3 -I <repo>/lumos_app/notebooks/tests/test_notebook_A.py` → `ALL TESTS PASSED`.
-4. Notebook B tests/harnesses per `lumos_app/notebooks/TEST_REPORT.md` pass; fixture end-to-end run completes; `python3 -I lumos_app/notebooks/tests/check_bundle.py --fixture <bundle>` passes; bundle `regions.json` lists exactly BGD, BGD-A..G, AUS, AUS-NSW, USA, USA-CA with correct `cells_exported`/`features_exported`; manifest `synthetic:true`, stage `ui_prototype`.
-5. `cd lumos_app && npm run build && npm test` pass; targeted e2e pass; no `/Users/` string inside `apps/web/public/data`.
+3. `cd /tmp && python3 -I <repo>/parallax_app/notebooks/tests/test_notebook_A.py` → `ALL TESTS PASSED`.
+4. Notebook B tests/harnesses per `parallax_app/notebooks/TEST_REPORT.md` pass; fixture end-to-end run completes; `python3 -I parallax_app/notebooks/tests/check_bundle.py --fixture <bundle>` passes; bundle `regions.json` lists exactly BGD, BGD-A..G, AUS, AUS-NSW, USA, USA-CA with correct `cells_exported`/`features_exported`; manifest `synthetic:true`, stage `ui_prototype`.
+5. `cd parallax_app && npm run build && npm test` pass; targeted e2e pass; no `/Users/` string inside `apps/web/public/data`.
 6. `grep -rnE "KGAT_[A-Za-z0-9]{8,}|ghp_[A-Za-z0-9]{10,}" .` (excluding node_modules, .git) → no hits; `git status` shows no screenshots staged.
 7. Docs no longer say Notebook B is un-updated; `KAGGLE_HANDOFF.md` matches the notebooks' actual step numbers and the 111/6 expectation.
 8. No leftover processes: `ps aux | grep -E "playwright|vite|vitest|kaggle|python3 .*notebooks"`.
@@ -155,9 +155,9 @@ Run from the repo root unless noted; use long timeouts.
 ---------------------------------------------------------------------------
 ## 10. How to work (patterns that worked / failed)
 
-- **Worked:** worker → independent monitor (re-runs checks, reads heartbeat files, checks `ps`) → resolver loop with ≤3 rounds; exclusive file ownership; heartbeat files under `lumos_app/review_loop/<ROLE>.md`; blackboard + message files for cooperating research agents (`docs/research/messages/`); polite fetching (1 request at a time, ≥3 s between requests per host, one retry on 429, no workarounds; this produced zero 429s).
+- **Worked:** worker → independent monitor (re-runs checks, reads heartbeat files, checks `ps`) → resolver loop with ≤3 rounds; exclusive file ownership; heartbeat files under `parallax_app/review_loop/<ROLE>.md`; blackboard + message files for cooperating research agents (`docs/research/messages/`); polite fetching (1 request at a time, ≥3 s between requests per host, one retry on 429, no workarounds; this produced zero 429s).
 - **Failed / gotchas:** (a) subagents are blocked from writing report files like FINDINGS.md → have them **return text** and write it yourself; (b) too many parallel agents → account session limit; (c) foreground `sleep` is blocked in the Bash tool — use `until <cond>; do sleep N; done` with a timeout, or run in background; (d) zsh globs with `--include=*.ts` fail in the Bash tool — quote them or use the Grep tool; (e) `kaggle kernels push` **starts a run immediately** and there is no cancel command in the CLI — double-check metadata (especially `enable_internet` default TRUE and `machine_shape`) before pushing; set `-t` time caps; (f) first `git push` needed `http.postBuffer` and HTTP/1.1.
-- Workflow scripts from this session (resumable) are under `~/.claude/projects/-Users-aburoshderokonuddawla-Desktop-Lumos-Fire-Calendar-Complete/<session>/workflows/scripts/`: `lumos-three-regions-*.js` (build), `lumos-research-crew-*.js`, `lumos-kaggle-probe-crew-*.js`. Reuse prompts from them if useful; agent journals are in `…/subagents/workflows/wf_*/journal.jsonl`.
+- Workflow scripts from this session (resumable) are under `~/.claude/projects/-Users-aburoshderokonuddawla-Desktop-Parallax-Fire-Calendar-Complete/<session>/workflows/scripts/`: `parallax-three-regions-*.js` (build), `parallax-research-crew-*.js`, `parallax-kaggle-probe-crew-*.js`. Reuse prompts from them if useful; agent journals are in `…/subagents/workflows/wf_*/journal.jsonl`.
 
 ---------------------------------------------------------------------------
 ## 11. Known unverified items (do not state as fact)
@@ -168,7 +168,7 @@ Notebook A on real FIRMS data; Notebook B on any real data/Kaggle machine; USA r
 ## 12. First 10 minutes for you
 
 1. `cd` to the repo root; `git status --short | head -50`; `git log --oneline | head`; `git branch -a`.
-2. Read `lumos_app/review_loop/*.md` heartbeats (if present) to see what the three in-flight agents finished.
-3. Run the §9 checks to learn the true state. Update `lumos_app/STATUS.md` if the docs agent did not.
+2. Read `parallax_app/review_loop/*.md` heartbeats (if present) to see what the three in-flight agents finished.
+3. Run the §9 checks to learn the true state. Update `parallax_app/STATUS.md` if the docs agent did not.
 4. Continue with §7 in order. Keep ≤3 agents in parallel. Commit a checkpoint after each stage.
-5. When §9 is fully green: tell the owner which two files to upload (`kaggle_notebooks/lumos_A_fetch.ipynb`, `kaggle_notebooks/lumos_B_train.ipynb`) and point him to `KAGGLE_HANDOFF.md`; remind him to **revoke the exposed GitHub and Kaggle tokens**.
+5. When §9 is fully green: tell the owner which two files to upload (`kaggle_notebooks/parallax_A_fetch.ipynb`, `kaggle_notebooks/parallax_B_train.ipynb`) and point him to `KAGGLE_HANDOFF.md`; remind him to **revoke the exposed GitHub and Kaggle tokens**.

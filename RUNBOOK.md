@@ -1,4 +1,4 @@
-# Lumos Fire Calendar — Step-by-Step Runbook
+# Parallax Fire — Step-by-Step Runbook
 
 Oct 10, 2026 · @Shahriar Hameem
 
@@ -6,7 +6,7 @@ The tests that exist pass on synthetic data only (see the health check below for
 
 ## Health check (10 Oct 2026)
 
-All test numbers are from synthetic data in a headless sandbox, not from real data or real devices. `lumos_app/STATUS.md` has the latest counts.
+All test numbers are from synthetic data in a headless sandbox, not from real data or real devices. `parallax_app/STATUS.md` has the latest counts.
 
 | Part | Status | Evidence |
 | --- | --- | --- |
@@ -16,7 +16,7 @@ All test numbers are from synthetic data in a headless sandbox, not from real da
 | Notebook guide cells | Added | 1.1–1.12 and 2.1–2.18, one markdown cell above every code cell |
 | Web app: data workspace | Unit tests: 446 pass in the last full run; build OK | Synthetic data only |
 | Web app: 3D landing and browser tests | e2e: 95 pass, 39 skip, 1 timing test (L05) fails in the full run but passes alone with a widened timeout | Synthetic data, headless Chromium with software WebGL |
-| Release stage per region | Being redesigned | One pooled stage is not evidence for one region; see `lumos_app/CONTRACT.md` §6 |
+| Release stage per region | Being redesigned | One pooled stage is not evidence for one region; see `parallax_app/CONTRACT.md` §6 |
 | Real FIRMS download on Kaggle | Not run | FIRMS answers from the owner's machine (HEAD checks done); the full 117-file download has not been tried on Kaggle |
 | Real-scale training (Australia, United States) | Not run | Australia was estimated at about 90M cell-months; the United States panel has not been sized |
 | Real phones, real GPU frame rates | Not tested | Only emulated in headless Chromium |
@@ -41,10 +41,10 @@ Known small issues, none blocking:
 - Notebook A requests 3 countries × (25 MODIS + 14 VIIRS) years = **117 FIRMS files**, plus 2 Natural Earth files. The 6 files for 2025 do not exist on FIRMS, so expect **111 ok and 6 missing**.
 - The whole United States is downloaded (HEAD-measured sizes for 2001–2024: United States about 767 MB, Australia about 1762 MB, Bangladesh about 15 MB; no bounding box). "Bounded" is done in the app: country totals for `USA`, detailed grids only for `USA-CA`, the same pattern as `AUS` / `AUS-NSW`.
 - The app opens on Bangladesh by default. Bangladesh, New South Wales and California are the three detailed regions.
-- `schema_version` stays `1.0`. The extra AOIs are recorded in `lumos_app/CONTRACT.md`, §8 (v1.2 addendum: AOI set extended). Older bundles (Bangladesh and Australia only) remain valid.
+- `schema_version` stays `1.0`. The extra AOIs are recorded in `parallax_app/CONTRACT.md`, §8 (v1.2 addendum: AOI set extended). Older bundles (Bangladesh and Australia only) remain valid.
 - None of this has been run on real data yet.
 - Notebook A and Notebook B both cover the three regions. Notebook B is not yet reviewed on real data.
-- United States caveats to keep in mind when reading results: the file includes Alaska and Hawaii; type 0 mixes wildfire with prescribed and agricultural burning (say "hotspot", not "wildfire"); type 1/2/3 rows are excluded from the main count; the Aleutians west of the antimeridian are a known limitation; `USA-CA` uses the national month ratios. Details: `lumos_app/CONTRACT.md` §10.2.
+- United States caveats to keep in mind when reading results: the file includes Alaska and Hawaii; type 0 mixes wildfire with prescribed and agricultural burning (say "hotspot", not "wildfire"); type 1/2/3 rows are excluded from the main count; the Aleutians west of the antimeridian are a known limitation; `USA-CA` uses the national month ratios. Details: `parallax_app/CONTRACT.md` §10.2.
 
 ## How to use this runbook
 
@@ -73,14 +73,14 @@ Gate: you have both zips unpacked, a phone-verified Kaggle account, and you know
 
 ### 0.2 Files on your laptop
 
-- [ ] 0.2.1 Download `Lumos_Fire_Calendar_App.zip` from this chat and unzip it to a folder such as `~/Projects/lumos_app`.
+- [ ] 0.2.1 Download `Parallax_Fire_Calendar_App.zip` from this chat and unzip it to a folder such as `~/Projects/parallax_app`.
 - [ ] 0.2.2 Install Node.js 20 or newer. Check with `node -v` in a terminal.
 - [ ] 0.2.3 In the folder, run `npm install`. It takes 1–2 minutes.
 - [ ] 0.2.4 Run `npm run dev` and open http://localhost:5173. Confirm the landing page loads with the DEMO DATA label.
 - [ ] 0.2.5 Click **Open the fire calendar** and confirm the workspace loads. Stop the server with Ctrl+C.
-- [ ] 0.2.6 Run `npm test`. Expect every unit test to pass (the count grows as tests are added; `lumos_app/STATUS.md` has the latest).
+- [ ] 0.2.6 Run `npm test`. Expect every unit test to pass (the count grows as tests are added; `parallax_app/STATUS.md` has the latest).
 - [ ] 0.2.7 Run `git init` (if there is no `.git` folder), then `git add -A && git commit -m "baseline"`, so you can always roll back.
-- [ ] 0.2.8 Keep `notebooks/lumos_A_fetch.ipynb` and `notebooks/lumos_B_train.ipynb` handy for Phase 1 and 2.
+- [ ] 0.2.8 Keep `notebooks/parallax_A_fetch.ipynb` and `notebooks/parallax_B_train.ipynb` handy for Phase 1 and 2.
 
 Check before moving on:
 
@@ -99,14 +99,14 @@ Check before moving on:
 
 ## Phase 1 — Notebook A: fetch NASA data (internet ON)
 
-Gate: a committed version of `lumos_A_fetch` whose Output tab holds `lumos_bundle/` with no `error` files (6 `missing` files for 2025 are expected). Time is not measured yet; plan 30–60 minutes. These steps are identical to the guide cells inside the notebook.
+Gate: a committed version of `parallax_A_fetch` whose Output tab holds `parallax_bundle/` with no `error` files (6 `missing` files for 2025 are expected). Time is not measured yet; plan 30–60 minutes. These steps are identical to the guide cells inside the notebook.
 
 ### 1.1 Create and configure the Kaggle notebook
 
 Manual set-up in the Kaggle web UI before any cell runs. Nothing is executed.
 
 - [ ] 1.1.1 On kaggle.com click **Create → New Notebook**.
-- [ ] 1.1.2 In the editor, **File → Import Notebook** and upload `notebooks/lumos_A_fetch.ipynb`. Rename the notebook `lumos_A_fetch` (Notebook B's instructions use this name).
+- [ ] 1.1.2 In the editor, **File → Import Notebook** and upload `notebooks/parallax_A_fetch.ipynb`. Rename the notebook `parallax_A_fetch` (Notebook B's instructions use this name).
 - [ ] 1.1.3 Right-hand panel **Settings → Internet: ON** (Kaggle only allows this on a phone-verified account).
 - [ ] 1.1.4 **Settings → Accelerator: None** (CPU). No GPU is needed here.
 - [ ] 1.1.5 Leave **Settings → Environment** on the default (latest) image; do not pick an old pinned image. Notebook B also uses the default, so the offline wheels match.
@@ -120,14 +120,14 @@ Check before moving on:
 
 ### 1.2 Config
 
-Sets the countries, year ranges, politeness limits for the downloader and the output folder (`/kaggle/working/lumos_bundle`). It only defines settings and prints nothing.
+Sets the countries, year ranges, politeness limits for the downloader and the output folder (`/kaggle/working/parallax_bundle`). It only defines settings and prints nothing.
 
 - [ ] 1.2.1 Check `COUNTRIES` (default Bangladesh, Australia and United_States; a space in a name becomes an underscore). Leave `EXTRA_COUNTRIES = []` unless you were asked to add training countries; each extra country adds download time.
 - [ ] 1.2.2 Leave `MODIS_YEARS` (2001–2025) and `VIIRS_YEARS` (2012–2025) as they are. The 2025 files do not exist on FIRMS and will be logged as `missing`.
 - [ ] 1.2.3 Set `FETCH_API_NRT = True` only if you added the `FIRMS_MAP_KEY` secret in 1.1.6. Otherwise leave it `False`.
 - [ ] 1.2.4 Leave `TRY_NOAA20 = False` (the `viirs-noaa20` and `viirs-noaa21` folders returned 404 on 10 Oct 2026; it would only log 404s).
 - [ ] 1.2.5 Leave the politeness settings (`MAX_WORKERS = 4`, `MAX_RETRIES = 3`, `BACKOFF_BUDGET_S`, `CIRCUIT_BREAKER_N`, `FILE_DEADLINE_S`) unless FIRMS is rate-limiting you heavily.
-- [ ] 1.2.6 Run the cell. Do not set any `LUMOS_*` environment variables on Kaggle; they are for local tests only.
+- [ ] 1.2.6 Run the cell. Do not set any `PARALLAX_*` environment variables on Kaggle; they are for local tests only.
 
 Check before moving on:
 
@@ -161,7 +161,7 @@ Check before moving on:
 Defines the job lists (FIRMS yearly country files, optional Area API requests, the Natural Earth files) and the functions that read and write `manifests/sources.json`.
 
 - [ ] 1.5.1 Run the cell.
-- [ ] 1.5.2 For reference, each FIRMS file comes from `https://firms.modaps.eosdis.nasa.gov/data/country/<sensor>/<year>/<sensor>_<year>_<Country>.csv` and is saved under `lumos_bundle/raw/firms_country/<sensor>/<year>/`.
+- [ ] 1.5.2 For reference, each FIRMS file comes from `https://firms.modaps.eosdis.nasa.gov/data/country/<sensor>/<year>/<sensor>_<year>_<Country>.csv` and is saved under `parallax_bundle/raw/firms_country/<sensor>/<year>/`.
 
 Check before moving on:
 
@@ -182,7 +182,7 @@ Check before moving on:
 
 - [ ] The closing line shows `ok=111, missing=6, error=0`.
 - [ ] The 6 `missing` files are the 2025 files (MODIS and VIIRS for Bangladesh, Australia and United_States), where FIRMS answers 404. They are recorded as missing, never filled with zeros, so the calendar ends at 2024. If you see other `missing` files, write them down; if you see any `error`, see section 8.1.
-- [ ] `/kaggle/working/lumos_bundle/manifests/sources.json` exists (Output panel on the right).
+- [ ] `/kaggle/working/parallax_bundle/manifests/sources.json` exists (Output panel on the right).
 
 ### 1.7 Optional recent NRT data
 
@@ -199,7 +199,7 @@ Check before moving on:
 
 ### 1.8 Boundaries
 
-Downloads the Natural Earth GeoJSON files (world countries; states and provinces) into `lumos_bundle/context/` and checks each is a valid FeatureCollection.
+Downloads the Natural Earth GeoJSON files (world countries; states and provinces) into `parallax_bundle/context/` and checks each is a valid FeatureCollection.
 
 - [ ] 1.8.1 Run the cell.
 - [ ] 1.8.2 Look for `Natural Earth boundaries: 2 files, 4 workers`, then two `ok` lines with a feature count. Notebook B later cuts the Bangladesh divisions, New South Wales and California out of the states-and-provinces file.
@@ -210,7 +210,7 @@ Check before moving on:
 
 ### 1.9 Offline wheelhouse
 
-Downloads wheels for PennyLane, PennyLane-Lightning, ONNX and onnxscript (plus XGBoost if missing) into `lumos_bundle/wheelhouse/`. Notebook B installs these with the internet off.
+Downloads wheels for PennyLane, PennyLane-Lightning, ONNX and onnxscript (plus XGBoost if missing) into `parallax_bundle/wheelhouse/`. Notebook B installs these with the internet off.
 
 - [ ] 1.9.1 Run the cell. Look for `Wheelhouse: downloading [...] for Python 3.x.y`.
 - [ ] 1.9.2 Watch one line per package: `wheel ok <name>` or `wheel FAILED <name>`.
@@ -231,7 +231,7 @@ Writes `manifests/sources.json`, `manifests/env_A.json` (Python version, package
 
 Check before moving on:
 
-- [ ] All four files exist under `/kaggle/working/lumos_bundle/`.
+- [ ] All four files exist under `/kaggle/working/parallax_bundle/`.
 
 ### 1.11 Summary table
 
@@ -252,34 +252,34 @@ Prints folder sizes, scans every file for the MAP\_KEY (deleting any that contai
 
 - [ ] 1.12.1 Run the cell and read the folder sizes (`raw`, `context`, `wheelhouse`, `manifests`).
 - [ ] 1.12.2 Look for `key leak check: passed`.
-- [ ] 1.12.3 Look for the last line `Done. Outputs are files under /kaggle/working/lumos_bundle (no zip). Now: Save Version -> 'Save & Run All'.`
+- [ ] 1.12.3 Look for the last line `Done. Outputs are files under /kaggle/working/parallax_bundle (no zip). Now: Save Version -> 'Save & Run All'.`
 - [ ] 1.12.4 Click **Save Version** (top right) → **Save & Run All (Commit)** → **Save**. The committed version re-runs the whole notebook in a fresh session; that is expected.
 - [ ] 1.12.5 Wait until the version shows as finished successfully (the notebook's **Versions** list).
-- [ ] 1.12.6 Open that version's **Output** tab and confirm `lumos_bundle/` is listed.
+- [ ] 1.12.6 Open that version's **Output** tab and confirm `parallax_bundle/` is listed.
 
 Check before moving on:
 
 - [ ] `key leak check: passed`.
 - [ ] `raw` is the largest folder and `context` is not empty.
-- [ ] The committed version's Output tab shows `lumos_bundle/manifests/sources.json`.
+- [ ] The committed version's Output tab shows `parallax_bundle/manifests/sources.json`.
 
 ## Phase 2 — Notebook B: train offline on a Kaggle GPU
 
-Gate: `lumos_app_bundle.zip` is on your computer, `blocked network attempts: 0`, and no HONEST NOTE (synthetic) banner. Run time on real data is not measured; for a first run cap each long stage at 45 minutes (see 2.2). These steps are identical to the guide cells inside the notebook.
+Gate: `parallax_app_bundle.zip` is on your computer, `blocked network attempts: 0`, and no HONEST NOTE (synthetic) banner. Run time on real data is not measured; for a first run cap each long stage at 45 minutes (see 2.2). These steps are identical to the guide cells inside the notebook.
 
 ### 2.1 Attach inputs and pick the GPU
 
 Manual set-up in the Kaggle web UI before any cell runs.
 
-- [ ] 2.1.1 On kaggle.com click **Create → New Notebook**, then **File → Import Notebook** and upload `kaggle_notebooks/lumos_B_train.ipynb`.
-- [ ] 2.1.2 Right-hand panel **Add Input → Notebook Output**, search for `lumos_A_fetch` and add its latest successful version.
+- [ ] 2.1.1 On kaggle.com click **Create → New Notebook**, then **File → Import Notebook** and upload `kaggle_notebooks/parallax_B_train.ipynb`.
+- [ ] 2.1.2 Right-hand panel **Add Input → Notebook Output**, search for `parallax_A_fetch` and add its latest successful version.
 - [ ] 2.1.3 *(Optional, enables Q2 in 2.16)* **Add Input → Models**, pick an instruct model such as Qwen2.5-7B-Instruct, framework **Transformers**. Its weights must fit in min(30 GB, half the free RAM, 85% of free VRAM).
 - [ ] 2.1.4 Choose ONE of two options and write down which:
   - **(a) Accelerator GPU T4 x2, no competition attached.** 31 GiB RAM, 4 CPUs. Safe for the account. Notebook B uses one T4 and turns bf16 off there. Slower and RAM-limited; the United States panel may be the limit.
   - **(b) Accelerator RTX PRO 6000**, only in a new notebook with the competition `arc-prize-2026-arc-agi-3` attached (Add Input → Competition) and Internet OFF. 177 GiB RAM, 48 CPUs. **Warning:** a search summary of the competition page says other use of that machine could lead to moderation action such as suspension (unconfirmed). This is your decision; do not read or submit anything in the competition.
 - [ ] 2.1.5 **Settings → Internet: OFF** (required for option (b); recommended for (a)). This notebook blocks all network sockets anyway.
 - [ ] 2.1.6 Leave **Settings → Environment** on the default (latest). Do not choose an old pinned image: the probe showed torch 2.11 with `sm_120` working on the default image, and an old image can fail with "no kernel image is available".
-- [ ] 2.1.7 Start the session and follow 2.2 to 2.18, or use **Run All**. Do not set `LUMOS_INPUT`, `LUMOS_WORK` or `LUMOS_QUICK` on Kaggle; they are for local tests only.
+- [ ] 2.1.7 Start the session and follow 2.2 to 2.18, or use **Run All**. Do not set `PARALLAX_INPUT`, `PARALLAX_WORK` or `PARALLAX_QUICK` on Kaggle; they are for local tests only.
 
 Check before moving on:
 
@@ -294,13 +294,13 @@ Sets offline variables, run switches, seeds, epochs, time budgets, split years a
 - [ ] 2.2.2 Budgets in minutes: `XGB_MAX_MINUTES` 120, `DL_MAX_MINUTES` 120, `QLLM_MAX_MINUTES` 90 by default. For the first real run lower each to 45 by editing the default string inside `os.environ.get(...)`.
 - [ ] 2.2.3 Change switches or budgets before the first run only: a change starts a fresh run folder instead of resuming.
 - [ ] 2.2.4 Run the cell.
-- [ ] 2.2.5 Read the log line `Lumos Notebook B B-1.1.0 · run <timestamp> · QUICK_TEST=False · input=/kaggle/input · bundle=... · work=/kaggle/working`.
+- [ ] 2.2.5 Read the log line `Parallax Notebook B B-1.1.0 · run <timestamp> · QUICK_TEST=False · input=/kaggle/input · bundle=... · work=/kaggle/working`.
 - [ ] 2.2.6 After a crash, a second Run All shows `(RESUMED)` and `resuming run ...: checkpointed stages [...]`.
 
 Check before moving on:
 
 - [ ] `QUICK_TEST=False`.
-- [ ] `bundle=` points to a folder under `/kaggle/input/` ending in `lumos_bundle`.
+- [ ] `bundle=` points to a folder under `/kaggle/input/` ending in `parallax_bundle`.
 - [ ] No `WARNING: N bundles found` line (if there is one, remove the extra inputs and run again).
 
 ### 2.3 Offline guard and environment probe
@@ -442,7 +442,7 @@ Opens 2023–2024 exactly once, scores every model, measures 80% interval covera
 
 Check before moving on:
 
-- [ ] On real data the stage is `observed_comparison` or `validated_calibration`, never `ui_prototype`. Note that the stage is currently pooled over all regions and is being redesigned to be per region (`lumos_app/CONTRACT.md` §6): do not quote it as evidence for one region.
+- [ ] On real data the stage is `observed_comparison` or `validated_calibration`, never `ui_prototype`. Note that the stage is currently pooled over all regions and is being redesigned to be per region (`parallax_app/CONTRACT.md` §6): do not quote it as evidence for one region.
 - [ ] The reason lists test area-month MAE for the selected model and both B0 baselines, plus coverage. Compare the coverage with the nominal 0.80 and record the difference.
 
 ### 2.13 Backcast and anomalies
@@ -459,7 +459,7 @@ Check before moving on:
 
 ### 2.14 Export the app bundle
 
-Writes the full app bundle before the research stages (activity records, cell grids, features, weights incl. ONNX with a parity check, model cards, metrics, figures, manifest, checksums) and zips it to `/kaggle/working/lumos_app_bundle.zip`.
+Writes the full app bundle before the research stages (activity records, cell grids, features, weights incl. ONNX with a parity check, model cards, metrics, figures, manifest, checksums) and zips it to `/kaggle/working/parallax_app_bundle.zip`.
 
 - [ ] 2.14.1 Run the cell.
 - [ ] 2.14.2 Read `activity records: N; schema errors: 0 (validator: ...)`.
@@ -472,7 +472,7 @@ Check before moving on:
 
 - [ ] `schema errors: 0`.
 - [ ] ONNX parity shows `passed` true (unless D1 was skipped).
-- [ ] `lumos_app_bundle.zip` exists and is well under 100 MB.
+- [ ] `parallax_app_bundle.zip` exists and is well under 100 MB.
 
 ### 2.15 Research: simulated quantum Q1
 
@@ -524,14 +524,14 @@ Prints one row per model, the subset comparison, the selected model with release
 - [ ] 2.18.2 Read `Selected model (validation only): ... | release stage: ...`.
 - [ ] 2.18.3 Read `Device: cuda ... blocked network attempts: 0`.
 - [ ] 2.18.4 Look at the figures (time series for BGD, AUS-NSW and USA-CA, plus AUS and USA if present, model comparison, test scatter, QML subset comparison). Record what you see; do not adjust anything because of how a figure looks.
-- [ ] 2.18.5 Download `lumos_app_bundle.zip` from the **Output** panel now, or commit with **Save Version → Save & Run All**. Interactive session files disappear when the session stops.
+- [ ] 2.18.5 Download `parallax_app_bundle.zip` from the **Output** panel now, or commit with **Save Version → Save & Run All**. Interactive session files disappear when the session stops.
 
 Check before moving on:
 
 - [ ] `blocked network attempts: 0`.
 - [ ] `Device: cuda`.
 - [ ] No HONEST NOTE banner on real data.
-- [ ] `lumos_app_bundle.zip` is saved on your computer.
+- [ ] `parallax_app_bundle.zip` is saved on your computer.
 
 ## Phase 3 — Check the results before trusting them
 
@@ -539,7 +539,7 @@ Gate: the bundle passes `check_bundle.py`, the figures look physically sensible,
 
 ### 3.1 Unpack and read the manifest
 
-- [ ] 3.1.1 Unzip `lumos_app_bundle.zip` into a scratch folder (not into the app yet).
+- [ ] 3.1.1 Unzip `parallax_app_bundle.zip` into a scratch folder (not into the app yet).
 - [ ] 3.1.2 Open `manifest.json`. Check `synthetic` is `false`.
 - [ ] 3.1.3 Note `snapshot_id`, `release_stage`, `selected_model_id` and the years covered.
 - [ ] 3.1.4 Read `release_reason` in full. It must name the test area-month MAE of the selected model and both B0 baselines, plus interval coverage.
@@ -551,7 +551,7 @@ Check before moving on:
 
 ### 3.2 Run the automatic bundle check
 
-- [ ] 3.2.1 In a terminal in the app folder: `python3 notebooks/tests/check_bundle.py <scratch>/lumos_app_bundle` (no `--fixture` flag).
+- [ ] 3.2.1 In a terminal in the app folder: `python3 notebooks/tests/check_bundle.py <scratch>/parallax_app_bundle` (no `--fixture` flag).
 - [ ] 3.2.2 Read the PASS/FAIL list. It checks checksums, schema, missing-vs-zero, browser recompute of B0/B1 and file sizes.
 - [ ] 3.2.3 If anything fails, copy the output into Claude Code with: "Explain this check\_bundle failure and fix Notebook B if needed."
 
@@ -611,14 +611,14 @@ Gate: the app runs locally on the real snapshot, the DEMO label is gone, and all
 
 ### 4.1 Open the project in Claude Code
 
-- [ ] 4.1.1 Copy `lumos_app_bundle.zip` into the app folder root.
+- [ ] 4.1.1 Copy `parallax_app_bundle.zip` into the app folder root.
 - [ ] 4.1.2 Open a terminal in the app folder and start Claude Code (`claude`).
 - [ ] 4.1.3 Paste: "Read CLAUDE\_CODE\_MASTER\_PROMPT.md, PRD.md, CONTRACT.md (including sections 7 to 10) and STATUS.md. Summarise the current state in 10 lines and wait."
 - [ ] 4.1.4 Check the summary mentions the two routes (landing and workspace) and the synthetic sample snapshot.
 
 ### 4.2 Import the real bundle
 
-- [ ] 4.2.1 Paste: "Run `node scripts/import_bundle.mjs lumos_app_bundle.zip`. Show me the output."
+- [ ] 4.2.1 Paste: "Run `node scripts/import_bundle.mjs parallax_app_bundle.zip`. Show me the output."
 - [ ] 4.2.2 Confirm the import verified the checksums and schema and set the new snapshot as default.
 - [ ] 4.2.3 If it refuses because the snapshot exists, ask it to re-run with `--replace`.
 - [ ] 4.2.4 Paste: "Keep the synthetic snapshot available for tests but make the real snapshot the default."
@@ -709,16 +709,16 @@ Gate: a public GitHub Pages URL that installs as an app on Windows, macOS, Andro
 
 ### 6.1 Prepare the repository
 
-- [ ] 6.1.1 On github.com create a new **public** repository, for example `lumos-fire-calendar`.
+- [ ] 6.1.1 On github.com create a new **public** repository, for example `parallax-fire`.
 - [ ] 6.1.2 Paste into Claude Code: "Check that no secrets, MAP\_KEYs, registration screenshots or raw FIRMS archives are in the repo or dist. Report file sizes over 10 MB."
 - [ ] 6.1.3 Paste: "Add the GitHub remote \<your repo URL> and push main."
-- [ ] 6.1.4 Paste: "Add a GitHub Actions workflow that builds with BASE\_PATH=/lumos-fire-calendar/ and deploys dist to GitHub Pages."
+- [ ] 6.1.4 Paste: "Add a GitHub Actions workflow that builds with BASE\_PATH=/parallax-fire/ and deploys dist to GitHub Pages."
 - [ ] 6.1.5 On GitHub: **Settings → Pages → Source: GitHub Actions**.
 
 ### 6.2 Deploy and verify
 
 - [ ] 6.2.1 Push; wait for the Actions run to turn green.
-- [ ] 6.2.2 Open `https://<user>.github.io/lumos-fire-calendar/`. The landing loads.
+- [ ] 6.2.2 Open `https://<user>.github.io/parallax-fire/`. The landing loads.
 - [ ] 6.2.3 Click into the workspace and back. Deep links like `#aoi=BGD&y=2016&m=3` work.
 - [ ] 6.2.4 Open DevTools → Network: no 404s for data files.
 - [ ] 6.2.5 DevTools → Application: the manifest and service worker are registered.
@@ -749,14 +749,14 @@ Gate: submission filed before the deadline with the live link, code link, video 
 
 ### 7.2 Write the project page
 
-- [ ] 7.2.1 One-sentence summary: "Lumos puts NASA's MODIS and VIIRS fire records on one fair scale and shows each place's burning calendar, with honest error bars."
+- [ ] 7.2.1 One-sentence summary: "Parallax puts NASA's MODIS and VIIRS fire records on one fair scale and shows each place's burning calendar, with honest error bars."
 - [ ] 7.2.2 Problem: the 2012 jump caused by the sharper VIIRS camera (two-camera analogy).
 - [ ] 7.2.3 What we built: the calendar workspace, the harmonized series, the 3D story, offline install on every device.
 - [ ] 7.2.4 Results: the release stage, test MAE against baselines, interval coverage (from Phase 3), stated as pooled over all regions unless per-region numbers exist. If the estimate did not beat the simple ratio, say so.
 - [ ] 7.2.5 Limits: not fire counts, not wildfire counts (prescribed and agricultural burning are included), not burned area, cloud gaps unknown, no 2025 data, Mymensingh boundary, USA includes Alaska and Hawaii.
 - [ ] 7.2.6 NASA data used: FIRMS MODIS C6.1 and VIIRS 375 m S-NPP (country yearly files, 2001–2024); Natural Earth boundaries.
 - [ ] 7.2.7 Research extras: simulated QML and QLLM compared fairly against classical models, no advantage claimed.
-- [ ] 7.2.8 Credits: M. Al Shahriar Hameem, Team Lumos, Dhaka (plus any teammates).
+- [ ] 7.2.8 Credits: M. Al Shahriar Hameem, __TEAM_PARALLAX__, Dhaka (plus any teammates).
 
 ### 7.3 Record the demo video
 

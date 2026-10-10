@@ -10,9 +10,9 @@ __pycache__/
 *.pyc
 # owner screenshots (one shows an API token) - never commit
 Screenshot*.png
-lumos_app/fixtures/out_b/
-lumos_app/review_loop/
-lumos_app/docs/kaggle/heartbeat/
-lumos_app/docs/kaggle/messages/
-lumos_app/docs/kaggle/probes/*/output/
-lumos_app/docs/research/messages/
+parallax_app/fixtures/out_b/
+parallax_app/review_loop/
+parallax_app/docs/kaggle/heartbeat/
+parallax_app/docs/kaggle/messages/
+parallax_app/docs/kaggle/probes/*/output/
+parallax_app/docs/research/messages/

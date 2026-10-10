@@ -40,7 +40,7 @@ Local planners and environmental analysts (primary); researchers, teachers and j
 Not a wildfire alarm or an evacuation tool; not a count of "real fires"; not a forecast. It describes **satellite-observed burning activity in the past** and how sure we can be about comparing two instruments.
 
 ## Team
-Team **Lumos**, Dhaka. Team leader: **M Al Shahriar Hameem**. (Add the other members' names in the video only if the team wants them on screen.) Challenge category: *Harmonization of MODIS and VIIRS Hot Spots*. Team page: https://www.spaceappschallenge.org/2026/find-a-team/lumos2/
+Team **Parallax**, Dhaka. Team leader: **M Al Shahriar Hameem**. (Add the other members' names in the video only if the team wants them on screen.) Challenge category: *Harmonization of MODIS and VIIRS Hot Spots*. Team page: https://www.spaceappschallenge.org/2026/find-a-team/parallax2/
 
 ## Opportunity / future (for the "look to the future" beat)
 - Extend the same method to more regions and to the newer NOAA-20/21 satellites (NASA has said S-NPP science data delivery ceases on 2 Nov 2026, so continuity across platforms matters more, not less).

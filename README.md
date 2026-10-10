@@ -1,6 +1,6 @@
-# 🔥 Lumos Fire Calendar
+# 🔥 Parallax Fire
 > NASA Space Apps 2026 entry, challenge *Harmonization of MODIS and VIIRS Hot Spots*. 
-> **Team Lumos**, Dhaka. Owner: M. Al Shahriar Hameem.
+> **__TEAM_PARALLAX__**, Dhaka. Owner: M. Al Shahriar Hameem.
 
 [![Deploy to GitHub Pages](https://github.com/Shahriar290900/Harmonisation-MODIS-VIIRS/actions/workflows/pages.yml/badge.svg)](https://github.com/Shahriar290900/Harmonisation-MODIS-VIIRS/actions/workflows/pages.yml)
 
@@ -55,8 +55,8 @@ Whole-country Australia and United States show totals only. Detailed 5 km cell m
 ## 📁 Repository Structure
 | Path | What it holds |
 |---|---|
-| `lumos_app/` | The app (React + Vite + MapLibre + Three.js PWA), the data contract (`CONTRACT.md`), product requirements (`PRD.md`), status (`STATUS.md`), notebook sources, scripts, tests and a synthetic demo snapshot |
-| `kaggle_notebooks/` | `lumos_A_fetch.ipynb` (downloads data, internet ON) and `lumos_B_train.ipynb` (trains and exports, internet OFF, GPU), plus `STEP_INDEX.md` |
+| `parallax_app/` | The app (React + Vite + MapLibre + Three.js PWA), the data contract (`CONTRACT.md`), product requirements (`PRD.md`), status (`STATUS.md`), notebook sources, scripts, tests and a synthetic demo snapshot |
+| `kaggle_notebooks/` | `parallax_A_fetch.ipynb` (downloads data, internet ON) and `parallax_B_train.ipynb` (trains and exports, internet OFF, GPU), plus `STEP_INDEX.md` |
 | `RUNBOOK.md` | Step-by-step guide, 9 phases |
 | `KAGGLE_HANDOFF.md` | Short click-by-click guide for running both notebooks on Kaggle |
 | `START_HERE.md` | Orientation for the whole package |
@@ -65,7 +65,7 @@ Whole-country Australia and United States show totals only. Detailed 5 km cell m
 ## 🚀 Run the app locally
 Needs Node.js 20 or newer.
 ```bash
-cd lumos_app
+cd parallax_app
 npm install
 npm run dev          # http://localhost:5173
 npm test             # unit tests
@@ -74,8 +74,8 @@ npm test             # unit tests
 
 ## 🔬 Real data: the Kaggle flow
 1. **Notebook A** (internet ON, CPU): requests 117 NASA FIRMS yearly country files (3 countries × (25 MODIS + 14 VIIRS) years) and Natural Earth boundaries. 
-2. **Notebook B** (internet OFF): attach A's output, run all, download `lumos_app_bundle.zip`. Covers Bangladesh, Australia (+NSW) and the United States (+California). Two GPU options: T4 x2 or RTX PRO 6000 (see `KAGGLE_HANDOFF.md`).
-3. **Import**: `cd lumos_app && node scripts/import_bundle.mjs <path-to>/lumos_app_bundle.zip` checks checksums and schema and makes it the default snapshot.
+2. **Notebook B** (internet OFF): attach A's output, run all, download `parallax_app_bundle.zip`. Covers Bangladesh, Australia (+NSW) and the United States (+California). Two GPU options: T4 x2 or RTX PRO 6000 (see `KAGGLE_HANDOFF.md`).
+3. **Import**: `cd parallax_app && node scripts/import_bundle.mjs <path-to>/parallax_app_bundle.zip` checks checksums and schema and makes it the default snapshot.
 
 Exact clicks and what to send back on failure: `KAGGLE_HANDOFF.md`.
 
@@ -90,4 +90,4 @@ Exact clicks and what to send back on failure: `KAGGLE_HANDOFF.md`.
 - No API keys or tokens belong in this repo. Zip files and `.env` files are git-ignored.
 
 ## 📊 Data and credits
-Fire detections: **NASA FIRMS** (MODIS Collection 6.1, VIIRS 375 m S-NPP), 2001–2024. NASA plans to stop delivering S-NPP VIIRS science data on 2 Nov 2026; the historical years used here are unaffected. Boundaries: Natural Earth (public domain). Built by Team Lumos, Dhaka (M. Al Shahriar Hameem).
+Fire detections: **NASA FIRMS** (MODIS Collection 6.1, VIIRS 375 m S-NPP), 2001–2024. NASA plans to stop delivering S-NPP VIIRS science data on 2 Nov 2026; the historical years used here are unaffected. Boundaries: Natural Earth (public domain). Built by __TEAM_PARALLAX__, Dhaka (M. Al Shahriar Hameem).

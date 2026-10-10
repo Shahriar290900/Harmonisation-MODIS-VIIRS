@@ -1,0 +1,291 @@
+#!/usr/bin/env python3
+"""Unit tests for Notebook B watchdog/robustness helpers (no full training run).
+
+* depth-limited search: bundle found at depth ≤ limit, NOT found deeper; early stop.
+* LLM discovery: size cap min(30 GB, 0.5 × free RAM) → oversized (sparse) checkpoint skipped and reported; small one chosen.
+* XGBoost wall-clock callback stops boosting at the deadline and keeps a usable best_iteration.
+* offline pip: resolver failure → `--no-deps` fallback (tiny local wheel with an unresolvable dependency).
+Usage: PARALLAX_INPUT=<fixture out> PARALLAX_WORK=<scratch> python test_b_units.py
+"""
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import time
+import zipfile
+from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+os.environ.setdefault("PARALLAX_AUTO_RESUME", "0")
+os.environ.setdefault("PARALLAX_QUICK", "1")
+from _exec_upto import exec_upto, SRC  # noqa: E402
+
+FAILS = []
+def check(c, m):
+    print(("  PASS " if c else "  FAIL ") + m, flush=True)
+    if not c: FAILS.append(m)
+
+ns = exec_upto("INGEST (contract")
+tmp = Path(tempfile.mkdtemp(prefix="parallaxB_units_"))
+
+print("== depth-limited bundle search ==")
+shallow = tmp / "in1" / "a" / "b" / "parallax_bundle" / "manifests"; shallow.mkdir(parents=True); (shallow / "sources.json").write_text("[]")
+deep = tmp / "in2" / "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9" / "parallax_bundle" / "manifests"; deep.mkdir(parents=True); (deep / "sources.json").write_text("[]")
+check(ns["locate_bundle"](tmp / "in1") == shallow.parent, "bundle at depth 3 found")
+try:
+    ns["locate_bundle"](tmp / "in2"); check(False, "bundle at depth 11 must not be found")
+except FileNotFoundError:
+    check(True, "bundle deeper than the limit is not searched (FileNotFoundError)")
+many = tmp / "in3"
+for i in range(50): (many / f"d{i}").mkdir(parents=True); (many / f"d{i}" / "config.json").write_text("{}")
+hits = list(ns["walk_limited"](many, lambda d, fs: [d] if "config.json" in fs else [], stop_after=5))
+check(len(hits) == 5, "walk_limited stops early after stop_after hits")
+
+print("== LLM discovery with size cap ==")
+text = open(SRC, encoding="utf-8").read()
+i, j = text.index("def _weights_size("), text.index("def make_llm_generate(")
+exec(compile(text[i:j], SRC, "exec"), ns)
+root = tmp / "models"
+for name, size in [("Qwen2.5-7B-Instruct", 40 * 10**9), ("qwen2.5-0.5b-instruct", 10**6)]:
+    d = root / name; d.mkdir(parents=True)
+    (d / "config.json").write_text(json.dumps({"architectures": ["Qwen2ForCausalLM"], "model_type": "qwen2"}))
+    (d / "tokenizer.json").write_text("{}")
+    with open(d / "model.safetensors", "wb") as f: f.truncate(size)     # sparse file: no real disk use
+found, rep = ns["find_local_llm"](root)
+check(found and found.endswith("qwen2.5-0.5b-instruct"), f"small instruct model chosen: {found}")
+check(rep["size_cap_gb"] <= 30 and any("7B" in x["dir"] for x in rep["too_large"]), f"40 GB checkpoint rejected by cap {rep['size_cap_gb']} GB: {rep['too_large']}")
+cap, _ = ns["llm_size_cap"]()
+check(cap <= min(30e9, 0.5 * ns["free_ram_gb"]() * 1e9) + 1, f"cap = min(30 GB, 0.5×free RAM) = {cap / 1e9:.2f} GB")
+
+print("== XGBoost wall-clock callback ==")
+import numpy as np, xgboost as xgb
+i, j = text.index("            class WallClock("), text.index("            def make_dm(")
+src = "\n".join(l[12:] for l in text[i:j].split("\n"))
+ns["xgb"] = xgb
+exec(compile(src, SRC, "exec"), ns)
+rng = np.random.default_rng(0); X = rng.random((20000, 10)); y = rng.poisson(np.exp(X[:, 0]))
+d = xgb.DMatrix(X, label=y)
+cb = ns["WallClock"](time.time() + 1.0)
+t0 = time.time()
+bst = xgb.train({"objective": "count:poisson", "tree_method": "hist", "max_depth": 8, "eta": 0.01}, d, num_boost_round=100000,
+                evals=[(d, "val")], early_stopping_rounds=100000, verbose_eval=False, callbacks=[cb])
+check(cb.stopped_early and time.time() - t0 < 5 and bst.num_boosted_rounds() < 100000,
+      f"stopped after {time.time() - t0:.1f}s at {bst.num_boosted_rounds()} rounds; best_iteration={bst.best_iteration}")
+
+print("== offline pip --no-deps fallback ==")
+wh = tmp / "bundle" / "wheelhouse"; wh.mkdir(parents=True)
+whl = wh / "parallax_fake_pkg-0.1-py3-none-any.whl"
+with zipfile.ZipFile(whl, "w") as z:
+    z.writestr("parallax_fake_pkg/__init__.py", "X = 1\n")
+    z.writestr("parallax_fake_pkg-0.1.dist-info/METADATA", "Metadata-Version: 2.1\nName: parallax-fake-pkg\nVersion: 0.1\nRequires-Dist: parallax-nonexistent-dep>=1\n")
+    z.writestr("parallax_fake_pkg-0.1.dist-info/WHEEL", "Wheel-Version: 1.0\nGenerator: test\nRoot-Is-Purelib: true\nTag: py3-none-any\n")
+    z.writestr("parallax_fake_pkg-0.1.dist-info/RECORD", "")
+ns["BUNDLE"] = tmp / "bundle"
+res = ns["try_offline_install"](("parallax-fake-pkg",))
+check(str(res.get("parallax-fake-pkg", "")).startswith("installed --no-deps"), f"resolver failure → --no-deps fallback: {res.get('parallax-fake-pkg')}")
+subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "-q", "parallax-fake-pkg"], capture_output=True)
+
+print("== three-region config (v1.2 addendum, CONTRACT §8-9) ==")
+check(ns["AOI_COUNTRIES"] == ["Bangladesh", "Australia", "United_States"], f"AOI_COUNTRIES (FIRMS slugs): {ns['AOI_COUNTRIES']}")
+check(ns["COUNTRY_ISO3"]["United_States"] == "USA" and ns["COUNTRY_ISO3"]["Bangladesh"] == "BGD" and ns["COUNTRY_ISO3"]["Australia"] == "AUS",
+      "COUNTRY_ISO3: Bangladesh→BGD, Australia→AUS, United_States→USA")
+check(ns["AOI_ADMIN1"] == {"Australia": ["AU-NSW"], "United_States": ["US-CA"]}, f"AOI_ADMIN1 (NE iso_3166_2): {ns['AOI_ADMIN1']}")
+check(ns["EXPECTED_ADMIN1"]["United_States"] == ["US-CA"] and ns["ADMIN1_DISPLAY"]["US-CA"] == "California", "EXPECTED_ADMIN1 / ADMIN1_DISPLAY: US-CA = California")
+check(set(ns["FEATURE_EXPORT_AOIS"]) == {"BGD", "AUS-NSW", "USA-CA"}, f"FEATURE_EXPORT_AOIS = {ns['FEATURE_EXPORT_AOIS']}")
+check(set(ns["CELLS_EXPORT_SKIP_AOIS"]) == {"AUS", "USA"}, f"CELLS_EXPORT_SKIP_AOIS = {ns['CELLS_EXPORT_SKIP_AOIS']}")
+check(ns["country_display"]("United_States") == "United States" and ns["country_display"]("Bangladesh") == "Bangladesh", "country_display: United_States → 'United States'")
+check(ns["ADMIN1_DISPLAY_KIND"].get("Bangladesh") == "Division" and ns["ADMIN1_DISPLAY_KIND"].get("United_States", "State") == "State", "display_kind: BGD Division, elsewhere State")
+check(set(ns["EXPECTED_ADMIN1"]) <= set(ns["COUNTRY_ISO3"]) and set(ns["AOI_ADMIN1"]) <= set(ns["AOI_COUNTRIES"]), "admin-1 tables keyed on configured FIRMS slugs only")
+# the registry table in CONTRACT.md §9 is the authority: every row must agree with the config constants
+reg_txt = (Path(__file__).resolve().parents[2] / "CONTRACT.md").read_text(encoding="utf-8")
+rows = [[c.strip() for c in l.strip().strip("|").split("|")] for l in reg_txt.split("## 9. Region registry", 1)[1].splitlines() if l.startswith("| ") and not l.startswith("| aoi_id") and not l.startswith("|---")]
+iso3 = ns["COUNTRY_ISO3"]; slug = {ns["country_display"](k): k for k in ns["AOI_COUNTRIES"]}
+bad = []
+for aoi, name, country, kind, parent, cells_x, feats_x, dkind in rows:
+    if (cells_x == "yes") != (aoi not in ns["CELLS_EXPORT_SKIP_AOIS"]): bad.append((aoi, "cells_exported"))
+    if (feats_x == "yes") != (aoi in ns["FEATURE_EXPORT_AOIS"]): bad.append((aoi, "features_exported"))
+    if country not in slug: bad.append((aoi, "country")); continue
+    if kind == "country" and aoi != iso3[slug[country]]: bad.append((aoi, "iso3"))
+    if kind == "admin1" and dkind != ns["ADMIN1_DISPLAY_KIND"].get(slug[country], "State"): bad.append((aoi, "display_kind"))
+check(len(rows) == 12 and not bad, f"CONTRACT §9 region registry ({len(rows)} rows) agrees with the notebook constants {bad}")
+
+print("== Natural Earth name mapping: FIRMS 'United_States' vs NE 'United States of America' ==")
+import shapely
+from shapely.geometry import shape, Point, box, mapping
+from shapely.ops import unary_union
+ns.update(shape=shape, unary_union=unary_union, shapely=shapely, re=__import__("re"))
+exec(compile("\n".join(text[text.index("def country_display("):text.index("def panel_memory_plan(")].split("\n")), SRC, "exec"), ns)
+exec(compile(text[text.index("ISO2_RE = re.compile"):text.index("AOI_NOTES = []")], SRC, "exec"), ns)    # admin1_code + dissolve_features
+us0 = {"ADMIN": "United States of America", "NAME": "United States of America", "ADM0_A3": "USA", "ISO_A3": "USA"}
+check(ns["ne_country_match"](us0, "USA", "United_States"), "NE admin-0 'United States of America' (ADM0_A3 USA) matches slug United_States")
+check(ns["ne_country_match"]({"ADMIN": "United States of America", "ADM0_A3": "-99"}, "USA", "United_States"), "explicit NE name table matches even if ISO3 is unusable")
+check(ns["ne_country_match"]({"admin": "United States of America", "adm0_a3": "USA"}, "USA", "United_States"), "NE admin-1 props (lowercase admin/adm0_a3) match")
+check(not ns["ne_country_match"]({"ADMIN": "Australia", "ADM0_A3": "AUS"}, "USA", "United_States") and not ns["ne_country_match"](us0, "AUS", "Australia")
+      and not ns["ne_country_match"]({"ADMIN": "Bangladesh", "ADM0_A3": "BGD"}, "USA", "United_States"), "no cross-matches between BGD / AUS / USA")
+check(not ns["ne_country_match"]({"admin": "United States Minor Outlying Islands", "adm0_a3": "UMI"}, "USA", "United_States"), "similar NE names (UMI) are not matched")
+# real (fixture) NE files: admin-1 features of USA found, US-CA picked by iso_3166_2, other states ignored
+FIXTURE = Path(os.environ["PARALLAX_INPUT"]) / "parallax_bundle" / "context"
+adm0 = json.load(open(FIXTURE / "ne_110m_admin_0_countries.geojson")); adm1 = json.load(open(FIXTURE / "ne_10m_admin_1_states_provinces.geojson"))
+hits0 = [f["properties"]["ADM0_A3"] for f in adm0["features"] if ns["ne_country_match"](f["properties"], "USA", "United_States")]
+check(hits0 == ["USA"], f"fixture admin-0: exactly one USA feature {hits0}")
+us1 = [f for f in adm1["features"] if ns["ne_country_match"]({k: v for k, v in f["properties"].items() if k in ("adm0_a3", "admin")}, "USA", "United_States")]
+check(len(us1) >= 1 and all(f["properties"]["iso_3166_2"].startswith("US-") for f in us1), f"fixture admin-1: {len(us1)} US features")
+codes = [ns["admin1_code"](f["properties"], None) for f in us1]
+check("US-CA" in codes and [c for c in codes if c == "US-CA"] == ["US-CA"], f"admin1_code → iso_3166_2 {sorted(codes)}")
+ca = ns["dissolve_features"]([f for f, c in zip(us1, codes) if c == "US-CA"])
+shapely.prepare(ca)
+pts = {"Los Angeles": (-118.24, 34.05, True), "Sacramento": (-121.49, 38.58, True), "Lake Tahoe CA side": (-120.1, 39.1, True),
+       "Reno NV": (-119.8, 39.53, False), "Phoenix AZ": (-112.07, 33.45, False), "Pacific off Monterey": (-124.0, 36.6, False), "Portland OR": (-122.7, 45.5, False)}
+okp = {k: bool(shapely.contains_xy(ca, x, y)) == want for k, (x, y, want) in pts.items()}
+check(all(okp.values()), f"US-CA polygon contains California points and excludes NV/AZ/OR/ocean points: {okp}")
+parts = len(ca.geoms) if hasattr(ca, "geoms") else 1
+check(parts > 1, f"US-CA is a MultiPolygon with {parts} parts (mainland + islands)")
+# a split feature set (mainland + island with the same code) must be dissolved to one geometry covering both
+mainland = {"geometry": mapping(box(-124.0, 33.0, -117.0, 41.0))}; island = {"geometry": mapping(box(-119.9, 33.9, -119.5, 34.1))}
+d = ns["dissolve_features"]([mainland, island])
+check(shapely.contains_xy(d, -119.7, 34.0) and shapely.contains_xy(d, -120.0, 37.0) and not shapely.contains_xy(d, -126.0, 37.0), "dissolve_features: mainland + island features → one geometry covering both")
+check(ns["dissolve_features"]([mainland]).equals(box(-124.0, 33.0, -117.0, 41.0)), "dissolve_features: single feature is used as is")
+
+print("== equal-area grid and key packing stay valid for Alaska / Hawaii / territories / antimeridian ==")
+exec(compile(text[text.index("def lonlat_to_cell("):text.index("def parse_times(")], SRC, "exec"), ns)
+import numpy as np
+places = {"Attu (Aleutians, +lon)": (172.9, 52.9), "Adak": (-176.6, 51.9), "Utqiagvik (71N)": (-156.8, 71.3), "Fairbanks": (-147.7, 64.8), "Honolulu": (-157.85, 21.3),
+          "Hilo": (-155.1, 19.7), "Guam": (144.8, 13.45), "American Samoa": (-170.7, -14.3), "San Juan PR": (-66.1, 18.45), "Key West": (-81.8, 24.55),
+          "Maine": (-67.0, 44.8), "Los Angeles": (-118.24, 34.05), "date line +180": (180.0, 0.0), "date line -180": (-180.0, 0.0), "N pole": (0.0, 90.0), "S pole": (0.0, -90.0),
+          "lon -179.99 / lat -89.99": (-179.99, -89.99)}
+lon = np.array([v[0] for v in places.values()]); lat = np.array([v[1] for v in places.values()])
+ix, iy, key = ns["lonlat_to_cell"](lon, lat)
+check(bool(ns["grid_key_in_range"](ix, iy).all()), f"every US place (and the whole-globe corners) packs into the key range: ix {ix.min()}..{ix.max()}, iy {iy.min()}..{iy.max()}")
+gl = np.stack(np.meshgrid(np.linspace(-180, 180, 721), np.linspace(-90, 90, 361)), -1).reshape(-1, 2)
+gx, gy, _ = ns["lonlat_to_cell"](gl[:, 0], gl[:, 1])
+check(bool(ns["grid_key_in_range"](gx, gy).all()), "a 0.5° global lattice packs into the key range (the USA file can never overflow it)")
+check(not bool(ns["grid_key_in_range"](np.array([0]), np.array([ns["KEY_MUL"] - ns["IY_OFF"]]))[0]), "grid_key_in_range rejects an out-of-range iy (guard works)")
+ix2, iy2 = ns["key_to_ixiy"](key)
+check(bool((ix2 == ix).all() and (iy2 == iy).all()), "key ↔ (ix, iy) round-trip for all places")
+clon, clat = ns["cell_centre"](ix, iy); ixc, iyc, _ = ns["lonlat_to_cell"](clon, clat)
+check(bool((ixc == ix).all() and (iyc == iy).all()), "cell centre lies inside its own cell for all places")
+# exact equal area: spherical rectangle between the cell edges is 5 km × 5 km = 25 km² at every latitude, incl. 71°N and 60°S
+R, M = ns["R_EARTH"], ns["CELL_M"]
+def edge_area_m2(i, j):       # spherical lon/lat rectangle with the cell's edges recovered through degrees/arcsin (not the projection formula itself)
+    lon0, lon1 = np.degrees(i * M / R), np.degrees((i + 1) * M / R)
+    lat0, lat1 = np.degrees(np.arcsin(j * M / R)), np.degrees(np.arcsin((j + 1) * M / R))
+    return R * R * np.radians(lon1 - lon0) * (np.sin(np.radians(lat1)) - np.sin(np.radians(lat0)))
+inner = [(i, j) for i, j in zip(ix, iy) if abs(j * M / R) <= 1 and abs((j + 1) * M / R) <= 1]    # polar caps are partial cells: excluded
+check(len(inner) > 10 and all(abs(edge_area_m2(i, j) / 25e6 - 1) < 1e-9 for i, j in inner), f"equal-area: {len(inner)} cells (Alaska 71°N, Hawaii, Samoa -14°S, Maine, ...) each 25 km² (rel. error < 1e-9)")
+# antimeridian: cells either side of ±180° are 8000 columns apart in key space, so the 3×3 neighbourhood does not wrap (documented limitation, Aleutians only)
+check(abs(int(ix[list(places).index("date line +180")]) - int(ix[list(places).index("date line -180")])) > 8000, "±180° cells are not key-neighbours (3×3 sum does not wrap the antimeridian)")
+# high latitude cells are tall and thin on the ground but exactly 25 km²: Utqiagvik cell E-W width < 2 km
+ew_km = M * np.cos(np.radians(71.3)) / 1000
+check(ew_km < 2.0, f"71°N cell is {ew_km:.2f} km wide E-W × {25 / ew_km:.1f} km N-S (distorted shape, same 25 km²)")
+
+print("== panel memory plan ==")
+plan = ns["panel_memory_plan"]({"Bangladesh": 20000, "Australia": 250000, "United_States": 300000}, 300, 13, 3)
+check(plan["n_cells"] == 570000 and plan["cell_months"] == 570000 * 300 and plan["bytes_per_cell_month"] == 13 * 4 + 4 + 4 + 2 + 2 + 1 + 12 + 12 + 4,
+      f"plan arithmetic: {plan}")
+check(abs(plan["panel_gb"] - 570000 * 300 * plan["bytes_per_cell_month"] / 1e9) < 0.01 and plan["peak_country_build_gb"] > 0, "panel_gb / peak_country_build_gb computed")
+plan2 = ns["panel_memory_plan"]({"Bangladesh": 20000, "Australia": 250000, "United_States": 600000}, 300, 13, 3)
+check(plan2["panel_gb"] > plan["panel_gb"] and plan2["peak_country_build_gb"] > plan["peak_country_build_gb"], "memory scales with the number of detection cells (sparse), not with area")
+check(ns["panel_memory_plan"]({}, 300, 13, 1)["panel_gb"] == 0, "empty input is safe")
+
+
+print("== review fixes: budgets, competitions mount, bf16 gate, offline package set, path scrub, memory guard, dtype fallback ==")
+import datetime as _dt
+env_has_budget = any(k in os.environ for k in ("XGB_MAX_MINUTES", "DL_MAX_MINUTES", "QLLM_MAX_MINUTES"))
+if not env_has_budget:
+    check((ns["XGB_MAX_MINUTES"], ns["DL_MAX_MINUTES"], ns["QLLM_MAX_MINUTES"]) == (45.0, 45.0, 45.0), f"first-real-run budgets default to 45/45/45 minutes: {(ns['XGB_MAX_MINUTES'], ns['DL_MAX_MINUTES'], ns['QLLM_MAX_MINUTES'])}")
+check("budgets_min" in ns["_CFG_FP"], "budgets are part of the run fingerprint (a change starts a fresh run)")
+# P3: the competitions mount is never walked
+comp = tmp / "kin"
+(comp / "competitions" / "arc-agi" / "parallax_bundle" / "manifests").mkdir(parents=True); (comp / "competitions" / "arc-agi" / "parallax_bundle" / "manifests" / "sources.json").write_text("[]")
+(comp / "competitions" / "arc-agi" / "config.json").write_text("{}")
+(comp / "notebooks" / "me" / "a" / "parallax_bundle" / "manifests").mkdir(parents=True); (comp / "notebooks" / "me" / "a" / "parallax_bundle" / "manifests" / "sources.json").write_text("[]")
+visited = []
+list(ns["walk_limited"](comp, lambda d, fs: (visited.append(str(d)) or [])))
+check(not any("competitions" in v for v in visited), f"walk_limited never enters /kaggle/input/competitions ({len(visited)} dirs visited)")
+check(ns["locate_bundle"](comp) == comp / "notebooks" / "me" / "a" / "parallax_bundle", "locate_bundle finds A's output next to a competitions mount, never inside it")
+only_comp = tmp / "kin2"; (only_comp / "competitions" / "x" / "parallax_bundle" / "manifests").mkdir(parents=True); (only_comp / "competitions" / "x" / "parallax_bundle" / "manifests" / "sources.json").write_text("[]")
+try:
+    ns["locate_bundle"](only_comp); check(False, "a bundle only inside competitions/ must not be found")
+except FileNotFoundError:
+    check(True, "a bundle only inside competitions/ is not found (competition data is never read)")
+check(not list(ns["walk_limited"](comp, lambda d, fs: [d] if "config.json" in fs else [])), "find_local_llm-style search does not reach competitions/**/config.json")
+# P5: bf16 autocast only on compute capability >= 8
+cc = ns["_cuda_cc_major"]()
+check(ns["AMP_BF16"] == (ns["DEVICE"] == "cuda" and cc >= 8) and ns["ENV"]["amp_bf16"] == ns["AMP_BF16"], f"AMP_BF16={ns['AMP_BF16']} (device {ns['DEVICE']}, compute capability major {cc}) and env_B amp_bf16 agree")
+src_txt = text
+check("use_amp = AMP_BF16" in src_txt and '"amp_bf16": AMP_BF16' in src_txt, "D1 autocast flag and D1_INFO amp_bf16 use the same AMP_BF16 value")
+# P2: offline package set
+check(ns["offline_pkgs"](True, True) == ("pennylane", "pennylane-lightning", "onnxruntime", "onnxscript"), "RUN_QML+RUN_DL installs pennylane, pennylane-lightning, onnxruntime, onnxscript")
+check(ns["offline_pkgs"](False, True) == ("onnxruntime", "onnxscript"), "RUN_QML off but RUN_DL on still installs the ONNX packages")
+check(ns["offline_pkgs"](True, False) == ("pennylane", "pennylane-lightning") and ns["offline_pkgs"](False, False) == (), "RUN_DL off: PennyLane pair only; both off: nothing")
+ns["BUNDLE"] = tmp / "bundle_empty_wh"; (ns["BUNDLE"] / "wheelhouse").mkdir(parents=True)
+r_ort = ns["try_offline_install"](("onnxruntime",))
+check(str(r_ort.get("import_check_onnxruntime", "")).startswith("onnxruntime") and "import_check" not in r_ort, f"import_check_onnxruntime reported (and no PennyLane check when not requested): {r_ort}")
+ns["BUNDLE"] = tmp / "bundle"
+# M-path: scrub absolute local paths
+ns["INPUT_ROOT"] = Path("/Users/someone/Desktop/proj/fixtures/out")
+s1 = ns["scrub_str"]("skipped: no local LLM within the size cap under /Users/someone/Desktop/proj/fixtures/out and /Users/other/x/y.json, /kaggle/input/models/q/ here /kaggle/working/runs/1")
+check("/Users/" not in s1 and "/kaggle/" not in s1 and "<input>" in s1, f"scrub_str removes /Users/ and /kaggle/ paths: {s1}")
+o1 = ns["scrub_obj"]({"a": ["x /home/bob/z"], "b": {"c": "/Users/q/r"}, "n": 3})
+check(json.dumps(o1).count("/Users/") == 0 and "/home/" not in json.dumps(o1) and o1["n"] == 3, f"scrub_obj recursive: {o1}")
+sd = tmp / "scrubdir"; (sd / "models").mkdir(parents=True)
+(sd / "metrics.json").write_text(json.dumps({"reason": "under /Users/aa/bb/cc"})); (sd / "models" / "blob.bin").write_bytes(b"\x00/Users/zz\x00")
+hits = ns["scrub_bundle_files"](sd)
+check(any(h[0] == "metrics.json" and h[2] == "scrubbed" for h in hits) and b"/Users/" not in (sd / "metrics.json").read_bytes()
+      and any(h[0].endswith("blob.bin") and h[2] == "binary_not_scrubbed" for h in hits), f"scrub_bundle_files rewrites text files, reports binaries: {hits}")
+check(not ns["scrub_bundle_files"](sd / "models" / "nothing_here") , "scrub_bundle_files on an empty dir is safe")
+# review L: fail-soft memory guard
+g_keep, g_drop, g_plan = ns["memory_guard"]({"Bangladesh": 20000, "Australia": 250000, "United_States": 300000}, 300, 13, 64.0)
+check(g_drop == [] and set(g_keep) == {"Bangladesh", "Australia", "United_States"}, "memory guard keeps every country when the estimate fits")
+g_keep, g_drop, g_plan = ns["memory_guard"]({"Bangladesh": 20000, "Australia": 250000, "United_States": 300000}, 300, 13, 8.0)
+check(g_drop == ["United_States"] and set(g_keep) == {"Bangladesh", "Australia"}, f"memory guard drops only the optional United_States when the estimate exceeds 90% of free RAM: dropped {g_drop}, plan {g_plan['panel_gb']} GB")
+g_keep, g_drop, _ = ns["memory_guard"]({"Bangladesh": 20000, "Australia": 2500000}, 300, 13, 4.0)
+check(g_drop == [] and "Australia" in g_keep, "memory guard never drops a non-optional country (it only warns elsewhere)")
+g_keep, g_drop, _ = ns["memory_guard"]({"Bangladesh": 20000, "United_States": 3000000}, 300, 13, float("nan"))
+check(g_drop == [], "memory guard does nothing when free RAM is unknown")
+# P8: transformers dtype= first, torch_dtype= on TypeError
+exec(compile(text[text.index("def from_pretrained_dtype("):text.index("def make_llm_generate(")], SRC, "exec"), ns)
+class _New:
+    calls = []
+    @classmethod
+    def from_pretrained(cls, d, dtype=None, **kw): cls.calls.append(("dtype", dtype, sorted(kw))); return "new"
+class _Old:
+    calls = []
+    @classmethod
+    def from_pretrained(cls, d, torch_dtype=None, **kw):
+        if "dtype" in kw: raise TypeError("unexpected keyword 'dtype'")
+        cls.calls.append(("torch_dtype", torch_dtype, sorted(kw))); return "old"
+check(ns["from_pretrained_dtype"](_New, "m", "bf16", local_files_only=True) == "new" and _New.calls[0][0] == "dtype", "from_pretrained_dtype uses dtype= when accepted")
+check(ns["from_pretrained_dtype"](_Old, "m", "bf16", local_files_only=True) == "old" and _Old.calls[0] == ("torch_dtype", "bf16", ["local_files_only"]), "from_pretrained_dtype falls back to torch_dtype= on TypeError")
+
+print("== ingest type rule (standard type==0 main; standard without type counted nowhere; NRT never used) ==")
+exec(compile(text[text.index('PLATFORMS = ["aqua"'):text.index("def ingest_nrt_file(")], SRC, "exec"), ns)
+import pandas as pd
+RUN = tmp / "run_ing"; RUN.mkdir()
+ns["RUN_DIR"] = RUN
+check(ns["PLATFORM_START"]["aqua"] == _dt.date(2002, 7, 3), f"Aqua starts 2002-07-03 (NASA): {ns['PLATFORM_START']['aqua']}")
+hdr = "latitude,longitude,brightness,scan,track,acq_date,acq_time,satellite,instrument,confidence,version,bright_t31,frp,daynight"
+def _csv(name, rows, with_type=True):
+    p = tmp / name
+    lines = [hdr + (",type" if with_type else "")]
+    for r in rows: lines.append(r)
+    p.write_text("\n".join(lines) + "\n"); return p
+base = "23.5,90.5,330,1.0,1.0,2020-03-{d:02d},0530,Aqua,MODIS,60,{v},290,5.0,D"
+rows = [base.format(d=1, v="6.03") + ",0", base.format(d=2, v="6.03") + ",0", base.format(d=3, v="6.03") + ",2", base.format(d=4, v="6.03") + ",",
+        base.format(d=5, v="6.1NRT") + ",", base.format(d=6, v="6.1NRT") + ","]
+agg, q, st = ns["ingest_file"]({"_path": str(_csv("std_mixed.csv", rows)), "sensor": "modis", "id": "t1"})
+aq = ns["PLAT_CODE"]["aqua"]
+check(int(agg["count"].sum()) == 2 and int(agg["static"].sum()) == 1, f"type==0 → main (2), type 2 → static (1); untyped standard and NRT rows counted nowhere: count={int(agg['count'].sum())} static={int(agg['static'].sum())}")
+check(st["standard_rows_without_type"] == 1 and st["nrt_rows"] == 2 and st["nrt_rows_without_type"] == 2 and int(agg["nrt"].sum()) == 2, f"stats: {{std_no_type, nrt}} = {st['standard_rows_without_type']}, {st['nrt_rows']}")
+check(st["platform_nrt_months"] == {"aqua": [str(2020 * 12 + 2)]}, f"NRT months recorded per platform: {st['platform_nrt_months']}")
+try:
+    ns["ingest_file"]({"_path": str(_csv("std_notype.csv", [base.format(d=1, v="6.03"), base.format(d=2, v="6.03")], with_type=False)), "sensor": "modis", "id": "t2"})
+    check(False, "a standard file without any type must be rejected")
+except ValueError as e:
+    check("type" in str(e), f"standard file without a usable type is unavailable (ValueError → INGEST ERROR → missing, not zero): {str(e)[:70]}")
+agg3, q3, st3 = ns["ingest_file"]({"_path": str(_csv("nrt_only.csv", [base.format(d=1, v="6.1NRT"), base.format(d=2, v="6.1NRT")], with_type=False)), "sensor": "modis", "id": "t3"})
+check(int(agg3["count"].sum()) == 0 and st3["nrt_rows"] == 2, "an NRT-only file without a type column is accepted but contributes no counts (never used for training)")
+
+print(f"\n{'ALL UNIT TESTS PASSED' if not FAILS else 'FAILED: ' + str(FAILS)}")
+sys.exit(1 if FAILS else 0)

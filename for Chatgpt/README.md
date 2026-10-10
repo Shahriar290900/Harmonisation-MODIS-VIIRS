@@ -1,6 +1,6 @@
 # For ChatGPT — video-making pack for "Parallax Fire"
 
-Team **Lumos** (Dhaka) · NASA Space Apps Challenge 2026 · Challenge: *Harmonization of MODIS and VIIRS Hot Spots*
+Team **Parallax** (Dhaka) · NASA Space Apps Challenge 2026 · Challenge: *Harmonization of MODIS and VIIRS Hot Spots*
 
 **Purpose.** Give ChatGPT (or any video/creative tool) everything it needs to plan, script and visualise the project video(s): what the app is, how NASA data is used, what the screens look like, the creative direction, the pitch timing rules, and the guardrails that keep the video honest.
 
@@ -20,7 +20,7 @@ Team **Lumos** (Dhaka) · NASA Space Apps Challenge 2026 · Challenge: *Harmoniz
 ## Important status note (read before making the video)
 - The app currently shows **synthetic demo data** (it carries a persistent red **DEMO DATA** tag). The real NASA data runs have **not** been done yet. Real numbers will be filled in after the Kaggle runs.
 - Until then, every outcome in the scripts is written as an **expectation / hypothesis** (marked `EXPECTED`) with `[MEASURED: …]` slots for real values. Do not turn expectations into measured claims. A video that is honest about this is stronger with judges, not weaker.
-- The project name is **Parallax Fire**. The app screenshots in `assets/` still say "Lumos Fire Calendar" (the earlier working name); a rename in the app is pending. Do not redraw the UI with invented numbers.
+- The project name is **Parallax Fire**. The app screenshots in `assets/` still say "Parallax Fire" (the earlier working name); a rename in the app is pending. Do not redraw the UI with invented numbers.
 - Do not include personal contact details (phones, emails) in the video or captions.
 
 ## assets/

@@ -27,10 +27,10 @@ jobs:
           node-version: 20
           
       - name: Install dependencies
-        run: cd lumos_app && npm install
+        run: cd parallax_app && npm install
         
       - name: Build App
-        run: cd lumos_app && npm run build
+        run: cd parallax_app && npm run build
         env:
           BASE_PATH: /Harmonisation-MODIS-VIIRS/
           
@@ -40,7 +40,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './lumos_app/dist'
+          path: './parallax_app/dist'
 
   deploy:
     environment:

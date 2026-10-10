@@ -1,6 +1,6 @@
 # 07 — Facts and guardrails (the source of truth for the video)
 
-Status date: 10 Oct 2026. Source notes live in the repo under `lumos_app/docs/research/` and `lumos_app/docs/kaggle/`.
+Status date: 10 Oct 2026. Source notes live in the repo under `parallax_app/docs/research/` and `parallax_app/docs/kaggle/`.
 
 ## A. Verified facts you may state
 | Fact | Source / how verified |
@@ -46,7 +46,7 @@ Status date: 10 Oct 2026. Source notes live in the repo under `lumos_app/docs/re
 ## E. Safe attribution lines
 - "Data: NASA FIRMS — MODIS Collection 6.1 (Terra, Aqua) and VIIRS 375 m (S-NPP) active-fire detections."
 - "Boundaries: Natural Earth (public domain)."
-- "Built by Team Lumos, Dhaka, for NASA Space Apps Challenge 2026."
+- "Built by __TEAM_PARALLAX__, Dhaka, for NASA Space Apps Challenge 2026."
 
 ## F. Open items the team must confirm before publishing
 - The real Space Apps submission deadline, video length limit and whether prebuilt work is allowed (our research pack says 7 Oct 2026; our PRD says the window starts 14 Nov 2026 — unresolved).

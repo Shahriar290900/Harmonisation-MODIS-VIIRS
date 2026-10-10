@@ -1,6 +1,6 @@
 # Claude Code prompts (from the runbook)
 
-Paste these into Claude Code with the `lumos_app` folder open, in order. Each is tagged with its runbook step. Start every new session with the master prompt (`CLAUDE_CODE_MASTER_PROMPT.md`). The project covers three regions (Bangladesh, Australia with NSW, United States with California); the data is synthetic until you import a real bundle.
+Paste these into Claude Code with the `parallax_app` folder open, in order. Each is tagged with its runbook step. Start every new session with the master prompt (`CLAUDE_CODE_MASTER_PROMPT.md`). The project covers three regions (Bangladesh, Australia with NSW, United States with California); the data is synthetic until you import a real bundle.
 
 
 ## Phase 4 — Load real data into the app with Claude Code
@@ -12,7 +12,7 @@ Read CLAUDE_CODE_MASTER_PROMPT.md, PRD.md, CONTRACT.md (including sections 7 to 
 
 **4.2.1**
 ```
-Run `node scripts/import_bundle.mjs lumos_app_bundle.zip`. Show me the output.
+Run `node scripts/import_bundle.mjs parallax_app_bundle.zip`. Show me the output.
 ```
 
 **4.2.3**
@@ -97,7 +97,7 @@ Add the GitHub remote <your repo URL> and push main.
 
 **6.1.4**
 ```
-Add a GitHub Actions workflow that builds with BASE_PATH=/lumos-fire-calendar/ and deploys dist to GitHub Pages.
+Add a GitHub Actions workflow that builds with BASE_PATH=/parallax-fire/ and deploys dist to GitHub Pages.
 ```
 
 **6.2.7**

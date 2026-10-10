@@ -1,9 +1,9 @@
-# Lumos Fire Calendar — step index
+# Parallax Fire — step index
 
 Every section with its steps and checks, exactly as written in the notebook guide cells (generated from the same text; if you change a guide cell, change this file too).
 
-- Phase 1 = `notebooks/lumos_A_fetch.ipynb` (Kaggle, Internet ON, CPU or T4)
-- Phase 2 = `notebooks/lumos_B_train.ipynb` (Kaggle, RTX PRO 6000 Blackwell, Internet OFF)
+- Phase 1 = `notebooks/parallax_A_fetch.ipynb` (Kaggle, Internet ON, CPU or T4)
+- Phase 2 = `notebooks/parallax_B_train.ipynb` (Kaggle, RTX PRO 6000 Blackwell, Internet OFF)
 - Phase 3 = check the results (last cell of Notebook B)
 
 ## Phase 1 — Notebook A: fetch the data bundle
@@ -31,7 +31,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 **Steps**
 
 - [ ] 1.1.1 On kaggle.com click **Create → New Notebook**.
-- [ ] 1.1.2 In the editor, **File → Import Notebook** and upload `notebooks/lumos_A_fetch.ipynb`. Rename the notebook `lumos_A_fetch` (Notebook B's instructions use this name).
+- [ ] 1.1.2 In the editor, **File → Import Notebook** and upload `notebooks/parallax_A_fetch.ipynb`. Rename the notebook `parallax_A_fetch` (Notebook B's instructions use this name).
 - [ ] 1.1.3 Right-hand panel **Settings → Internet: ON** (Kaggle only allows this on a phone-verified account).
 - [ ] 1.1.4 **Settings → Accelerator: None** (CPU) or **GPU T4**. No GPU is needed here.
 - [ ] 1.1.5 Leave **Settings → Environment** on the default (latest) image. Notebook B must use the same image, or the offline wheels may not install.
@@ -48,7 +48,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 **Time:** estimate: 5 min
 
 ### Phase 1 · Section 1.2 — Config  (cell 1)
-**What this cell does:** Sets the countries, year ranges, politeness limits for the downloader and the output folder (`/kaggle/working/lumos_bundle`). It only defines settings and prints nothing.
+**What this cell does:** Sets the countries, year ranges, politeness limits for the downloader and the output folder (`/kaggle/working/parallax_bundle`). It only defines settings and prints nothing.
 
 **Steps**
 
@@ -57,7 +57,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 - [ ] 1.2.3 Set `FETCH_API_NRT = True` only if you added the `FIRMS_MAP_KEY` secret in 1.1.6 (the NRT layer needs a MAP_KEY; the yearly files do not). Otherwise leave it `False`.
 - [ ] 1.2.4 Leave `TRY_NOAA20 = False` (that FIRMS folder is unverified; it would only log 404s).
 - [ ] 1.2.5 Leave the politeness and disk settings (`MAX_WORKERS = 4`, `MAX_RETRIES = 3`, `BACKOFF_BUDGET_S`, `CIRCUIT_BREAKER_N`, `FILE_DEADLINE_S`, `DISK_MIN_FREE_GIB = 2`, `DISK_CHECK_EVERY_N = 12`) unless FIRMS is rate-limiting you heavily.
-- [ ] 1.2.6 Run the cell. Do not set any `LUMOS_*` environment variables on Kaggle; they are for local tests only.
+- [ ] 1.2.6 Run the cell. Do not set any `PARALLAX_*` environment variables on Kaggle; they are for local tests only.
 
 **Check before moving on**
 
@@ -106,7 +106,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 **Steps**
 
 - [ ] 1.5.1 Run the cell.
-- [ ] 1.5.2 For reference, each FIRMS file comes from `https://firms.modaps.eosdis.nasa.gov/data/country/<sensor>/<year>/<sensor>_<year>_<Country>.csv` and is saved under `lumos_bundle/raw/firms_country/<sensor>/<year>/`. This yearly country route is not documented on FIRMS's download page (it only links a JavaScript `/country/` page); it works without a key today but may change.
+- [ ] 1.5.2 For reference, each FIRMS file comes from `https://firms.modaps.eosdis.nasa.gov/data/country/<sensor>/<year>/<sensor>_<year>_<Country>.csv` and is saved under `parallax_bundle/raw/firms_country/<sensor>/<year>/`. This yearly country route is not documented on FIRMS's download page (it only links a JavaScript `/country/` page); it works without a key today but may change.
 
 **Check before moving on**
 
@@ -134,7 +134,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 - [ ] With the default config it shows `ok=111, missing=6`. The 6 `missing` files are the 2025 files (3 countries × 2 sensors). `missing` is allowed only for 2025 and for any other year that FIRMS genuinely does not have (a 404 you write down). Missing files are never filled with zeros.
 - [ ] No 2025 file is `ok` with zero rows. A 2025 file recorded as `ok` would mean FIRMS has published it since 10 Oct 2026 (then `ok` is above 111 and that is fine); an `ok` file with no data rows would carry the note `header-only file (0 data rows)`.
 - [ ] The `disk:` lines show more than 2 GiB free and there is no `DISK GUARD` line.
-- [ ] `/kaggle/working/lumos_bundle/manifests/sources.json` exists (Output panel on the right).
+- [ ] `/kaggle/working/parallax_bundle/manifests/sources.json` exists (Output panel on the right).
 
 **If it fails:** For `error` rows caused by 429, 5xx, timeouts or a tripped circuit breaker, wait a few minutes and run this cell again: good files are reused (note `cached`) and only the failed ones are fetched. For 403, check that Internet is ON. A disk-full error is recorded per file and the run keeps going. If a `DISK GUARD` line appears, the remaining files were recorded as `error` (`skipped: only ... GiB free`): free space in `/kaggle/working` (nothing else should be there), then run this cell again; files already downloaded are reused.
 
@@ -159,7 +159,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 **Time:** estimate: under 1 s when off; about 1 min when on
 
 ### Phase 1 · Section 1.8 — Boundaries  (cell 7)
-**What this cell does:** Downloads the two Natural Earth GeoJSON files (world countries; states and provinces) into `lumos_bundle/context/` and checks that each is a valid FeatureCollection.
+**What this cell does:** Downloads the two Natural Earth GeoJSON files (world countries; states and provinces) into `parallax_bundle/context/` and checks that each is a valid FeatureCollection.
 
 **Steps**
 
@@ -175,7 +175,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 **Time:** estimate: under 2 min
 
 ### Phase 1 · Section 1.9 — Offline wheelhouse  (cell 8)
-**What this cell does:** Runs `pip download --only-binary=:all:` for PennyLane, PennyLane-Lightning, onnxruntime and onnxscript (plus XGBoost if it is not installed), one package at a time, into `lumos_bundle/wheelhouse/`. The standalone `onnx` package is not downloaded: the Kaggle image already has onnx 1.22.0 (checked 10 Oct 2026), and onnxscript pulls it in only if needed. onnxruntime is not in the image and Notebook B needs it for the ONNX parity check. Notebook B installs these with the internet off.
+**What this cell does:** Runs `pip download --only-binary=:all:` for PennyLane, PennyLane-Lightning, onnxruntime and onnxscript (plus XGBoost if it is not installed), one package at a time, into `parallax_bundle/wheelhouse/`. The standalone `onnx` package is not downloaded: the Kaggle image already has onnx 1.22.0 (checked 10 Oct 2026), and onnxscript pulls it in only if needed. onnxruntime is not in the image and Notebook B needs it for the ONNX parity check. Notebook B installs these with the internet off.
 
 **Steps**
 
@@ -203,7 +203,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 
 **Check before moving on**
 
-- [ ] All four files exist under `/kaggle/working/lumos_bundle/`.
+- [ ] All four files exist under `/kaggle/working/parallax_bundle/`.
 
 **If it fails:** Usually a disk or permission problem in `/kaggle/working`. Check free disk in the session panel, then run the cell again.
 
@@ -234,16 +234,16 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 
 - [ ] 1.12.1 Run the cell and read the folder sizes (`raw`, `context`, `wheelhouse`, `manifests`, `README_bundle.md`).
 - [ ] 1.12.2 Look for `key leak check: passed`.
-- [ ] 1.12.3 Look for the last line `Done. Outputs are files under /kaggle/working/lumos_bundle (no zip). Now: Save Version -> 'Save & Run All'.`
+- [ ] 1.12.3 Look for the last line `Done. Outputs are files under /kaggle/working/parallax_bundle (no zip). Now: Save Version -> 'Save & Run All'.`
 - [ ] 1.12.4 Click **Save Version** (top right) → choose **Save & Run All (Commit)** → **Save**. The committed version runs the whole notebook again in a fresh session, so it downloads everything again; that is expected.
 - [ ] 1.12.5 Wait until the version shows as finished successfully (bottom-left version status, or the notebook's **Versions** list).
-- [ ] 1.12.6 Open that version and its **Output** tab, and confirm `lumos_bundle/` is listed.
+- [ ] 1.12.6 Open that version and its **Output** tab, and confirm `parallax_bundle/` is listed.
 
 **Check before moving on**
 
 - [ ] `key leak check: passed`.
 - [ ] `raw` is the largest folder and `context` is not empty.
-- [ ] The committed version's Output tab shows `lumos_bundle/manifests/sources.json`.
+- [ ] The committed version's Output tab shows `parallax_bundle/manifests/sources.json`.
 
 **If it fails:** `key leak check: FAILED (offending files removed)` should never happen. Run 1.6 to 1.12 again so the removed files are downloaded again, then commit. If the committed version fails, open its log, fix the cause (usually FIRMS errors) and commit again.
 
@@ -254,12 +254,12 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 **Check before you continue**
 
 - [ ] The committed version of this notebook finished successfully (see **Versions**).
-- [ ] Its **Output** tab lists `lumos_bundle/manifests/sources.json`.
+- [ ] Its **Output** tab lists `parallax_bundle/manifests/sources.json`.
 - [ ] The summary table (1.11) had no `error` cells (and `missing` only for 2025 plus any genuine 404 you wrote down), or you wrote down each remaining one.
 - [ ] `key leak check: passed` (1.12).
 - [ ] You noted the Python version from `README_bundle.md`; Notebook B must use the same Kaggle environment.
 - [ ] The wheelhouse has PennyLane wheels (1.9), or you accept that Q1 uses the built-in simulator.
-- [ ] Now open `notebooks/lumos_B_train.ipynb` and start at **Phase 2 · Section 2.1** in its first cell.
+- [ ] Now open `notebooks/parallax_B_train.ipynb` and start at **Phase 2 · Section 2.1** in its first cell.
 
 ## Phase 2 — Notebook B: train and export
 
@@ -289,13 +289,13 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 
 **Steps**
 
-- [ ] 2.1.1 On kaggle.com click **Create → New Notebook**, then **File → Import Notebook** and upload `notebooks/lumos_B_train.ipynb`.
-- [ ] 2.1.2 Right-hand panel **Add Input → Notebook Output**, search for your Notebook A (`lumos_A_fetch`) and add its latest successful version.
+- [ ] 2.1.1 On kaggle.com click **Create → New Notebook**, then **File → Import Notebook** and upload `notebooks/parallax_B_train.ipynb`.
+- [ ] 2.1.2 Right-hand panel **Add Input → Notebook Output**, search for your Notebook A (`parallax_A_fetch`) and add its latest successful version.
 - [ ] 2.1.3 *(Optional, enables Q2 in 2.16)* **Add Input → Models**, pick an instruct model such as Qwen2.5-7B-Instruct, framework **Transformers**. Its weights must fit in min(30 GB, half the free RAM, 85% of free VRAM).
 - [ ] 2.1.4 **Settings → Accelerator: RTX PRO 6000** (Blackwell).
 - [ ] 2.1.5 **Settings → Internet: OFF**. The Blackwell GPU is only offered with Internet OFF, and this notebook blocks all network sockets anyway.
 - [ ] 2.1.6 Leave **Settings → Environment** on the same image as Notebook A (the default, latest).
-- [ ] 2.1.7 Start the session and follow 2.2 to 2.18 cell by cell, or use **Run All**. Do not set `LUMOS_INPUT`, `LUMOS_WORK` or `LUMOS_QUICK` on Kaggle; they are for local tests only.
+- [ ] 2.1.7 Start the session and follow 2.2 to 2.18 cell by cell, or use **Run All**. Do not set `PARALLAX_INPUT`, `PARALLAX_WORK` or `PARALLAX_QUICK` on Kaggle; they are for local tests only.
 
 **Check before moving on**
 
@@ -315,16 +315,16 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 - [ ] 2.2.2 Budgets in minutes come from environment variables with defaults for the first real run: `XGB_MAX_MINUTES` 45, `DL_MAX_MINUTES` 45, `QLLM_MAX_MINUTES` 45 (the real-data speed is unmeasured; raise them after the first run has shown the B2 and D1 timings). To change one on Kaggle, edit the default string inside `os.environ.get(...)`.
 - [ ] 2.2.3 Change switches or budgets before the first run only: they are part of the run fingerprint, so a change starts a fresh run folder instead of resuming.
 - [ ] 2.2.4 Run the cell.
-- [ ] 2.2.5 Read the log line `Lumos Notebook B B-1.2.0 · run <timestamp> · QUICK_TEST=False · input=/kaggle/input · bundle=... · work=/kaggle/working`.
+- [ ] 2.2.5 Read the log line `Parallax Notebook B B-1.2.0 · run <timestamp> · QUICK_TEST=False · input=/kaggle/input · bundle=... · work=/kaggle/working`.
 - [ ] 2.2.6 After a crash, a second Run All shows `(RESUMED)` and `resuming run ...: checkpointed stages [...]`.
 
 **Check before moving on**
 
 - [ ] `QUICK_TEST=False`.
-- [ ] `bundle=` points to a folder under `/kaggle/input/` that ends in `lumos_bundle`.
+- [ ] `bundle=` points to a folder under `/kaggle/input/` that ends in `parallax_bundle`.
 - [ ] No `WARNING: N bundles found` line (if there is one, remove the extra inputs and run again).
 
-**If it fails:** `FileNotFoundError: No lumos_bundle/manifests/sources.json under /kaggle/input` means Notebook A's output is not attached: redo 2.1.2. `LUMOS_RESUME_RUN=...: no .../stages.json` means that variable is set by mistake: remove it.
+**If it fails:** `FileNotFoundError: No parallax_bundle/manifests/sources.json under /kaggle/input` means Notebook A's output is not attached: redo 2.1.2. `PARALLAX_RESUME_RUN=...: no .../stages.json` means that variable is set by mistake: remove it.
 
 **Time:** estimate: under 10 s
 
@@ -542,7 +542,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 **Time:** estimate: under 5 min
 
 ### Phase 2 · Section 2.14 — Export the app bundle  (cell 13)
-**What this cell does:** Writes the app bundle before the research stages: monthly activity records per area and year (validated against `activity.schema.json`), cell grids (15 MB per file budget), B1 input features for BGD, AUS-NSW and USA-CA, the optional recent NRT layer, scrubbed sources, regions (whose `cells_exported` / `features_exported` flags reflect the files actually written) and boundaries, model weights (B1 JSON, B2 JSON, D1 ONNX with an onnxruntime parity check), model cards, metrics, `comparison.csv`, figures, manifest and checksums. It copies the bundle to `/kaggle/working/lumos_app_bundle/` and zips it to `/kaggle/working/lumos_app_bundle.zip`.
+**What this cell does:** Writes the app bundle before the research stages: monthly activity records per area and year (validated against `activity.schema.json`), cell grids (15 MB per file budget), B1 input features for BGD, AUS-NSW and USA-CA, the optional recent NRT layer, scrubbed sources, regions (whose `cells_exported` / `features_exported` flags reflect the files actually written) and boundaries, model weights (B1 JSON, B2 JSON, D1 ONNX with an onnxruntime parity check), model cards, metrics, `comparison.csv`, figures, manifest and checksums. It copies the bundle to `/kaggle/working/parallax_app_bundle/` and zips it to `/kaggle/working/parallax_app_bundle.zip`.
 
 **Steps**
 
@@ -558,7 +558,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 - [ ] `schema errors: 0`.
 - [ ] No `STILL_PRESENT` or `binary_not_scrubbed` in the path-scan line.
 - [ ] ONNX parity shows `passed` true (unless D1 was skipped).
-- [ ] `/kaggle/working/lumos_app_bundle.zip` exists, and its size is well under 100 MB.
+- [ ] `/kaggle/working/parallax_app_bundle.zip` exists, and its size is well under 100 MB.
 
 **If it fails:** `activity records failed schema validation` stops the run: this is a bug, so save the log and report it. An ONNX or XGBoost export error is recorded in the model card and the export continues. Even if a later stage crashes, this zip is already safe.
 
@@ -605,7 +605,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 **Time:** estimate: under 1 min when skipped; 20–45 min with a model, capped by QLLM_MAX_MINUTES (45 by default)
 
 ### Phase 2 · Section 2.17 — Research results and bundle refresh  (cell 16)
-**What this cell does:** Scores Q1, the subset-trained classical models, the full-data models and the best Q2 designs on a bounded subset (up to 20,000 rows) of the test rows already opened in 2.12, then rewrites the app bundle's metrics, model cards, manifest, checksums and zip, marks the run complete, and, once the final zip is verified file by file, deletes the duplicate stage copy `runs/<ts>/lumos_app_bundle` (the bundle stays in `lumos_app_bundle/` and the zip).
+**What this cell does:** Scores Q1, the subset-trained classical models, the full-data models and the best Q2 designs on a bounded subset (up to 20,000 rows) of the test rows already opened in 2.12, then rewrites the app bundle's metrics, model cards, manifest, checksums and zip, marks the run complete, and, once the final zip is verified file by file, deletes the duplicate stage copy `runs/<ts>/parallax_app_bundle` (the bundle stays in `parallax_app_bundle/` and the zip).
 
 **Steps**
 
@@ -614,7 +614,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 
 **Check before moving on**
 
-- [ ] That line appears and the zip size is close to the one from 2.14, followed by `stage copy lumos_app_bundle removed after zip verification`.
+- [ ] That line appears and the zip size is close to the one from 2.14, followed by `stage copy parallax_app_bundle removed after zip verification`.
 - [ ] `runs/<ts>/stages.json` now has `"complete": true`.
 
 **If it fails:** `research test-subset evaluation failed (app bundle unaffected)` is not fatal: the core bundle from 2.14 stands, refreshed without research test numbers.
@@ -630,16 +630,16 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 - [ ] 2.18.2 Read `Selected model (validation only): ... | release stage: ...` and the `region <id>: <stage> ...` lines below it (one per gated region, then the regions reported separately).
 - [ ] 2.18.3 Read `Device: cuda ... blocked network attempts: 0`.
 - [ ] 2.18.4 Look at the figures below (time series for BGD, AUS-NSW and USA-CA, plus AUS and USA, model comparison, test scatter, QML subset comparison).
-- [ ] 2.18.5 Download `/kaggle/working/lumos_app_bundle.zip`: right-hand **Output** panel (or the committed version's **Output** tab) → `lumos_app_bundle.zip` → **Download**. Files in an interactive session disappear when it stops, so download now or commit with **Save Version → Save & Run All**.
+- [ ] 2.18.5 Download `/kaggle/working/parallax_app_bundle.zip`: right-hand **Output** panel (or the committed version's **Output** tab) → `parallax_app_bundle.zip` → **Download**. Files in an interactive session disappear when it stops, so download now or commit with **Save Version → Save & Run All**.
 
 **Check before moving on**
 
 - [ ] `blocked network attempts: 0`.
 - [ ] `Device: cuda`.
 - [ ] No HONEST NOTE banner on real data (the banner means the synthetic fixture was used).
-- [ ] `lumos_app_bundle.zip` is saved on your computer.
+- [ ] `parallax_app_bundle.zip` is saved on your computer.
 
-**If it fails:** If the figures do not show, open them in the bundle's `figures/` folder. If the download stalls, download the `lumos_app_bundle/` folder from the Output panel instead.
+**If it fails:** If the figures do not show, open them in the bundle's `figures/` folder. If the download stalls, download the `parallax_app_bundle/` folder from the Output panel instead.
 
 **Time:** estimate: under 1 min, plus download time
 
@@ -651,9 +651,9 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 - [ ] Open `figures/timeseries_BGD.png`: the estimate continues smoothly into the VIIRS series with no jump at 2012, and Aqua sits below VIIRS.
 - [ ] Open `metrics.json` or `comparison.csv`: note the selected model and its test interval coverage per region (`release.regions`; aim: near 0.80).
 - [ ] Open `runs/<ts>/run_log.json` (in `/kaggle/working`): note the timings and the RSS memory for Australia and the United States (ingest and panel lines).
-- [ ] Run `python notebooks/tests/check_bundle.py <unzipped lumos_app_bundle>` locally (without `--fixture`); it must pass on the real bundle (DATA-03).
+- [ ] Run `python notebooks/tests/check_bundle.py <unzipped parallax_app_bundle>` locally (without `--fixture`); it must pass on the real bundle (DATA-03).
 - [ ] Q2 shows `ok` if you attached a model, or `skipped` if you did not; never anything in between.
-- [ ] Give `lumos_app_bundle.zip` to Claude Code, which unzips it to `apps/web/public/data/<snapshot_id>/`.
+- [ ] Give `parallax_app_bundle.zip` to Claude Code, which unzips it to `apps/web/public/data/<snapshot_id>/`.
 
 ## Counts
 
