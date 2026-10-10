@@ -1,0 +1,213 @@
+[
+ {
+  "aoi_id": "BGD",
+  "name": "Bangladesh",
+  "country": "Bangladesh",
+  "kind": "country",
+  "bbox": [
+   88.0844,
+   20.6709,
+   92.6727,
+   26.4465
+  ],
+  "geometry_path": "geo/BGD.geojson",
+  "supported_calibration": false,
+  "iso_3166_2": null,
+  "natural_earth_names": [
+   "Bangladesh"
+  ],
+  "note": null,
+  "cells_exported": true,
+  "features_exported": true
+ },
+ {
+  "aoi_id": "BGD-A",
+  "name": "Barishal",
+  "country": "Bangladesh",
+  "kind": "admin1",
+  "bbox": [
+   89.8768,
+   21.8043,
+   90.9978,
+   23.0716
+  ],
+  "geometry_path": "geo/BGD-A.geojson",
+  "supported_calibration": false,
+  "iso_3166_2": "BD-A",
+  "natural_earth_names": [
+   "Barisal"
+  ],
+  "note": null,
+  "cells_exported": true,
+  "features_exported": false
+ },
+ {
+  "aoi_id": "BGD-B",
+  "name": "Chattogram",
+  "country": "Bangladesh",
+  "kind": "admin1",
+  "bbox": [
+   90.5991,
+   20.742,
+   92.641,
+   24.2564
+  ],
+  "geometry_path": "geo/BGD-B.geojson",
+  "supported_calibration": false,
+  "iso_3166_2": "BD-B",
+  "natural_earth_names": [
+   "Chittagong"
+  ],
+  "note": null,
+  "cells_exported": true,
+  "features_exported": false
+ },
+ {
+  "aoi_id": "BGD-C",
+  "name": "Dhaka",
+  "country": "Bangladesh",
+  "kind": "admin1",
+  "bbox": [
+   89.3085,
+   22.8702,
+   91.2488,
+   25.4029
+  ],
+  "geometry_path": "geo/BGD-C.geojson",
+  "supported_calibration": false,
+  "iso_3166_2": "BD-C",
+  "natural_earth_names": [
+   "Dhaka"
+  ],
+  "note": "Natural Earth's Dhaka polygon predates the 2015 split and includes the Mymensingh division (BD-H)",
+  "cells_exported": true,
+  "features_exported": false
+ },
+ {
+  "aoi_id": "BGD-D",
+  "name": "Khulna",
+  "country": "Bangladesh",
+  "kind": "admin1",
+  "bbox": [
+   88.5416,
+   21.6439,
+   89.9795,
+   24.1898
+  ],
+  "geometry_path": "geo/BGD-D.geojson",
+  "supported_calibration": false,
+  "iso_3166_2": "BD-D",
+  "natural_earth_names": [
+   "Khulna"
+  ],
+  "note": null,
+  "cells_exported": true,
+  "features_exported": false
+ },
+ {
+  "aoi_id": "BGD-E",
+  "name": "Rajshahi",
+  "country": "Bangladesh",
+  "kind": "admin1",
+  "bbox": [
+   88.0218,
+   23.8149,
+   89.8325,
+   25.3026
+  ],
+  "geometry_path": "geo/BGD-E.geojson",
+  "supported_calibration": false,
+  "iso_3166_2": "BD-E",
+  "natural_earth_names": [
+   "Rajshahi"
+  ],
+  "note": null,
+  "cells_exported": true,
+  "features_exported": false
+ },
+ {
+  "aoi_id": "BGD-F",
+  "name": "Rangpur",
+  "country": "Bangladesh",
+  "kind": "admin1",
+  "bbox": [
+   88.0744,
+   25.1595,
+   89.8344,
+   26.6235
+  ],
+  "geometry_path": "geo/BGD-F.geojson",
+  "supported_calibration": false,
+  "iso_3166_2": "BD-F",
+  "natural_earth_names": [
+   "Rangpur"
+  ],
+  "note": null,
+  "cells_exported": true,
+  "features_exported": false
+ },
+ {
+  "aoi_id": "BGD-G",
+  "name": "Sylhet",
+  "country": "Bangladesh",
+  "kind": "admin1",
+  "bbox": [
+   90.9124,
+   23.9879,
+   92.4915,
+   25.2019
+  ],
+  "geometry_path": "geo/BGD-G.geojson",
+  "supported_calibration": false,
+  "iso_3166_2": "BD-G",
+  "natural_earth_names": [
+   "Sylhet"
+  ],
+  "note": null,
+  "cells_exported": true,
+  "features_exported": false
+ },
+ {
+  "aoi_id": "AUS",
+  "name": "Australia",
+  "country": "Australia",
+  "kind": "country",
+  "bbox": [
+   113.339,
+   -43.6346,
+   153.5695,
+   -10.6682
+  ],
+  "geometry_path": "geo/AUS.geojson",
+  "supported_calibration": false,
+  "iso_3166_2": null,
+  "natural_earth_names": [
+   "Australia"
+  ],
+  "note": null,
+  "cells_exported": false,
+  "features_exported": false
+ },
+ {
+  "aoi_id": "AUS-NSW",
+  "name": "New South Wales",
+  "country": "Australia",
+  "kind": "admin1",
+  "bbox": [
+   141.0001,
+   -37.5103,
+   159.1065,
+   -28.1493
+  ],
+  "geometry_path": "geo/AUS-NSW.geojson",
+  "supported_calibration": false,
+  "iso_3166_2": "AU-NSW",
+  "natural_earth_names": [
+   "New South Wales",
+   "Lord Howe Island"
+  ],
+  "note": null,
+  "cells_exported": true,
+  "features_exported": true
+ }
+]

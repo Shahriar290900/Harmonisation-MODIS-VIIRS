@@ -1,0 +1,107 @@
+{
+ "rows": [
+  {
+   "trip": 1,
+   "landing": {
+    "heapMB": 14.89,
+    "perfMemMB": 19.55,
+    "created": 5,
+    "live": 2,
+    "canvases": 2,
+    "triggers": 6
+   },
+   "workspace": {
+    "heapMB": 14.85,
+    "perfMemMB": 19.55,
+    "created": 9,
+    "live": 1,
+    "canvases": 1,
+    "triggers": 0
+   }
+  },
+  {
+   "trip": 2,
+   "landing": {
+    "heapMB": 20.09,
+    "perfMemMB": 19.55,
+    "created": 13,
+    "live": 2,
+    "canvases": 2,
+    "triggers": 6
+   },
+   "workspace": {
+    "heapMB": 17.16,
+    "perfMemMB": 19.55,
+    "created": 16,
+    "live": 1,
+    "canvases": 1,
+    "triggers": 0
+   }
+  },
+  {
+   "trip": 3,
+   "landing": {
+    "heapMB": 20.38,
+    "perfMemMB": 19.55,
+    "created": 20,
+    "live": 2,
+    "canvases": 2,
+    "triggers": 6
+   },
+   "workspace": {
+    "heapMB": 17.47,
+    "perfMemMB": 19.55,
+    "created": 23,
+    "live": 1,
+    "canvases": 1,
+    "triggers": 0
+   }
+  },
+  {
+   "trip": 4,
+   "landing": {
+    "heapMB": 20.79,
+    "perfMemMB": 19.55,
+    "created": 27,
+    "live": 2,
+    "canvases": 2,
+    "triggers": 6
+   },
+   "workspace": {
+    "heapMB": 17.63,
+    "perfMemMB": 19.55,
+    "created": 30,
+    "live": 1,
+    "canvases": 1,
+    "triggers": 0
+   }
+  },
+  {
+   "trip": 5,
+   "landing": {
+    "heapMB": 21.12,
+    "perfMemMB": 19.55,
+    "created": 34,
+    "live": 2,
+    "canvases": 2,
+    "triggers": 6
+   },
+   "workspace": {
+    "heapMB": 17.71,
+    "perfMemMB": 19.55,
+    "created": 37,
+    "live": 1,
+    "canvases": 1,
+    "triggers": 0
+   }
+  }
+ ],
+ "final": {
+  "heapMB": 20.76,
+  "perfMemMB": 19.55,
+  "created": 39,
+  "live": 1,
+  "canvases": 1,
+  "triggers": 6
+ }
+}

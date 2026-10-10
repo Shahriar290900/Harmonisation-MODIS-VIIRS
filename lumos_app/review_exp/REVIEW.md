@@ -1,0 +1,41 @@
+# Code review: experience layer (9fcc64a6..f4148da2)
+
+Method: read every file in scope, built to `review_exp/scratch/dist`, then ran Playwright probes against `vite preview` on :4179 (`scratch/probe1-3.mjs`, `replay.mjs`, `glyph.mjs`). The server has been stopped. Verdicts: **CONFIRMED** = reproduced at runtime; **CODE** = verified by reading only.
+
+## High
+
+**H1. Back button breaks while Replay is running (CONFIRMED).** `App.tsx:89-90` with `state/store.ts:170-174`. When App unmounts, its cleanup calls `holdSync(false)`, which runs `syncOut()`. That `replaceState`s `#aoi=…` over the `#/` entry the browser just restored. The `hashchange` event fires after this, so the Router switches straight back to the workspace. Repro: open the workspace, press Replay, press Back. Result: `hash=#aoi=BGD&y=2016&m=7 route=workspace`, the landing never renders, and its history entry is lost. Fix: let `holdSync(false)` skip the flush on unmount (e.g. `holdSync(false, { flush: false })` in the cleanup). Or make `syncOut` a no-op when `routeOf(location.hash)==='landing'`. Or detach the store when the Workspace unmounts. Add an e2e test that runs Replay and then goes Back.
+
+## Medium
+
+**M1. Back from the workspace always lands at the top of the landing (CONFIRMED).** `landing/transition.ts:477` calls `window.scrollTo(0,0)` before `location.hash = …`. The browser therefore saves scrollY 0 for the landing entry, and the landing remounts at a short height anyway. Probe: index link at y=14533, then Back gives y=0. A user browsing the index or gallery loses their place every time. Fix: record `scrollY` in `history.state` (or sessionStorage) before navigating. On Landing mount, restore it after the first `ScrollTrigger.refresh()` and the series loads.
+
+**M2. ScrollTrigger keeps a 60 fps rAF loop running after the landing unmounts (CONFIRMED).** In the workspace after visiting the landing, about 60 rAF/s come from ScrollTrigger's internal `_rafBugFix` loop (`Landing-*.js:60`). A direct workspace load has 0. `ScrollTrigger.getAll()` is 0, so this is not a trigger leak; the plugin is simply still enabled. The cost is battery and idle CPU across the whole workspace session. Fix: call `ScrollTrigger.disable(false)` in Landing's unmount cleanup (`Landing.tsx:48-56`) and `ScrollTrigger.enable()` on mount. Add a "rAF/s in workspace" check to L05.
+
+**M3. "Illustrative" label is missing on the no-WebGL and reduced-motion paths (CONFIRMED).** The WebGL pixel-compare adds a visible "Illustrative fires · not real data" badge (`pixelCompare.ts:417-428`). `mountFallbackPixels` (`fallbacks.ts:146`) and `StaticPixels` (`Story.tsx:113-126`) show none, and the only text is `.lx-sr` (`Story.tsx:104`). The probe under reduced motion found no visible "illustrat" in `#how`. Fix: put a visible `<p className="lx-cam__note">Illustrative fires · not real data</p>` in the React markup for all three paths. Then drop the DOM-injected badge.
+
+**M4. "Peak month" deep links and labels are not that year's peak (CONFIRMED with data).** `data.ts:110-117`: `peakMonth` is the mean over all years, and `bestYear` is the latest year with that month observed. For AUS and AUS-NSW the climatological peak is December, but 2024 peaked in November. Even so, cards say "Peak month December. Opens December 2024" (`Gallery.tsx:104,110`), and the hero says "New South Wales, December 2024 … in its peak burning month" (`Landing.tsx:178-180,229`). The index year tooltip says "peak month March" for every year (`IndexList.tsx:106-107`). BGD-A's own peak differs from March in 11 of 25 years. Fix: say "usual peak (all-year mean)". Or compute a per-year `argmax` for the deep link and the tooltip.
+
+**M5. Each workspace mount leaks a WebGL context until GC (CONFIRMED).** `ui/MapPanel.tsx:26`: the `hasWebGL()` probe runs in a `useState` initializer and never calls `loseContext()`. This existed before, but the workspace can now remount, and live contexts grew 4→7 over 3 round trips. Chrome evicts the oldest context at 16, which could be the live map. L05 forces GC (`landing.spec.ts:312-314`), so it hides this. Fix: reuse `webglOk()` from `threeLoader.ts`, or call `getExtension('WEBGL_lose_context')?.loseContext()`.
+
+## Low
+
+- **L1. Globe loses its hotspots when the globe remounts (CODE).** `Landing.tsx:147-164,168-183`: toggling reduced motion (or `quality`) disposes the globe and mounts a new, empty one. `mode` stays `'webgl'`, so the points effect doesn't run again. Fix: keep the last points in a ref and call `setPoints` right after mounting.
+- **L2. Main-thread long task at globe start (CONFIRMED).** `globe.ts:412` runs `buildLandDots(42000)` synchronously: about 83 ms warm on a fast server CPU, and 200-300 ms on a mid-range phone. Many 50-650 ms long tasks were recorded during landing load (SwiftShader inflates these). Fix: precompute the dots into a static `Float32Array` asset, or chunk the work with `requestIdleCallback`.
+- **L3. Landing downloads the whole workspace (CONFIRMED).** `Router.tsx:8` imports `App` eagerly, so the landing pays for the 346 kB main chunk. Workspace isolation itself is correct: no three, gsap or Landing chunk on `#aoi=` (verified). Fix: `lazy(() => import('../App'))` behind the existing boot fallback.
+- **L4. Breakpoints read once (CODE).** `Landing.tsx:194-197`: `wide` and `narrow` are read once, so the globe offset is wrong after a resize or rotation that crosses 1100/700 px without changing `flags.mobile`. Use `gsap.matchMedia()`.
+- **L5. Copy that isn't computed (CODE).** "Averaged over 2003–2025" (`Landing.tsx:226,230`) does not match the averaging, which includes 2001-02 (`data.ts:101-109`). "The usual season: Feb–Apr" is a hard-coded ±1 month around the peak (`Story.tsx:294`). "Ten areas", "7 divisions" (`Gallery.tsx:60,63`) and "Twenty-three years" (`Story.tsx:303`) are literals that happen to match. Derive them from `regions` and `rows`, or filter the average to ≥2003. The 194 cells (106 BGD + 88 NSW) and ×3.5 are computed correctly.
+- **L6. Every unknown hash opens the workspace (CONFIRMED).** `Router.tsx:15-18`: `#/foo`, `#//` and `#lx-main` all open the workspace and get rewritten to `#aoi=BGD…`. As a result the landing skip link (`Landing.tsx:62`) can only leave the page; it cannot skip within it. Also, XSS-style payloads are safely discarded (verified). Suggest routing only `#/app…` and `aoi=` to the workspace, and pointing the skip link at `#lx-main` with a click handler.
+- **L7. Card names drop DEMO and status (CODE).** `Gallery.tsx:110`: the card `aria-label` replaces its content, so screen readers lose the "demo" tag and the est./obs. years. Append them to the label. The fixed nav DEMO badge does keep the disclosure visible on screen.
+- **L8. Promises that never resolve (CODE).** `globe.ts:560-572` `focus()` and `three/transition.ts:163-165,188-192` `play()`/`reveal()` never resolve if they are disposed mid-tween, because `kill()` skips `onComplete`. `openWorkspace` bounds these with `bounded()`, but any other caller would hang. Resolve inside `dispose`/`teardown`.
+- **L9. Glyph shapes differ from the PRD (CODE).** PRD §91 specifies ● ◐ ◔ ▨ ⊘; the code now uses lucide Circle, CircleDot, ChartPie and Ban. They still read apart in greyscale at 8 px (`scratch/glyph-cal.png`). Update the PRD or legend docs.
+- **L10. Build output committed to git.** The diff commits `node_modules/lucide-react` (about 3,600 files) and `dist/`. Add both to `.gitignore` and remove them from the index.
+
+## Verified OK
+
+- three: renderer `dispose` + `forceContextLoss`, `disposeTree`, IntersectionObserver, visibility and ResizeObserver cleanup. All landing contexts are lost after unmount.
+- No `.lx-transition` left behind, ScrollTriggers at 0 in the workspace, and mount/unmount counts balanced over 5 cycles. StrictMode effects clean up symmetrically (CODE).
+- The service worker registers on both routes.
+- Reduced motion: no scrubbed triggers, no 3D loops, CSS animations killed.
+- Icon3D: unique `useId` ids, decorative icons `aria-hidden`, and every icon-only button has an `aria-label`. No pill radii or emoji left in UI source (grepped).
+- No horizontal overflow at 1440 px. Focus lands on `#main` after the transition. Index arrow-key navigation works.

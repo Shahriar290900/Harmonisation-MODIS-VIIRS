@@ -1,0 +1,223 @@
+{
+ "model_id": "D1_mlp",
+ "description": "PyTorch MLP (128-128-64, Poisson NLL), exported to ONNX with preprocessing embedded.",
+ "status": "ok",
+ "error": null,
+ "target": "viirs_snpp_count (type 0, cell-month)",
+ "prediction": "estimated_viirs_reference_detections",
+ "unit": "expected S-NPP VIIRS type-0 detections per 5 km cell per UTC calendar month; AOI value = sum over the AOI's cells",
+ "features": [
+  "aqua_count",
+  "aqua_day",
+  "aqua_night",
+  "aqua_frp_sum",
+  "aqua_frp_mean",
+  "aqua_conf_mean",
+  "aqua_scan_mean",
+  "terra_count",
+  "aqua_count_3x3",
+  "month_sin",
+  "month_cos",
+  "lat",
+  "aqua_clim",
+  "country_AUS",
+  "country_BGD"
+ ],
+ "feature_order": [
+  "aqua_count",
+  "aqua_day",
+  "aqua_night",
+  "aqua_frp_sum",
+  "aqua_frp_mean",
+  "aqua_conf_mean",
+  "aqua_scan_mean",
+  "terra_count",
+  "aqua_count_3x3",
+  "month_sin",
+  "month_cos",
+  "lat",
+  "aqua_clim",
+  "country_AUS",
+  "country_BGD"
+ ],
+ "feature_definitions": {
+  "aqua_count": "Aqua MODIS type-0 detections in the 5 km cell and UTC calendar month (transform log1p)",
+  "aqua_day": "Aqua type-0 detections with daynight=D (log1p)",
+  "aqua_night": "Aqua type-0 detections with daynight=N (log1p)",
+  "aqua_frp_sum": "sum of FRP (MW) of Aqua type-0 detections with finite frp (log1p)",
+  "aqua_frp_mean": "aqua_frp_sum / number of those detections; 0 if none (log1p)",
+  "aqua_conf_mean": "mean MODIS confidence (0-100) of Aqua type-0 detections; 0 if none (identity)",
+  "aqua_scan_mean": "mean scan (km) of Aqua type-0 detections; 0 if none (log1p)",
+  "terra_count": "Terra MODIS type-0 detections in the cell-month (log1p); separate series, never pooled into the target",
+  "aqua_count_3x3": "sum of aqua_count over the 3x3 block of cells (ix-1..ix+1, iy-1..iy+1) incl. itself; cells outside the universe add 0 (log1p)",
+  "month_sin": "sin(2*pi*(month-1)/12), month 1..12 (identity)",
+  "month_cos": "cos(2*pi*(month-1)/12) (identity)",
+  "lat": "latitude (deg) of the cell centre = degrees(asin((iy+0.5)*5000/6371007.181)) (identity)",
+  "aqua_clim": "mean aqua_count of this cell for this calendar month over the TRAIN years 2013-2020 (available months only) (log1p)",
+  "country_AUS": "1 if the cell belongs to Australia (FIRMS country file) else 0 (identity)",
+  "country_BGD": "1 if the cell belongs to Bangladesh (FIRMS country file) else 0 (identity)"
+ },
+ "train_years": [
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2020
+ ],
+ "val_years": [
+  2021,
+  2022
+ ],
+ "test_years": [
+  2023,
+  2024
+ ],
+ "spatial_holdout": "20% of 100 km blocks excluded from train",
+ "info": {
+  "selected_seed": 0,
+  "hidden": [
+   128,
+   128,
+   64
+  ],
+  "amp_bf16": false,
+  "n_train": 233064,
+  "n_train_eligible": 233064,
+  "device": "cpu"
+ },
+ "val_summary": {
+  "cell_month": {
+   "n": 77232,
+   "mae": 0.13142823459967773,
+   "rmse": 0.5476535674671711,
+   "bias": 0.004596247899347308,
+   "poisson_deviance": 0.32799882728378604,
+   "sum_obs": 8841.0,
+   "sum_pred": 9195.977417762391
+  },
+  "aoi_month": {
+   "n": 240,
+   "mae": 8.098045963318631,
+   "rmse": 18.51570678969037,
+   "bias": 1.9977377503819298,
+   "poisson_deviance": 2.705387899661292,
+   "sum_obs": 13706.0,
+   "sum_pred": 14185.457060091663
+  }
+ },
+ "test_summary": {
+  "cell_month": {
+   "n": 77232,
+   "mae": 0.12225846490691268,
+   "rmse": 0.5105223427573071,
+   "bias": 0.00853250352315716,
+   "poisson_deviance": 0.30969300907767505,
+   "sum_obs": 7530.0,
+   "sum_pred": 8188.982312100474
+  },
+  "aoi_month": {
+   "n": 240,
+   "mae": 7.872732570245474,
+   "rmse": 17.5003421146364,
+   "bias": 4.675990761969782,
+   "poisson_deviance": 2.9795622326542297,
+   "sum_obs": 11411.0,
+   "sum_pred": 12533.237782872748
+  }
+ },
+ "interval": {
+  "q_low": -0.7844550978468462,
+  "q_high": 0.3224877425326285,
+  "n_val_aoi_months": 240,
+  "formula": "low=(\u0177+1)\u00b7exp(q_low)\u22121, high=(\u0177+1)\u00b7exp(q_high)\u22121, clipped \u22650",
+  "nominal": 0.8,
+  "test_coverage": 0.7625,
+  "n_test_aoi_months": 240
+ },
+ "selected": false,
+ "synthetic_training_data": true,
+ "intended_use": "Retrospective harmonised fire-activity calendar (VIIRS S-NPP scale) for 2003\u20132012; comparison for 2012+.",
+ "limitations": "FIRMS detections are not burned area; no cloud-cover denominator (coverage_fraction null); relationship may drift with land use; Terra kept separate.",
+ "onnx_io": {
+  "file": "models/D1_mlp/model.onnx",
+  "input": {
+   "name": "x",
+   "dtype": "float32",
+   "shape": [
+    "N",
+    15
+   ],
+   "features": [
+    "aqua_count",
+    "aqua_day",
+    "aqua_night",
+    "aqua_frp_sum",
+    "aqua_frp_mean",
+    "aqua_conf_mean",
+    "aqua_scan_mean",
+    "terra_count",
+    "aqua_count_3x3",
+    "month_sin",
+    "month_cos",
+    "lat",
+    "aqua_clim",
+    "country_AUS",
+    "country_BGD"
+   ],
+   "values": "RAW feature values (preprocessing is embedded)"
+  },
+  "output": {
+   "name": "rate",
+   "dtype": "float32",
+   "shape": [
+    "N"
+   ],
+   "meaning": "expected VIIRS S-NPP detections per cell-month"
+  },
+  "opset": 17
+ },
+ "onnx": {
+  "path": "models/D1_mlp/model.onnx",
+  "input": "x: float32[N, 15] raw features in FEATURES order",
+  "output": "rate: float32[N]",
+  "input_name": "x",
+  "output_name": "rate",
+  "input_features": [
+   "aqua_count",
+   "aqua_day",
+   "aqua_night",
+   "aqua_frp_sum",
+   "aqua_frp_mean",
+   "aqua_conf_mean",
+   "aqua_scan_mean",
+   "terra_count",
+   "aqua_count_3x3",
+   "month_sin",
+   "month_cos",
+   "lat",
+   "aqua_clim",
+   "country_AUS",
+   "country_BGD"
+  ],
+  "opset": 17,
+  "dynamic_axes": {
+   "x": [
+    0
+   ],
+   "rate": [
+    0
+   ]
+  },
+  "preprocessing": "embedded (log1p on LOG1P features, then (z-mean)/scale); feed RAW feature values",
+  "sha256": "3661087416bd10e3d52113c886605f895cdd44a08f011feeb5c7999581b84833",
+  "parity": {
+   "n": 2048,
+   "max_abs_diff": 2.384185791015625e-06,
+   "max_rel_diff": 9.800477300814237e-07,
+   "passed": true
+  }
+ }
+}

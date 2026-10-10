@@ -1,0 +1,98 @@
+{
+ "model_id": "B0_ratio",
+ "description": "Global train ratio \u03a3viirs/\u03a3aqua \u00d7 aqua count.",
+ "status": "ok",
+ "error": null,
+ "target": "viirs_snpp_count (type 0, cell-month)",
+ "prediction": "estimated_viirs_reference_detections",
+ "unit": "expected S-NPP VIIRS type-0 detections per 5 km cell per UTC calendar month; AOI value = sum over the AOI's cells",
+ "features": [
+  "aqua_count"
+ ],
+ "feature_order": [
+  "aqua_count"
+ ],
+ "feature_definitions": {
+  "aqua_count": "Aqua MODIS type-0 detections in the 5 km cell and UTC calendar month (transform log1p)"
+ },
+ "train_years": [
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2020
+ ],
+ "val_years": [
+  2021,
+  2022
+ ],
+ "test_years": [
+  2023,
+  2024
+ ],
+ "spatial_holdout": "20% of 100 km blocks excluded from train",
+ "info": {
+  "formula": "est = r * aqua_count",
+  "r": 3.5467993790521413
+ },
+ "val_summary": {
+  "cell_month": {
+   "n": 77232,
+   "mae": 0.13625312004618845,
+   "rmse": 0.7644755871023726,
+   "bias": -0.00044407828120383164,
+   "poisson_deviance": 2.5334180889515876,
+   "sum_obs": 8841.0,
+   "sum_pred": 8806.702946186066
+  },
+  "aoi_month": {
+   "n": 240,
+   "mae": 7.182594837745031,
+   "rmse": 13.963027553851786,
+   "bias": -0.5221043507258097,
+   "poisson_deviance": 19.256214211074848,
+   "sum_obs": 13706.0,
+   "sum_pred": 13580.694955825806
+  }
+ },
+ "test_summary": {
+  "cell_month": {
+   "n": 77232,
+   "mae": 0.11984378892194417,
+   "rmse": 0.6904083064572272,
+   "bias": -0.0022980735270854034,
+   "poisson_deviance": 2.305278272963427,
+   "sum_obs": 7530.0,
+   "sum_pred": 7352.51518535614
+  },
+  "aoi_month": {
+   "n": 240,
+   "mae": 6.937580614288648,
+   "rmse": 12.101802364835596,
+   "bias": -1.3192143032948176,
+   "poisson_deviance": 21.665236375924504,
+   "sum_obs": 11411.0,
+   "sum_pred": 11094.388567209244
+  }
+ },
+ "interval": {
+  "q_low": -0.37937075856516617,
+  "q_high": 1.0986122886681098,
+  "n_val_aoi_months": 240,
+  "formula": "low=(\u0177+1)\u00b7exp(q_low)\u22121, high=(\u0177+1)\u00b7exp(q_high)\u22121, clipped \u22650",
+  "nominal": 0.8,
+  "test_coverage": 0.8041666666666667,
+  "n_test_aoi_months": 240
+ },
+ "selected": false,
+ "synthetic_training_data": true,
+ "intended_use": "Retrospective harmonised fire-activity calendar (VIIRS S-NPP scale) for 2003\u20132012; comparison for 2012+.",
+ "limitations": "FIRMS detections are not burned area; no cloud-cover denominator (coverage_fraction null); relationship may drift with land use; Terra kept separate.",
+ "app_recompute": {
+  "weights": "models/B0_ratio/weights.json",
+  "how": "est = r * aqua_count"
+ }
+}

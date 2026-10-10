@@ -1,0 +1,41 @@
+{
+  "name": "lumos-fire-calendar",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --config apps/web/vite.config.ts",
+    "build": "tsc -p apps/web/tsconfig.json --noEmit && vite build --config apps/web/vite.config.ts",
+    "preview": "vite preview --config apps/web/vite.config.ts --port 4173 --strictPort",
+    "test": "vitest run --config apps/web/vite.config.ts",
+    "e2e": "playwright test -c tests/playwright.config.ts",
+    "import-bundle": "node scripts/import_bundle.mjs"
+  },
+  "dependencies": {
+    "d3-scale": "4.0.2",
+    "d3-shape": "3.2.0",
+    "gsap": "3.13.0",
+    "lucide-react": "0.468.0",
+    "maplibre-gl": "5.6.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "three": "0.170.0",
+    "zod": "3.24.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.0",
+    "@testing-library/react": "16.3.0",
+    "@types/d3-scale": "4.0.9",
+    "@types/d3-shape": "3.1.7",
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.5",
+    "@types/three": "0.170.0",
+    "@vitejs/plugin-react": "4.4.1",
+    "adm-zip": "0.5.16",
+    "jsdom": "26.1.0",
+    "typescript": "5.7.3",
+    "vite": "6.3.5",
+    "vite-plugin-pwa": "1.0.0",
+    "vitest": "3.1.2"
+  }
+}

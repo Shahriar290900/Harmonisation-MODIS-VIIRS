@@ -1,0 +1,16 @@
+{
+ "synthetic": true,
+ "note": "SYNTHETIC FIXTURE - NOT REAL DATA",
+ "generator": "fixtures/make_fixture_bundle.py",
+ "seed": 20261009,
+ "python_version": "fixture",
+ "platform": "fixture",
+ "packages": {},
+ "wheelhouse": {
+  "requested": [],
+  "succeeded": [],
+  "failed": [],
+  "files": []
+ },
+ "created_utc": "2025-09-15T00:00:00Z"
+}
