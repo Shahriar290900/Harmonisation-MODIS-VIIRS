@@ -71,7 +71,8 @@ describe('H4: cells parsing', () => {
 
 describe('M1: B0 null pattern', () => {
   it('2025-09 partial (exported null) recomputes to null, and parity flags null mismatches', () => {
-    for (const aoi of ['BGD', 'AUS-NSW', 'BGD-C']) {
+    const aois = ['BGD', 'AUS-NSW', 'USA-CA', 'BGD-C'].filter((a) => readJson<{ aois: string[] }>('manifest.json').aois.includes(a));
+    for (const aoi of aois) {
       const r = recs(aoi, 2025);
       const rc = recomputeAoiMonth('B0_month_ratio', { aoiId: aoi, year: 2025, b0Weights: w0, cells: readJson<CellsFile>(`cells/${aoi}/2025.json`), records: r });
       const ex = exportedEstimates(r);

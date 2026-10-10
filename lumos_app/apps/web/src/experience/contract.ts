@@ -16,7 +16,9 @@ export interface GlobeHandle {
   resize(): void;
   dispose(): void;
 }
-export type MountGlobe = (canvasHost: HTMLElement, opts: { reducedMotion: boolean; quality: 'high' | 'low' }) => GlobeHandle | null; // null = WebGL unavailable
+/** `home`: the highlighted country (ISO_A3) and the initial focus; omitted = Bangladesh (the Bangladesh-first story). */
+export interface GlobeHome { iso3: string; lon: number; lat: number }
+export type MountGlobe = (canvasHost: HTMLElement, opts: { reducedMotion: boolean; quality: 'high' | 'low'; home?: GlobeHome }) => GlobeHandle | null; // null = WebGL unavailable
 
 export interface PixelCompareHandle { setProgress(p: number): void; resize(): void; dispose(): void }
 /** "Two cameras" 3D explainer: MODIS 1 km pixel grid vs VIIRS 375 m grid over the same fire field; progress 0→1 morphs coarse→fine→harmonized */

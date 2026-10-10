@@ -15,7 +15,7 @@ Every section with its steps and checks, exactly as written in the notebook guid
 | 1.3 Helpers | 2 | Imports, expected headers, logger with key redaction | < 5 s |
 | 1.4 Polite downloader | 3 | Download engine: retries, back-off budget, circuit breaker, stall guard, cache | < 1 s |
 | 1.5 Plan the downloads | 4 | Job lists and manifest read/write | < 1 s |
-| 1.6 Download FIRMS country archives | 5 | Download 78 FIRMS yearly CSVs (default config) | 5–25 min |
+| 1.6 Download FIRMS country archives | 5 | Download 117 FIRMS yearly CSVs (default config) | 8–40 min |
 | 1.7 Optional recent NRT data | 6 | Optional last 10 days of NRT detections (needs MAP_KEY) | < 1 s / ~1 min |
 | 1.8 Boundaries | 7 | Natural Earth countries and admin-1 boundaries | < 2 min |
 | 1.9 Offline wheelhouse | 8 | Download wheels for offline install in Notebook B | 1–5 min |
@@ -50,7 +50,7 @@ Every section with its steps and checks, exactly as written in the notebook guid
 
 **Steps**
 
-- [ ] 1.2.1 Check `COUNTRIES` (default Bangladesh and Australia). Leave `EXTRA_COUNTRIES = []` unless you were asked to add training countries; each extra country adds download time.
+- [ ] 1.2.1 Check `COUNTRIES` (default Bangladesh, Australia and United_States; a space in a name becomes an underscore). Leave `EXTRA_COUNTRIES = []` unless you were asked to add training countries; each extra country adds download time.
 - [ ] 1.2.2 Leave `MODIS_YEARS` (2001–2025) and `VIIRS_YEARS` (2012–2025) as they are.
 - [ ] 1.2.3 Set `FETCH_API_NRT = True` only if you added the `FIRMS_MAP_KEY` secret in 1.1.6. Otherwise leave it `False`.
 - [ ] 1.2.4 Leave `TRY_NOAA20 = False` (that FIRMS folder is unverified; it would only log 404s).
@@ -120,8 +120,8 @@ Every section with its steps and checks, exactly as written in the notebook guid
 **Steps**
 
 - [ ] 1.6.1 Run the cell. The first lines show the Python version, the bundle path and the FIRMS and Natural Earth base URLs.
-- [ ] 1.6.2 Look for `FIRMS country archives: 78 files, 4 workers` (2 countries × (25 MODIS + 14 VIIRS) years with the default config).
-- [ ] 1.6.3 Watch the per-file lines `[  i/78] ok|missing|error <id> <rows> <MB> <note>`. Australia files are the largest and take longest.
+- [ ] 1.6.2 Look for `FIRMS country archives: 117 files, 4 workers` (3 countries × (25 MODIS + 14 VIIRS) years with the default config).
+- [ ] 1.6.3 Watch the per-file lines `[  i/117] ok|missing|error <id> <rows> <MB> <note>`. Ids use the underscore name, for example `modis_2020_United_States`. The Australia and United_States files are the largest and take longest.
 - [ ] 1.6.4 Lines like `HTTP 429 for ... retry 1/3 in 12.0s` are normal: the downloader is waiting as FIRMS asked.
 - [ ] 1.6.5 If you see `circuit breaker` or `HTTP 403; stopping all requests`, the remaining files from that host are recorded as `error` with a `skipped: host ... refused earlier` note.
 - [ ] 1.6.6 Wait for the closing line `FIRMS country archives: done in ...s (ok=..., missing=..., error=...)`.
@@ -135,7 +135,7 @@ Every section with its steps and checks, exactly as written in the notebook guid
 
 **If it fails:** For `error` rows caused by 429, 5xx, timeouts or a tripped circuit breaker, wait a few minutes and run this cell again: good files are reused (note `cached`) and only the failed ones are fetched. For 403, check that Internet is ON. A disk-full error is recorded per file and the run keeps going.
 
-**Time:** estimate: 5–25 min (depends on FIRMS speed; real data not yet tested)
+**Time:** estimate: 8–40 min (depends on FIRMS speed; United_States file sizes are known but its download time is unmeasured; real data not yet tested)
 
 ### Phase 1 · Section 1.7 — Optional recent NRT data  (cell 6)
 **What this cell does:** Only when `FETCH_API_NRT = True` and a MAP_KEY is found: downloads the last `API_NRT_DAYS` days (default 10) of near-real-time VIIRS and MODIS detections from the FIRMS Area API, in requests of at most 5 days. Otherwise it logs that the step is off. The key is never printed or saved.
@@ -167,7 +167,7 @@ Every section with its steps and checks, exactly as written in the notebook guid
 
 - [ ] The closing line shows `ok=2, missing=0, error=0`.
 
-**If it fails:** Run the cell again (it reuses anything already downloaded). Do not move on without these files: Notebook B needs them for the region polygons and the Bangladesh division and New South Wales areas.
+**If it fails:** Run the cell again (it reuses anything already downloaded). Do not move on without these files: Notebook B needs them for the region polygons and the Bangladesh division, New South Wales and California areas.
 
 **Time:** estimate: under 2 min
 
@@ -386,12 +386,13 @@ Every section with its steps and checks, exactly as written in the notebook guid
 **Time:** estimate: 5–15 min on real data (fixture: 3 s; real data untested)
 
 ### Phase 2 · Section 2.6 — Grid, panel, features and areas  (cell 5)
-**What this cell does:** Decides for every country, platform and month whether data is complete, partial or missing (header-only files, platform outages, months after the last date of a current-year file and months before a satellite's start are missing or partial, never zero), builds the cell × month arrays with the model features (3×3 neighbourhood, train-only climatology, month, latitude, country), checkpoints them, then assigns cells to the areas of interest: each country plus Bangladesh's divisions and New South Wales, using the Natural Earth polygons.
+**What this cell does:** Decides for every country, platform and month whether data is complete, partial or missing (header-only files, platform outages, months after the last date of a current-year file and months before a satellite's start are missing or partial, never zero), builds the cell × month arrays with the model features (3×3 neighbourhood, train-only climatology, month, latitude, country), checkpoints them, then assigns cells to the areas of interest: each country plus Bangladesh's divisions, New South Wales and California, using the Natural Earth polygons.
 
 **Steps**
 
 - [ ] 2.6.1 Run the cell.
-- [ ] 2.6.2 Read `panel <country>: N cells` for each country, then `panel: 2 countries, N cells × M months = ... cell-months (2001–2025)`.
+- [ ] 2.6.2 Read `panel <country>: N cells` for each country, then `panel: 3 countries, N cells × M months = ... cell-months (2001–2025)`.
+- [ ] 2.6.2a Before the panel is built, read `panel plan: ... panel arrays ≈ X GB, peak while building the largest country ≈ Y GB (free RAM Z GB)`. A `WARNING: estimated panel memory exceeds 60% of free RAM` line means the kernel may run out of memory; write down the numbers (they are also in `metrics.json` under `panel_memory`).
 - [ ] 2.6.3 Read the `availability <country> <platform>: complete=... partial=[...] missing=...` lines.
 - [ ] 2.6.4 A `NOTE: BD-H (Mymensingh) is absent from this Natural Earth file ...` line is expected: Natural Earth's Dhaka polygon still contains Mymensingh.
 - [ ] 2.6.5 Read `Bangladesh: k cells assigned to the nearest division (≤0.1°), u cells unassigned ...`.
@@ -400,10 +401,10 @@ Every section with its steps and checks, exactly as written in the notebook guid
 **Check before moving on**
 
 - [ ] Aqua availability lists `2002-07` as partial and S-NPP lists `2012-01` as partial (the satellites' first months).
-- [ ] The AOI lines include `BGD`, the Bangladesh divisions (`BGD-A` ...), `AUS` and `AUS-NSW`, each with cells > 0.
+- [ ] The AOI lines include `BGD`, the Bangladesh divisions (`BGD-A` ...), `AUS`, `AUS-NSW`, `USA` and `USA-CA`, each with cells > 0.
 - [ ] Unassigned Bangladesh cells are a small share of the `BGD` cells (offshore detections).
 
-**If it fails:** If the kernel dies here (Australia is the largest array), restart and Run All: ingest is reused from its checkpoint. Note the RSS in the log for the report; real Australia scale is untested. If AOIs are missing, the Natural Earth files from 1.8 are missing from the bundle.
+**If it fails:** If the kernel dies here (Australia and the United States are the largest arrays), restart and Run All: ingest is reused from its checkpoint. Note the RSS in the log for the report; real Australia and United States scale is untested. The United States file includes Alaska, Hawaii and territories, but only cells with at least one detection enter the panel, so memory grows with the number of such cells, not with the area. If AOIs are missing, the Natural Earth files from 1.8 are missing from the bundle.
 
 **Time:** estimate: 2–10 min (fixture: under 1 s)
 
@@ -535,7 +536,7 @@ Every section with its steps and checks, exactly as written in the notebook guid
 **Time:** estimate: under 5 min
 
 ### Phase 2 · Section 2.14 — Export the app bundle  (cell 13)
-**What this cell does:** Writes the app bundle before the research stages: monthly activity records per area and year (validated against `activity.schema.json`), cell grids (15 MB per file budget), B1 input features for AUS-NSW and BGD, the optional recent NRT layer, scrubbed sources, regions and boundaries, model weights (B1 JSON, B2 JSON, D1 ONNX with an onnxruntime parity check), model cards, metrics, `comparison.csv`, figures, manifest and checksums. It copies the bundle to `/kaggle/working/lumos_app_bundle/` and zips it to `/kaggle/working/lumos_app_bundle.zip`.
+**What this cell does:** Writes the app bundle before the research stages: monthly activity records per area and year (validated against `activity.schema.json`), cell grids (15 MB per file budget), B1 input features for BGD, AUS-NSW and USA-CA, the optional recent NRT layer, scrubbed sources, regions and boundaries, model weights (B1 JSON, B2 JSON, D1 ONNX with an onnxruntime parity check), model cards, metrics, `comparison.csv`, figures, manifest and checksums. It copies the bundle to `/kaggle/working/lumos_app_bundle/` and zips it to `/kaggle/working/lumos_app_bundle.zip`.
 
 **Steps**
 
@@ -543,6 +544,7 @@ Every section with its steps and checks, exactly as written in the notebook guid
 - [ ] 2.14.2 Read `activity records: N; schema errors: 0 (validator: ...)`.
 - [ ] 2.14.3 Read `ONNX parity: {...}`.
 - [ ] 2.14.4 Lines `cells <aoi> <year>: est cutoff raised to ...` mean a cell file was over budget and its cutoff was raised and recorded; that is expected for large areas.
+- [ ] 2.14.4a Cell grids (`cells/<aoi>/<year>.json`) are written for `BGD` and its divisions, `AUS-NSW` and `USA-CA` only; whole-country `AUS` and `USA` have none. B1 feature files (`features/<aoi>/<year>.json`) exist for `BGD`, `AUS-NSW` and `USA-CA`.
 - [ ] 2.14.5 Read `app bundle [core (before research stages Q1/Q2)]: ... zip ... MB`.
 
 **Check before moving on**
@@ -620,7 +622,7 @@ Every section with its steps and checks, exactly as written in the notebook guid
 - [ ] 2.18.1 Run the cell and read the summary table.
 - [ ] 2.18.2 Read `Selected model (validation only): ... | release stage: ...`.
 - [ ] 2.18.3 Read `Device: cuda ... blocked network attempts: 0`.
-- [ ] 2.18.4 Look at the figures below (time series for BGD, AUS and AUS-NSW, model comparison, test scatter, QML subset comparison).
+- [ ] 2.18.4 Look at the figures below (time series for BGD, AUS-NSW and USA-CA, plus AUS and USA, model comparison, test scatter, QML subset comparison).
 - [ ] 2.18.5 Download `/kaggle/working/lumos_app_bundle.zip`: right-hand **Output** panel (or the committed version's **Output** tab) → `lumos_app_bundle.zip` → **Download**. Files in an interactive session disappear when it stops, so download now or commit with **Save Version → Save & Run All**.
 
 **Check before moving on**
@@ -641,7 +643,7 @@ Every section with its steps and checks, exactly as written in the notebook guid
 - [ ] Open `manifest.json` in the bundle: `release_stage` is `observed_comparison` or `validated_calibration`, `synthetic` is false, and `release_reason` makes sense.
 - [ ] Open `figures/timeseries_BGD.png`: the estimate continues smoothly into the VIIRS series with no jump at 2012, and Aqua sits below VIIRS.
 - [ ] Open `metrics.json` or `comparison.csv`: note the selected model and its test interval coverage (aim: near 0.80).
-- [ ] Open `runs/<ts>/run_log.json` (in `/kaggle/working`): note the timings and the RSS memory for Australia (ingest and panel lines).
+- [ ] Open `runs/<ts>/run_log.json` (in `/kaggle/working`): note the timings and the RSS memory for Australia and the United States (ingest and panel lines).
 - [ ] Run `python notebooks/tests/check_bundle.py <unzipped lumos_app_bundle>` locally (without `--fixture`); it must pass on the real bundle (DATA-03).
 - [ ] Q2 shows `ok` if you attached a model, or `skipped` if you did not; never anything in between.
 - [ ] Give `lumos_app_bundle.zip` to Claude Code, which unzips it to `apps/web/public/data/<snapshot_id>/`.

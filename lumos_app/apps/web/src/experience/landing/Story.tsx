@@ -10,7 +10,11 @@ import { annualMeans, countWord, unavailableText, useNear, type AoiSeries } from
 import { mountFallbackPixels } from './fallbacks';
 import { gsap, Reveal } from './motion';
 import type { Ctx } from './Landing';
+import { DEFAULT_AOI } from '../../data/regions';
 import { StageTagLx } from './StageTag';
+
+/** The Bangladesh-first story's region name, read from regions.json (falls back to the default's name while loading). */
+const homeName = (ctx: Ctx) => ctx.core?.regions.find((r) => r.aoi_id === DEFAULT_AOI)?.name ?? 'Bangladesh';
 
 function useStep(n: number) {
   const [step, setStep] = useState(0);
@@ -139,9 +143,10 @@ function StaticPixels() {
 
 const C = { aqua: '#00B4D8', viirs: '#8B5CF6', est: '#14B8A6' };
 
-/** (c) The 2012 jump: annual mean monthly hotspots for Bangladesh, drawn on scroll. */
+/** (c) The 2012 jump: annual mean monthly hotspots for the default region (Bangladesh), drawn on scroll. */
 export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
   const { flags, core } = ctx;
+  const home = homeName(ctx);
   const ref = useRef<HTMLElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(640);
@@ -207,7 +212,7 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
 
   const r = ratio ? `×${ratio.toFixed(1)}` : 'several times';
   const items = [
-    { k: '01 · MODIS alone', h: 'A record since 2003.', p: 'Aqua MODIS, month by month, averaged per year for Bangladesh. One camera, one scale.' },
+    { k: '01 · MODIS alone', h: 'A record since 2003.', p: `Aqua MODIS, month by month, averaged per year for ${home}. One camera, one scale.` },
     { k: '02 · Splice in VIIRS', h: `In 2012 the record leaps ${r}.`, p: 'Join the sharper VIIRS onto the end and the chart jumps. Nothing changed on the ground — the camera did.' },
     { k: '03 · Harmonized', h: 'Now the years are comparable.', p: 'MODIS years translated to the VIIRS scale (dashed), with the 80% band. 2005 and 2020 finally sit on the same axis.' }
   ];
@@ -234,7 +239,7 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
           <div ref={box} className="lx-jump__box">
             <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img" aria-labelledby="lx-jump-desc">
               <desc id="lx-jump-desc">
-                {`Bangladesh, mean monthly hotspots per year, ${y0}–${y1}. Raw MODIS stays low; raw VIIRS from 2012 is ${r} higher; the harmonized estimate puts all years on the VIIRS scale.`}
+                {`${home}, mean monthly hotspots per year, ${y0}–${y1}. Raw MODIS stays low; raw VIIRS from 2012 is ${r} higher; the harmonized estimate puts all years on the VIIRS scale.`}
               </desc>
               <defs>
                 <clipPath id="lx-clip-aqua"><rect x={m.l - 2} y={0} width={full ? pw + 4 : 0} height={h} /></clipPath>
@@ -266,10 +271,10 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
                 <path d={path('viirs')} fill="none" stroke={C.viirs} strokeWidth="2.75" strokeLinejoin="round" />
                 {data.filter((d) => d.viirs != null).map((d) => <circle key={d.year} cx={X(d.year)} cy={Y(d.viirs!)} r={3} fill={C.viirs} stroke="#0B1220" strokeWidth="1.5" />)}
               </g>
-              {!data.length && <text x={w / 2} y={h / 2} textAnchor="middle" className="lx-axis">{ctx.bgdFailed ? unavailableText('Bangladesh activity') : 'Loading Bangladesh activity…'}</text>}
+              {!data.length && <text x={w / 2} y={h / 2} textAnchor="middle" className="lx-axis">{ctx.homeFailed ? unavailableText(`${home} activity`) : `Loading ${home} activity…`}</text>}
             </svg>
           </div>
-          <figcaption className="lx-figcap">Bangladesh · mean monthly hotspot detections per year · y-axis linear. Source: this snapshot’s <code>activity/BGD/*.json</code>.</figcaption>
+          <figcaption className="lx-figcap">{home} · mean monthly hotspot detections per year · y-axis linear. Source: this snapshot’s <code>activity/{DEFAULT_AOI}/*.json</code>.</figcaption>
         </figure>
       </div>
     </section>
@@ -279,6 +284,7 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
 /** (d) Read the calendar: a mini heatmap that assembles cell by cell. */
 export function CalendarStory({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
   const { flags } = ctx;
+  const home = homeName(ctx);
   const ref = useRef<HTMLElement>(null);
   const [step, setStep] = useStep(3);
   const rows = useMemo(() => (bgd ? bgd.rows.filter((r) => r.year >= 2003) : []), [bgd]);
@@ -321,7 +327,7 @@ export function CalendarStory({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null })
           <Steps items={items} step={step} reduced={flags.reduced} />
           {!flags.reduced && <Progress step={step} n={3} />}
         </div>
-        <figure className="lx-cal" role="img" aria-label={`Bangladesh burning calendar, ${rows[0]?.year ?? 2003}–${rows.at(-1)?.year ?? 2025}; peak month ${MONTHS_LONG[peak - 1]}; ${highs.length} months flagged unusually high.`}>
+        <figure className="lx-cal" role="img" aria-label={`${home} burning calendar, ${rows[0]?.year ?? 2003}–${rows.at(-1)?.year ?? 2025}; peak month ${MONTHS_LONG[peak - 1]}; ${highs.length} months flagged unusually high.`}>
           <div className="lx-cal__grid" style={{ ['--rows' as string]: rows.length || 23 }}>
             <span />
             {MONTHS_SHORT.map((mn, i) => <span key={mn} className={'lx-cal__mh' + (i + 1 === peak ? ' is-peak' : '')}>{mn[0]}</span>)}
@@ -331,8 +337,8 @@ export function CalendarStory({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null })
             {!rows.length && Array.from({ length: 23 * 13 }, (_, i) => <span key={i} className="lx-cal__ghost" />)}
             {rows.length > 0 && <span className="lx-cal__peak" style={{ gridColumn: `${peak + 1} / span 1`, gridRow: `2 / span ${rows.length}` }} />}
           </div>
-          {ctx.bgdFailed && !rows.length && <p className="lx-figcap lx-cal__na" role="status">{unavailableText('The Bangladesh calendar')}</p>}
-          <figcaption className="lx-figcap lx-cal__key">Bangladesh · VIIRS-scale hotspots per month · <span><Glyph state="observed" /> observed</span> <span><Glyph state="estimated" /> estimated</span> <span><Glyph state="partial" /> partial</span> <span><Glyph state="missing" /> missing</span> <span><span className="lx-flag" aria-hidden /> high for its season</span></figcaption>
+          {ctx.homeFailed && !rows.length && <p className="lx-figcap lx-cal__na" role="status">{unavailableText(`The ${home} calendar`)}</p>}
+          <figcaption className="lx-figcap lx-cal__key">{home} · VIIRS-scale hotspots per month · <span><Glyph state="observed" /> observed</span> <span><Glyph state="estimated" /> estimated</span> <span><Glyph state="partial" /> partial</span> <span><Glyph state="missing" /> missing</span> <span><span className="lx-flag" aria-hidden /> high for its season</span></figcaption>
         </figure>
       </div>
     </section>

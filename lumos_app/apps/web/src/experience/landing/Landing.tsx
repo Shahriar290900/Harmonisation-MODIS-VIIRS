@@ -8,6 +8,7 @@ import { ArrowRight, FlaskConical, Layers, TriangleAlert, X } from 'lucide-react
 import { Icon3D } from '../../ui/icons/Icon3D';
 import { STAGE_LABEL, StageTagLx } from './StageTag';
 import { MONTHS_LONG } from '../../data/format';
+import type { Region } from '../../types';
 import { api, BASE_URL, offline, unavailableText, useCore, useSeriesStatus, workspaceHash, type AoiSeries, type Core } from './data';
 import { fallbackQuality, loadThree, webglOk, type ThreeModule } from './threeLoader';
 import { mountFallbackGlobe } from './fallbacks';
@@ -18,10 +19,11 @@ import { Gallery } from './Gallery';
 import { IndexList } from './IndexList';
 import { debugHook } from './debug';
 import { usePwa } from '../../ui/PwaStatus';
+import { DEFAULT_AOI, DEFAULT_FOCUS, detailedRegions, regionFocus } from '../../data/regions';
 
 export { STAGE_LABEL };
 
-export interface Ctx { core: Core | null; three: ThreeModule | null | undefined; flags: Flags; quality: 'high' | 'low'; gl: boolean; /** Bangladesh series failed to load (offline + not cached). */ bgdFailed: boolean }
+export interface Ctx { core: Core | null; three: ThreeModule | null | undefined; flags: Flags; quality: 'high' | 'low'; gl: boolean; /** The default (Bangladesh-first) region's series failed to load (offline + not cached). */ homeFailed: boolean }
 
 export default function Landing() {
   // REVIEW M2: ScrollTrigger must be enabled before any child creates its triggers (children's layout effects run
@@ -40,10 +42,17 @@ export default function Landing() {
   const quality = useMemo<'high' | 'low'>(() => {
     try { return three?.detectQuality ? three.detectQuality() : fallbackQuality(); } catch { return 'low'; }
   }, [three]);
-  const { map: series, failed } = useSeriesStatus(core, ['BGD', 'AUS-NSW']);
-  const bgd = series.get('BGD') ?? null;
-  const ctx: Ctx = { core, three, flags, quality, gl, bgdFailed: !bgd && failed.has('BGD') };
-  const nsw = series.get('AUS-NSW') ?? null;
+  // First-class detailed regions (cells + features exported) come from regions.json: BGD first (the default story), then
+  // every other detailed region (AUS-NSW, USA-CA in the v1.2 set). Nothing here names a region except the default.
+  const detailed = useMemo(() => detailedRegions(core?.regions ?? []), [core]);
+  const detailedIds = useMemo(() => (detailed.length ? detailed.map((r) => r.aoi_id) : core ? [DEFAULT_AOI] : []), [detailed, core]);
+  const { map: series, failed } = useSeriesStatus(core, detailedIds);
+  const bgd = series.get(DEFAULT_AOI) ?? null;
+  const ctx: Ctx = { core, three, flags, quality, gl, homeFailed: !bgd && failed.has(DEFAULT_AOI) };
+  const others = useMemo(
+    () => detailed.filter((r) => r.aoi_id !== DEFAULT_AOI).flatMap((r) => { const s = series.get(r.aoi_id); return s ? [{ region: r, series: s }] : []; }),
+    [detailed, series]
+  );
 
   // Landing always starts at the top unless the browser restores a position; refresh triggers once data shapes settle.
   useEffect(() => { const t = setTimeout(() => ScrollTrigger.refresh(), 120); return () => clearTimeout(t); }, [core, bgd]);
@@ -89,7 +98,7 @@ export default function Landing() {
     return () => { live = false; if (timer) clearTimeout(timer); try { if (prev) history.scrollRestoration = prev; } catch { /* ignore */ } };
   }, []);
 
-  const openHash = bgd ? workspaceHash('BGD', bgd.bestYear, bgd.openMonth) : '#aoi=BGD';
+  const openHash = bgd ? workspaceHash(DEFAULT_AOI, bgd.bestYear, bgd.openMonth) : `#aoi=${DEFAULT_AOI}`;
 
   return (
     <div className={'lx' + (flags.reduced ? ' lx--reduced' : '') + (flags.mobile ? ' lx--mobile' : '')}>
@@ -100,7 +109,7 @@ export default function Landing() {
       }}>Skip to main content</a>
       <Nav core={core} flags={flags} openHash={openHash} />
       <main id="lx-main" tabIndex={-1}>
-        <GlobeStage ctx={ctx} bgd={bgd} nsw={nsw} openHash={openHash} error={error} />
+        <GlobeStage ctx={ctx} bgd={bgd} others={others} openHash={openHash} error={error} />
         <TwoCameras ctx={ctx} />
         <JumpChart ctx={ctx} bgd={bgd} />
         <CalendarStory ctx={ctx} bgd={bgd} />
@@ -150,7 +159,7 @@ function Nav({ core, flags, openHash }: { core: Core | null; flags: Flags; openH
   );
 }
 
-const FOCUS_BGD = { lon: 90.35, lat: 23.7 };
+type Detail = { region: Region; series: AoiSeries };
 
 async function hotPoints(three: ThreeModule | null | undefined, core: Core, aoi: string, year: number, month: number): Promise<HotPoint[]> {
   if (three?.loadHotPoints) {
@@ -172,12 +181,16 @@ async function hotPoints(three: ThreeModule | null | undefined, core: Core, aoi:
   } catch { return []; }
 }
 
-function GlobeStage({ ctx, bgd, nsw, openHash, error }: { ctx: Ctx; bgd: AoiSeries | null; nsw: AoiSeries | null; openHash: string; error: string | null }) {
+function GlobeStage({ ctx, bgd, others, openHash, error }: { ctx: Ctx; bgd: AoiSeries | null; others: Detail[]; openHash: string; error: string | null }) {
   const { core, three, flags, quality, gl } = ctx;
   const stageRef = useRef<HTMLElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const globe = useRef<GlobeHandle | null>(null);
   const lastPoints = useRef<HotPoint[] | null>(null);
+  // Hero focus comes from the default region's bbox in regions.json (Bangladesh keeps its curated default focus).
+  const homeRegion = core?.regions.find((r) => r.aoi_id === DEFAULT_AOI);
+  const focusRef = useRef<{ lon: number; lat: number }>(DEFAULT_FOCUS);
+  focusRef.current = regionFocus(homeRegion);
   const [mode, setMode] = useState<'pending' | 'webgl' | 'fallback'>('pending');
   const primary = useMagnetic<HTMLAnchorElement>(flags.fine && !flags.reduced);
   const secondary = useMagnetic<HTMLButtonElement>(flags.fine && !flags.reduced, 0.22);
@@ -188,42 +201,42 @@ function GlobeStage({ ctx, bgd, nsw, openHash, error }: { ctx: Ctx; bgd: AoiSeri
     const host = hostRef.current!;
     let h: GlobeHandle | null = null;
     if (three && gl) {
-      try { h = three.mountGlobe(host, { reducedMotion: flags.reduced, quality }); } catch { h = null; }
+      try { h = three.mountGlobe(host, { reducedMotion: flags.reduced, quality, home: { iso3: DEFAULT_AOI, ...focusRef.current } }); } catch { h = null; }
     }
     const isGl = !!h;
-    if (!h) h = mountFallbackGlobe(host, { reducedMotion: flags.reduced, layout: () => globeLayout(host) });
+    if (!h) h = mountFallbackGlobe(host, { reducedMotion: flags.reduced, layout: () => globeLayout(host), focus: focusRef.current });
     globe.current = h;
     // REVIEW L1: a remount (reduced-motion / quality change) keeps the hotspots already loaded.
     if (lastPoints.current) h.setPoints(lastPoints.current);
     setMode(isGl ? 'webgl' : 'fallback');
     debugHook().globe = isGl ? 'webgl' : 'fallback';
-    if (isGl) void h.focus(FOCUS_BGD.lon, FOCUS_BGD.lat, 0)?.catch?.(() => undefined);
+    if (isGl) void h.focus(focusRef.current.lon, focusRef.current.lat, 0)?.catch?.(() => undefined);
     // The three globe observes its own host; only the 2-D fallback needs a ResizeObserver here (avoids double resize).
     let ro: ResizeObserver | null = null;
     if (!isGl) { ro = new ResizeObserver(() => h?.resize()); ro.observe(host); }
     return () => { ro?.disconnect(); h?.dispose(); if (globe.current === h) globe.current = null; };
   }, [three, gl, flags.reduced, quality]);
 
-  // Hotspots: peak month of the latest good year for Bangladesh and New South Wales.
+  // Hotspots: peak month of the latest good year for Bangladesh and every other detailed region whose series has loaded.
   const [pointsInfo, setPointsInfo] = useState<string | null>(null);
   useEffect(() => {
     if (!core || !bgd || mode === 'pending') return;
     let live = true;
     // REVIEW M4: each area's own peak month in the year shown (not the all-year mean month).
-    const jobs: Promise<HotPoint[]>[] = [hotPoints(three, core, 'BGD', bgd.bestYear, bgd.openMonth)];
-    if (nsw) jobs.push(hotPoints(three, core, 'AUS-NSW', nsw.bestYear, nsw.openMonth));
+    const jobs: Promise<HotPoint[]>[] = [hotPoints(three, core, DEFAULT_AOI, bgd.bestYear, bgd.openMonth)];
+    for (const o of others) jobs.push(hotPoints(three, core, o.region.aoi_id, o.series.bestYear, o.series.openMonth));
     Promise.all(jobs).then((sets) => {
       if (!live) return;
       const pts = sets.flat();
       lastPoints.current = pts;
       globe.current?.setPoints(pts);
       if (!pts.length) { setPointsInfo(offline() ? 'Hotspot cells unavailable offline.' : 'No hotspot cells in this month.'); return; }
-      const parts = [`Bangladesh, ${MONTHS_LONG[bgd.openMonth - 1]} ${bgd.bestYear}`];
-      if (nsw) parts.push(`New South Wales, ${MONTHS_LONG[nsw.openMonth - 1]} ${nsw.bestYear}`);
+      const parts = [`${homeRegion?.name ?? 'Bangladesh'}, ${MONTHS_LONG[bgd.openMonth - 1]} ${bgd.bestYear}`];
+      for (const o of others) parts.push(`${o.region.name}, ${MONTHS_LONG[o.series.openMonth - 1]} ${o.series.bestYear}`);
       setPointsInfo(`${pts.filter((p) => p.series === 'viirs').length.toLocaleString('en-US')} hotspot cells · ${parts.join(' · ')}`);
     });
     return () => { live = false; };
-  }, [core, bgd, nsw, three, mode]);
+  }, [core, bgd, others, three, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Intro + scroll choreography.
   useLayoutEffect(() => {
@@ -309,7 +322,7 @@ function GlobeStage({ ctx, bgd, nsw, openHash, error }: { ctx: Ctx; bgd: AoiSeri
           <aside className="lx-hero__aside" data-intro aria-label="What the globe shows">
             {synthetic && <span className="lx-demo lx-demo--live"><Icon3D icon={TriangleAlert} tone="red" size={14} />DEMO DATA · synthetic fixture</span>}
             <p className="lx-aside__t">{mode === 'fallback' ? 'Static globe (WebGL unavailable)' : 'Live from the snapshot'}</p>
-            <p className="lx-aside__v">{pointsInfo ?? (error ? (offline() ? 'Snapshot unavailable offline.' : 'Snapshot unavailable.') : ctx.bgdFailed ? unavailableText('Hotspot cells') : 'Loading hotspot cells…')}</p>
+            <p className="lx-aside__v">{pointsInfo ?? (error ? (offline() ? 'Snapshot unavailable offline.' : 'Snapshot unavailable.') : ctx.homeFailed ? unavailableText('Hotspot cells') : 'Loading hotspot cells…')}</p>
             {core && <p className="lx-aside__s">{core.manifest.years.length} years · {core.regions.length} areas · {core.manifest.snapshot_id}</p>}
           </aside>
           <div className="lx-scrollcue" aria-hidden="true"><span />Scroll</div>

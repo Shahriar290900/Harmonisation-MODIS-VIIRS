@@ -3,16 +3,16 @@
   {
    "trip": 1,
    "landing": {
-    "heapMB": 14.01,
-    "perfMemMB": 16.31,
+    "heapMB": 15.73,
+    "perfMemMB": 17.36,
     "created": 0,
     "live": 0,
     "canvases": 2,
     "triggers": 4
    },
    "workspace": {
-    "heapMB": 10.28,
-    "perfMemMB": 16.31,
+    "heapMB": 11.9,
+    "perfMemMB": 17.36,
     "created": 0,
     "live": 0,
     "canvases": 0,
@@ -22,16 +22,16 @@
   {
    "trip": 2,
    "landing": {
-    "heapMB": 15.36,
-    "perfMemMB": 16.31,
+    "heapMB": 16.7,
+    "perfMemMB": 17.36,
     "created": 0,
     "live": 0,
     "canvases": 2,
     "triggers": 4
    },
    "workspace": {
-    "heapMB": 10.64,
-    "perfMemMB": 16.31,
+    "heapMB": 11.31,
+    "perfMemMB": 17.36,
     "created": 0,
     "live": 0,
     "canvases": 0,
@@ -41,16 +41,16 @@
   {
    "trip": 3,
    "landing": {
-    "heapMB": 15.39,
-    "perfMemMB": 16.31,
+    "heapMB": 16.89,
+    "perfMemMB": 17.36,
     "created": 0,
     "live": 0,
     "canvases": 2,
     "triggers": 4
    },
    "workspace": {
-    "heapMB": 10.91,
-    "perfMemMB": 16.31,
+    "heapMB": 11.42,
+    "perfMemMB": 17.36,
     "created": 0,
     "live": 0,
     "canvases": 0,
@@ -60,16 +60,16 @@
   {
    "trip": 4,
    "landing": {
-    "heapMB": 15.55,
-    "perfMemMB": 16.31,
+    "heapMB": 16.94,
+    "perfMemMB": 17.36,
     "created": 0,
     "live": 0,
     "canvases": 2,
     "triggers": 4
    },
    "workspace": {
-    "heapMB": 11.09,
-    "perfMemMB": 16.31,
+    "heapMB": 11.67,
+    "perfMemMB": 17.36,
     "created": 0,
     "live": 0,
     "canvases": 0,
@@ -79,16 +79,16 @@
   {
    "trip": 5,
    "landing": {
-    "heapMB": 16.19,
-    "perfMemMB": 16.31,
+    "heapMB": 17.08,
+    "perfMemMB": 17.36,
     "created": 0,
     "live": 0,
     "canvases": 2,
     "triggers": 4
    },
    "workspace": {
-    "heapMB": 11.12,
-    "perfMemMB": 16.31,
+    "heapMB": 11.73,
+    "perfMemMB": 17.36,
     "created": 0,
     "live": 0,
     "canvases": 0,
@@ -97,8 +97,8 @@
   }
  ],
  "final": {
-  "heapMB": 15.46,
-  "perfMemMB": 16.31,
+  "heapMB": 17.18,
+  "perfMemMB": 17.36,
   "created": 0,
   "live": 0,
   "canvases": 1,

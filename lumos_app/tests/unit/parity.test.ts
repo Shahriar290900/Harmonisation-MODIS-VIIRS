@@ -8,10 +8,16 @@ import { diskFetch, readJson, SNAP_ID } from './helpers';
 const w0 = B0WeightsSchema.parse(readJson('models/B0_month_ratio/weights.json'));
 const w1 = B1WeightsSchema.parse(readJson('models/B1_poisson/weights.json'));
 const recs = (aoi: string, y: number) => parseActivityFile(readJson(`activity/${aoi}/${y}.json`)) as ActivityRecord[];
+const AOIS = readJson<{ aois: string[] }>('manifest.json').aois;
+// USA / USA-CA come with the three-region snapshot; AOIs absent from an older bundle are skipped by the filter, and the
+// test below asserts that USA-CA is actually covered.
+const DETAILED = ['BGD', 'AUS-NSW', 'USA-CA', 'BGD-C'].filter((a) => AOIS.includes(a));
+const FEATURED = ['BGD', 'AUS-NSW', 'USA-CA'].filter((a) => AOIS.includes(a));
+const COUNTRY_ONLY = ['AUS', 'USA'].filter((a) => AOIS.includes(a)); // no cells exported: B0 from AOI-level records
 const YEARS = [2005, 2008, 2012, 2015, 2016, 2019, 2021, 2023, 2025];
 
 describe('B0_month_ratio parity (selected model) vs exported activity estimates', () => {
-  for (const aoi of ['BGD', 'AUS-NSW', 'BGD-C'])
+  for (const aoi of DETAILED)
     it.each(YEARS)(`${aoi} %i from cells ≤1e-3`, (y) => {
       const cells = readJson<CellsFile>(`cells/${aoi}/${y}.json`);
       const r = recomputeAoiMonth('B0_month_ratio', { aoiId: aoi, year: y, b0Weights: w0, cells, records: recs(aoi, y) });
@@ -19,9 +25,11 @@ describe('B0_month_ratio parity (selected model) vs exported activity estimates'
       expect(p.n).toBeGreaterThan(0);
       expect(p.maxRelDiff).toBeLessThanOrEqual(1e-3);
     });
-  it('AUS (no cells exported) from AOI-level records ≤1e-3', () => {
-    for (const y of YEARS) {
-      const p = parity(b0FromRecords(w0, 'AUS', recs('AUS', y)), exportedEstimates(recs('AUS', y)));
+  it('whole-country AUS / USA (no cells exported) from AOI-level records ≤1e-3', () => {
+    expect(COUNTRY_ONLY).toEqual(expect.arrayContaining(['AUS', 'USA']));
+    expect(DETAILED).toContain('USA-CA');
+    for (const aoi of COUNTRY_ONLY) for (const y of YEARS) {
+      const p = parity(b0FromRecords(w0, aoi, recs(aoi, y)), exportedEstimates(recs(aoi, y)));
       expect(p.n).toBeGreaterThan(0);
       expect(p.maxRelDiff).toBeLessThanOrEqual(1e-3);
     }
@@ -33,7 +41,7 @@ describe('B0_month_ratio parity (selected model) vs exported activity estimates'
 });
 
 describe('B1_poisson parity vs notebook export (features.check.b1_sum_by_month)', () => {
-  for (const aoi of ['BGD', 'AUS-NSW'])
+  for (const aoi of FEATURED)
     it.each([2003, 2008, 2012, 2016, 2020, 2022, 2024, 2025])(`${aoi} %i ≤1e-3`, (y) => {
       const f = B1FeaturesSchema.parse(readJson(`features/${aoi}/${y}.json`));
       const r = recomputeAoiMonth('B1_poisson', { aoiId: aoi, b1Weights: w1, features: f });

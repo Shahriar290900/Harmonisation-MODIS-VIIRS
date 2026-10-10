@@ -19,6 +19,18 @@ function copyBundle(): string {
   return d;
 }
 
+/** Self-contained zip-slip archive: one entry whose name escapes the extraction root (adm-zip cannot add such a name directly). */
+function makeSlipZip(): string {
+  const zip = new AdmZip();
+  zip.addFile('ok/manifest.json', Buffer.from('{}'));
+  const zp = path.join(tmp('slip'), 'slip.zip');
+  zip.writeZip(zp);
+  const z2 = new AdmZip(zp);
+  z2.getEntries()[0].entryName = '../evil/manifest.json';
+  z2.writeZip(zp);
+  return zp;
+}
+
 describe('scripts/import_bundle.mjs', () => {
   it('roundtrip from zip: verifies, copies, keeps other snapshots, sets default', () => {
     const src = copyBundle();
@@ -58,12 +70,7 @@ describe('scripts/import_bundle.mjs', () => {
     expect(fs.existsSync(path.join(out, 'index.json'))).toBe(false);
   });
   it('refuses zip-slip entries', () => {
-    const zip = new AdmZip();
-    zip.addFile('ok/manifest.json', Buffer.from('{}'));
-    const zp = path.join(tmp('zip'), 'evil.zip');
-    zip.writeZip(zp);
-    // patch entry name after write is not supported by adm-zip API; emulate by direct name
-    const z2 = new AdmZip(zp); z2.getEntries()[0].entryName = '../evil/manifest.json'; z2.writeZip(zp);
+    const zp = makeSlipZip();
     expect(() => importBundle(zp, { out: tmp('out'), log: quiet })).toThrow(/unsafe path/);
   });
   // ---- REVIEW B1 / H3 / F4 / F5 regressions ----
@@ -122,7 +129,7 @@ describe('scripts/import_bundle.mjs', () => {
     zip.writeZip(zp);
     expect(() => importBundle(zp, { out: tmp('out'), log: quiet, limits: { maxEntries: 20000, maxTotalBytes: 1000, maxZipBytes: 1e9, activitySample: 5 } })).toThrow(/expands to/);
     expect(() => importBundle(zp, { out: tmp('out'), log: quiet, limits: { maxEntries: 3, maxTotalBytes: 1e9, maxZipBytes: 1e9, activitySample: 5 } })).toThrow(/too many entries/);
-    expect(() => importBundle(path.join(__dirname, '../../review_app/scratch/imp/slip.zip'), { out: tmp('out'), log: quiet })).toThrow(/unsafe path|manifest/);
+    expect(() => importBundle(makeSlipZip(), { out: tmp('out'), log: quiet })).toThrow(/unsafe path/);
     const out = tmp('out');
     importBundle(zp, { out, log: quiet });
     expect(fs.readdirSync(out).filter((n) => n.startsWith('.'))).toEqual([]); // no staging left in --out

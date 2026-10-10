@@ -21,8 +21,15 @@ What is simulated (deterministic for a given seed):
       Terra mu = 0.8 * Aqua-formula (independent scan)
       S-NPP mu = 0.85 * g^0.8 * (1 + 0.12*aqua_scan)  (=> ~3-4x Aqua, nonlinear)
     Aqua absent before 2002-07-04 UTC.
+  * United_States (v1.2 addendum): fire clusters inside California (USA-CA polygon: north,
+    Sierra, southern Sierra/Tehachapi, SoCal; peak Jul-Oct, with a 2020-like Aug-Oct spike and a
+    Nov-2018 spike, all synthetic) plus a few clusters elsewhere in the USA (Pacific Northwest,
+    Southeast, Rockies, Plains, Alaska) so the whole-country USA aggregate differs from USA-CA.
+    USA data uses its OWN random stream (seed ^ 0x55AA), so the Bangladesh / Australia files are
+    byte-identical to the pre-USA fixture.
   * type=2 static sources at fixed "kiln" locations near Dhaka/Chattogram
-    (dry season Nov-Apr) and a few AU industrial sites.
+    (dry season Nov-Apr), a few AU industrial sites and a few US industrial / flare sites
+    (one inside California).
   * acq_time sometimes written without leading zeros; a few invalid rows
     (lat 999, impossible date, negative frp) and a few exact duplicate rows.
   * version "6.1"/"2.0", plus a few "6.1NRT"/"2.0NRT" rows late in 2024.
@@ -37,7 +44,8 @@ What is simulated (deterministic for a given seed):
     "recent observed" layer.
   * Natural Earth context files mirror the REAL NE properties / names / iso_3166_2
     (7 Bangladesh divisions with old spellings Chittagong/Barisal and no Mymensingh;
-    NSW split into mainland + Lord Howe Island, both AU-NSW) using simplified real
+    NSW split into mainland + Lord Howe Island, both AU-NSW; USA admin-0 plus the admin-1
+    features California US-CA and the neighbours US-NV / US-OR / US-AZ) using simplified real
     polygons from fixtures/ne_subset/ (see extract_ne_subset.py). Detections are
     still synthetic.
 """
@@ -66,12 +74,14 @@ VIIRS_COLUMNS = ["latitude", "longitude", "bright_ti4", "scan", "track", "acq_da
                  "bright_ti5", "frp", "daynight", "type"]
 FIRMS_BASE = "https://firms.modaps.eosdis.nasa.gov"
 NE_BASE = "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson"
-COUNTRIES = ["Bangladesh", "Australia"]
+COUNTRIES = ["Bangladesh", "Australia", "United_States"]   # FIRMS country names (underscore for spaces)
 MODIS_YEARS = list(range(2001, 2026))
 VIIRS_YEARS = list(range(2012, 2026))
 OMIT = {("viirs-snpp", 2016, "Australia")}          # -> status "missing"
 HEADER_ONLY = {("viirs-snpp", 2025, "Bangladesh")}   # -> status ok, 0 rows (incomplete current year)
 TERRA_OUTAGE = {(2008, "Australia")}                 # Terra rows absent from that MODIS file
+USA_COUNTRY = "United_States"
+USA_SEED_XOR = 0x55AA                               # separate rng stream for the USA data
 RETRIEVED_UTC = "2025-09-15T00:00:00Z"               # fixed for determinism: fixture = an A run on this date
 DATA_END = np.datetime64("2025-09-10T23:59")         # last detection in the current-year (2025) files
 NE_SUBSET = Path(__file__).resolve().parent / "ne_subset"
@@ -113,6 +123,32 @@ REGIONS = {
                _season({9: 1.2, 10: 1.6, 11: 1.0, 6: 0.6, 7: 0.8, 8: 1.0, 12: 0.5, 1: 0.4})),
 }
 
+# United States (v1.2 addendum). Box -> clusters; USA_CA_* boxes lie inside the real Natural Earth US-CA
+# polygon (checked with a 0.12 deg margin when the fixture was designed).
+REGIONS_USA = {
+    "USA_CA_NORTH": (USA_COUNTRY, (-123.4, -121.0), (40.0, 41.6), 22, 0.55,
+                     _season({6: 0.7, 7: 1.8, 8: 2.2, 9: 1.8, 10: 1.0, 5: 0.3, 11: 0.3}, floor=0.04)),
+    "USA_CA_SIERRA": (USA_COUNTRY, (-121.2, -120.4), (37.0, 38.8), 20, 0.5,
+                      _season({6: 0.8, 7: 1.8, 8: 2.2, 9: 1.9, 10: 1.1, 5: 0.3, 11: 0.3}, floor=0.04)),
+    "USA_CA_SSIERRA": (USA_COUNTRY, (-120.2, -119.2), (35.2, 36.5), 18, 0.5,
+                       _season({6: 0.9, 7: 1.8, 8: 2.0, 9: 1.8, 10: 1.1, 5: 0.4, 11: 0.4}, floor=0.05)),
+    "USA_CA_SOCAL": (USA_COUNTRY, (-117.4, -116.6), (33.5, 34.3), 14, 0.5,
+                     _season({7: 0.9, 8: 1.0, 9: 1.2, 10: 1.8, 11: 1.4, 12: 0.8, 5: 0.3, 6: 0.5}, floor=0.1)),
+    "USA_PNW": (USA_COUNTRY, (-123.0, -118.0), (43.0, 47.0), 22, 0.55,
+                _season({7: 1.4, 8: 2.2, 9: 1.8, 6: 0.5, 10: 0.5}, floor=0.03)),
+    "USA_SOUTHEAST": (USA_COUNTRY, (-90.0, -82.0), (30.0, 35.0), 25, 0.75,
+                      _season({2: 1.0, 3: 2.0, 4: 1.2, 11: 0.5, 12: 0.4, 1: 0.5}, floor=0.1)),
+    "USA_ROCKIES": (USA_COUNTRY, (-114.0, -106.0), (40.0, 47.0), 18, 0.5,
+                    _season({7: 1.2, 8: 2.0, 9: 1.4, 6: 0.4}, floor=0.03)),
+    "USA_PLAINS": (USA_COUNTRY, (-98.0, -95.0), (37.0, 39.0), 14, 0.8,
+                   _season({3: 1.8, 4: 2.2, 10: 0.4, 11: 0.4}, floor=0.05)),
+    "USA_ALASKA": (USA_COUNTRY, (-152.0, -145.0), (63.0, 66.0), 10, 0.3,
+                   _season({6: 1.5, 7: 2.0, 8: 0.6}, floor=0.0)),
+}
+# California-like spikes (synthetic): Nov 2018 and Aug-Oct 2020, applied to the four USA_CA_* regions only
+CA_SPIKES = {(2018, 11): 3.0, (2020, 8): 4.0, (2020, 9): 6.0, (2020, 10): 4.0}
+USA_SPIKE_REGIONS = {"USA_CA_NORTH", "USA_CA_SIERRA", "USA_CA_SSIERRA", "USA_CA_SOCAL"}
+
 RATE_SCALE = 1.7  # global activity scale (tunes total row count)
 
 # Black-Summer-like multipliers (year, month) for south-east Australia
@@ -135,12 +171,20 @@ def _static_sites(rng: np.random.Generator) -> pd.DataFrame:
     return df
 
 
+def _static_sites_usa() -> pd.DataFrame:
+    """US industrial / flare-like static sources (type 2); the Martinez one lies inside California."""
+    rows = [(USA_COUNTRY, lat, lon, "industry") for lat, lon in
+            [(37.99, -122.10), (29.72, -95.01), (31.90, -102.00), (48.10, -103.60), (40.70, -74.15)]]
+    return pd.DataFrame(rows, columns=["country", "lat", "lon", "kind"])
+
+
 # --------------------------------------------------------------------------
 # Simulation
 # --------------------------------------------------------------------------
-def _make_clusters(rng):
+def _make_clusters(rng, regions=None):
+    regions = REGIONS if regions is None else regions
     recs = []
-    for reg, (country, (lo0, lo1), (la0, la1), n, base, _) in REGIONS.items():
+    for reg, (country, (lo0, lo1), (la0, la1), n, base, _) in regions.items():
         lons = rng.uniform(lo0, lo1, n)
         lats = rng.uniform(la0, la1, n)
         w = rng.lognormal(0.0, 0.8, n)  # heterogeneous cluster activity
@@ -149,15 +193,18 @@ def _make_clusters(rng):
     return pd.DataFrame(recs, columns=["region", "country", "lat", "lon", "rate"])
 
 
-def simulate_events(rng, clusters: pd.DataFrame, years: list[int]) -> pd.DataFrame:
+def simulate_events(rng, clusters: pd.DataFrame, years: list[int], regions=None,
+                    spikes=None) -> pd.DataFrame:
     """Latent fire events (one per fire-day) for all clusters/years/months."""
-    yr_eff = {(reg, y): rng.lognormal(0.0, 0.3) for reg in REGIONS for y in years}
+    regions = REGIONS if regions is None else regions
+    spikes = (BLACK_SUMMER, BLACK_SUMMER_REGIONS) if spikes is None else spikes
+    yr_eff = {(reg, y): rng.lognormal(0.0, 0.3) for reg in regions for y in years}
     parts = []
     for y in years:
         for m in range(1, 13):
             mult = np.array([
-                REGIONS[r][5][m - 1] * yr_eff[(r, y)] *
-                (BLACK_SUMMER.get((y, m), 1.0) if r in BLACK_SUMMER_REGIONS else 1.0)
+                regions[r][5][m - 1] * yr_eff[(r, y)] *
+                (spikes[0].get((y, m), 1.0) if r in spikes[1] else 1.0)
                 for r in clusters["region"]])
             lam = clusters["rate"].to_numpy() * mult
             n = rng.poisson(lam)
@@ -368,13 +415,20 @@ AUS_STATES = [
     ("Western Australia", "AU-WA", "State", 112.9, -35.2, 129.0, -13.7),
     ("Tasmania", "AU-TAS", "State", 144.6, -43.7, 148.5, -40.6),
 ]
+USA_STATES = [  # rectangles only used in the fallback; California box covers the fixture CA clusters
+    ("California", "US-CA", -124.4, 32.5, -114.1, 42.0),
+    ("Nevada", "US-NV", -120.0, 35.0, -114.0, 42.0),
+    ("Oregon", "US-OR", -124.6, 42.0, -116.5, 46.3),
+    ("Arizona", "US-AZ", -114.8, 31.3, -109.0, 37.0),
+]
 
 
 def natural_earth_fixtures():
     """Admin-0/1 FeatureCollections mirroring REAL Natural Earth (properties verbatim, simplified polygons)."""
-    a0p = NE_SUBSET / "ne_110m_admin_0_BGD_AUS.geojson"
-    a1p = NE_SUBSET / "ne_10m_admin_1_BGD_AUS_simplified.geojson"
-    note = FIXTURE_NOTE + "; boundaries = real Natural Earth BGD/AUS features (admin-1 simplified 0.005 deg)"
+    a0p = NE_SUBSET / "ne_110m_admin_0_BGD_AUS_USA.geojson"
+    a1p = NE_SUBSET / "ne_10m_admin_1_BGD_AUS_USA_simplified.geojson"
+    note = (FIXTURE_NOTE + "; boundaries = real Natural Earth BGD/AUS/USA features (admin-1 simplified "
+            "0.005 deg; USA admin-1 limited to US-CA plus neighbours US-NV/US-OR/US-AZ)")
     if a0p.exists() and a1p.exists():
         admin0 = json.loads(a0p.read_text(encoding="utf-8"))
         admin1 = json.loads(a1p.read_text(encoding="utf-8"))
@@ -385,7 +439,8 @@ def natural_earth_fixtures():
     print("[fixture] WARNING: fixtures/ne_subset missing -> rectangle stand-ins with real NE names/codes")
     admin0 = {"type": "FeatureCollection", "synthetic": True, "note": FIXTURE_NOTE, "features": []}
     for name, a3, a2, bbox in [("Bangladesh", "BGD", "BD", (88.08, 20.67, 92.67, 26.45)),
-                               ("Australia", "AUS", "AU", (113.3, -43.6, 153.6, -10.7))]:
+                               ("Australia", "AUS", "AU", (113.3, -43.6, 153.6, -10.7)),
+                               ("United States of America", "USA", "US", (-125.0, 24.5, -66.9, 49.4))]:
         admin0["features"].append({"type": "Feature", "properties": {
             "featurecla": "Admin-0 country", "ADMIN": name, "NAME": name, "NAME_LONG": name,
             "SOVEREIGNT": name, "ADM0_A3": a3, "ISO_A3": a3, "ISO_A2": a2},
@@ -400,6 +455,11 @@ def natural_earth_fixtures():
         admin1["features"].append({"type": "Feature", "properties": {
             "featurecla": "Admin-1 states provinces", "name": name, "admin": "Australia", "adm0_a3": "AUS",
             "iso_a2": "AU", "iso_3166_2": iso, "type_en": typ, "region": None},
+            "geometry": _rect(lo0, la0, lo1, la1)})
+    for name, iso, lo0, la0, lo1, la1 in USA_STATES:
+        admin1["features"].append({"type": "Feature", "properties": {
+            "featurecla": "Admin-1 states provinces", "name": name, "admin": "United States of America",
+            "adm0_a3": "USA", "iso_a2": "US", "iso_3166_2": iso, "type_en": "State", "region": "West"},
             "geometry": _rect(lo0, la0, lo1, la1)})
     return admin0, admin1
 
@@ -440,18 +500,27 @@ def build(out_dir: Path, seed: int = 20261009) -> Path:
     for sub in ["raw/firms_country", "context", "wheelhouse", "manifests"]:
         (bundle / sub).mkdir(parents=True, exist_ok=True)
 
-    clusters = _make_clusters(rng)
-    sites = _static_sites(rng)
-    years = list(range(2000, 2026))  # simulate a margin; files written only for contract years
-    ev = simulate_events(rng, clusters, years)
+    # United_States has its own random stream so BGD/AUS stay byte-identical to the pre-USA fixture
+    rng_us = np.random.default_rng(seed ^ USA_SEED_XOR)
 
-    aqua, aqua_scan = detections_for_sat(rng, ev, "Aqua")
-    terra, _ = detections_for_sat(rng, ev, "Terra")
-    snpp, _ = detections_for_sat(rng, ev, "N", aqua_scan=aqua_scan)
-    st = {s: static_detections(rng, sites, years, s) for s in ("Aqua", "Terra", "N")}
-    modis = pd.concat([aqua, terra, st["Aqua"], st["Terra"]], ignore_index=True)
+    def simulate(rng_, regions, make_sites, spikes=None):
+        cl = _make_clusters(rng_, regions)
+        sites_ = make_sites()   # after the clusters: keeps the BGD/AUS random stream order unchanged
+        ev_ = simulate_events(rng_, cl, years, regions, spikes)
+        aqua_, aqua_scan_ = detections_for_sat(rng_, ev_, "Aqua")
+        terra_, _ = detections_for_sat(rng_, ev_, "Terra")
+        snpp_, _ = detections_for_sat(rng_, ev_, "N", aqua_scan=aqua_scan_)
+        st_ = {s: static_detections(rng_, sites_, years, s) for s in ("Aqua", "Terra", "N")}
+        return aqua_, terra_, snpp_, st_
+
+    years = list(range(2000, 2026))  # simulate a margin; files written only for contract years
+    aqua, terra, snpp, st = simulate(rng, REGIONS, lambda: _static_sites(rng))
+    u_aqua, u_terra, u_snpp, u_st = simulate(rng_us, REGIONS_USA, _static_sites_usa,
+                                              (CA_SPIKES, USA_SPIKE_REGIONS))
+    modis = pd.concat([aqua, terra, st["Aqua"], st["Terra"], u_aqua, u_terra, u_st["Aqua"], u_st["Terra"]],
+                      ignore_index=True)
     modis = modis[(modis["satellite"] != "Aqua") | (modis["utc"] >= AQUA_START)]
-    viirs = pd.concat([snpp, st["N"]], ignore_index=True)
+    viirs = pd.concat([snpp, st["N"], u_snpp, u_st["N"]], ignore_index=True)
     viirs = viirs[viirs["utc"] >= np.datetime64("2012-01-20T00:00")]  # S-NPP VIIRS start
     modis = modis[modis["utc"] <= DATA_END]   # A ran on 2025-09-15: current year incomplete
     viirs = viirs[viirs["utc"] <= DATA_END]
@@ -476,7 +545,8 @@ def build(out_dir: Path, seed: int = 20261009) -> Path:
                     d = dc[dc["uyear"] == y].sort_values("utc", kind="stable")
                     if sensor == "modis" and (y, country) in TERRA_OUTAGE:
                         d = d[d["satellite"] != "Terra"]
-                    rows = corrupt(rng, conv(rng, d), y, nrt)
+                    rng_c = rng_us if country == USA_COUNTRY else rng
+                    rows = corrupt(rng_c, conv(rng_c, d), y, nrt)
                     if (sensor, y, country) in HEADER_ONLY:
                         rows = rows.iloc[0:0]
                     p = bundle / rel
@@ -497,7 +567,7 @@ def build(out_dir: Path, seed: int = 20261009) -> Path:
     d0 = np.datetime64("2025-09-06T00:00")
     for country in COUNTRIES:
         d = viirs[(viirs["country"] == country) & (viirs["utc"] >= d0) & (viirs["type"] == 0)]
-        rows = to_viirs_rows(rng, d).drop(columns=["type"])
+        rows = to_viirs_rows(rng_us if country == USA_COUNTRY else rng, d).drop(columns=["type"])
         rows["version"] = "2.0NRT"
         rel = f"raw/firms_api/VIIRS_SNPP_NRT/{country}/VIIRS_SNPP_NRT_{country}_2025-09-06_5d.csv"
         p = bundle / rel
@@ -549,7 +619,10 @@ def build(out_dir: Path, seed: int = 20261009) -> Path:
         "Aqua absent before 2002-07-04; Black-Summer-like spike in NSW/VIC 2019-11..2020-01; "
         "2025 is an incomplete current year (rows end 2025-09-10; viirs-snpp 2025 Bangladesh "
         "header-only); Terra absent from modis_2008_Australia; one synthetic NRT Area-API file per country; "
-        "Natural Earth boundaries are simplified REAL NE features (properties verbatim).\n", encoding="utf-8")
+        "United_States (v1.2 addendum) has California-like activity inside the US-CA polygon plus a few "
+        "clusters elsewhere (whole-country USA aggregate differs from USA-CA); "
+        "Natural Earth boundaries are simplified REAL NE features (properties verbatim; USA admin-1 limited to "
+        "US-CA, US-NV, US-OR, US-AZ).\n", encoding="utf-8")
     (bundle / "FIXTURE_NOT_REAL_DATA.txt").write_text(FIXTURE_NOTE + "\n")
     self_check_headers(bundle)
     print(f"[fixture] wrote {bundle}  total CSV data rows={total:,}  files="

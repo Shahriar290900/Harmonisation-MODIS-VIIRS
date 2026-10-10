@@ -2,6 +2,7 @@
 // rate = exp(clip(eta, −30, 30)); AOI-month = Σ cells. Inputs from features/<aoi>/<year>.json (schema lumos-b1-features-1).
 // Mirrors notebooks/tests/check_bundle.py exactly (absent rows = 0 dynamic features; aqua_count_raw = aqua_count).
 import type { B1Features, B1Weights } from '../data/schemas';
+import { iso3Of } from '../data/regions';
 
 const TWO_PI = 2 * Math.PI;
 
@@ -14,6 +15,18 @@ export interface B1Result {
   months: (number | null)[];
   /** Optional per-cell rates [cellIndex][month0] when requested. */
   cellRates?: Float64Array[];
+  /** Visible labels for any silent-looking substitution (e.g. a country with no `country_<ISO3>` term in the weights). */
+  fallbackNotes: string[];
+}
+
+/** Country-term fallbacks for one AOI: the AOI's own country absent from the weights, or one-hot entries absent from the file. */
+export function b1FallbackNotes(w: B1Weights, f: B1Features): string[] {
+  const iso = iso3Of(f.aoi_id), onehot = f.derived.country_onehot as Record<string, number>, notes: string[] = [];
+  if (!w.feature_names.includes(`country_${iso}`))
+    notes.push(`weights.json has no country_${iso} term: ${iso} is scored with the all-zero country baseline, not a ${iso}-trained effect.`);
+  const absent = w.feature_names.filter((n) => n.startsWith('country_') && !(n in onehot));
+  if (absent.length) notes.push(`${absent.join(', ')} missing from the features file: set to 0.`);
+  return notes;
 }
 
 export function b1FromFeatures(w: B1Weights, f: B1Features, opts: { keepCells?: boolean } = {}): B1Result {
@@ -65,5 +78,5 @@ export function b1FromFeatures(w: B1Weights, f: B1Features, opts: { keepCells?: 
   }
   const unavailable = new Set(f.unavailable_months);
   const months = Array.from(sums, (v, m) => (unavailable.has(m + 1) || bad[m] ? null : v));
-  return { months, cellRates };
+  return { months, cellRates, fallbackNotes: b1FallbackNotes(w, f) };
 }

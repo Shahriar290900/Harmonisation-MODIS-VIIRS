@@ -3,7 +3,7 @@ import type { ActivityRecord, CellsFile } from '../types';
 import type { B0Weights, B1Features, B1Weights } from '../data/schemas';
 import type { LumosDataApi } from '../data/api';
 import { parseUtcMonth } from '../data/format';
-import { b0FromCells, b0FromRecords } from './b0';
+import { b0FallbackNote, b0FromCells, b0FromRecords } from './b0';
 import { b1FromFeatures } from './b1';
 
 export type BrowserModelId = 'B0_month_ratio' | 'B1_poisson';
@@ -18,7 +18,7 @@ export interface RecomputeInputs {
   b1Weights?: B1Weights | null;
   /** B0 from cells (preferred, cell-level like the notebook). */
   cells?: CellsFile | null;
-  /** B0 fallback from AOI-level Aqua counts when cells are not exported (e.g. whole AUS). */
+  /** B0 fallback from AOI-level Aqua counts when cells are not exported (e.g. whole-country AUS or USA). */
   records?: ActivityRecord[] | null;
   /** B1 inputs. */
   features?: B1Features | null;
@@ -29,6 +29,8 @@ export interface RecomputeResult {
   /** index 0 = Jan; null where it cannot be computed */
   months: (number | null)[];
   inputs: 'cells' | 'records' | 'features';
+  /** Visible labels when a country has no weights of its own (global B0 ratio, or no B1 country term). Empty = none. */
+  fallbackNotes: string[];
 }
 
 /** Recompute the 12 AOI-month values for one model. Throws if required inputs are absent. */
@@ -41,14 +43,16 @@ export function recomputeAoiMonth(modelId: BrowserModelId, inp: RecomputeInputs)
 function recomputeRaw(modelId: BrowserModelId, inp: RecomputeInputs): RecomputeResult {
   if (modelId === 'B0_month_ratio') {
     if (!inp.b0Weights) throw new Error('B0_month_ratio weights not available');
-    if (inp.cells) return { modelId, months: maskUnknown(b0FromCells(inp.b0Weights, inp.aoiId, inp.cells), inp.records), inputs: 'cells' };
-    if (inp.records) return { modelId, months: maskUnknown(b0FromRecords(inp.b0Weights, inp.aoiId, inp.records), inp.records), inputs: 'records' };
+    const note = b0FallbackNote(inp.b0Weights, inp.aoiId), fallbackNotes = note ? [note] : [];
+    if (inp.cells) return { modelId, months: maskUnknown(b0FromCells(inp.b0Weights, inp.aoiId, inp.cells), inp.records), inputs: 'cells', fallbackNotes };
+    if (inp.records) return { modelId, months: maskUnknown(b0FromRecords(inp.b0Weights, inp.aoiId, inp.records), inp.records), inputs: 'records', fallbackNotes };
     throw new Error('B0_month_ratio needs cells or activity records');
   }
   if (modelId === 'B1_poisson') {
     if (!inp.b1Weights) throw new Error('B1_poisson weights not available');
-    if (!inp.features) throw new Error('B1_poisson needs features/<aoi>/<year>.json (exported for BGD and AUS-NSW only)');
-    return { modelId, months: b1FromFeatures(inp.b1Weights, inp.features).months, inputs: 'features' };
+    if (!inp.features) throw new Error('B1_poisson needs features/<aoi>/<year>.json (exported only for regions with features_exported in regions.json)');
+    const b1 = b1FromFeatures(inp.b1Weights, inp.features);
+    return { modelId, months: b1.months, inputs: 'features', fallbackNotes: b1.fallbackNotes };
   }
   throw new Error(`Model ${modelId as string} cannot be recomputed in the browser`);
 }

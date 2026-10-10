@@ -35,21 +35,24 @@ clon, clat = ns["cell_centre"](ix, iy)
 ixc, iyc, _ = ns["lonlat_to_cell"](clon, clat); assert (ixc == ix).all() and (iyc == iy).all(), "centre not inside its own cell"
 print("cell id round-trip + centre-in-cell OK")
 
-# ---- (2b) 3x3 brute force on AUS (negative iy) ----
+# ---- (2b) 3x3 brute force per country: AUS (negative iy), USA (Alaska 71N, Hawaii/Aleutians, negative ix), BGD ----
 NM = ns["NM"]
 aq = P["aqua_count"].reshape(-1, NM); a3 = P["aqua_count_3x3"].reshape(-1, NM)
+for cname in ns["COUNTRIES"]:
+    co = CELLS[CELLS.country == cname]
+    pos = {(int(a), int(b)): int(g) for a, b, g in zip(co.ix, co.iy, co.gcell)}
+    rng = np.random.default_rng(0); errs = 0; checked = 0
+    mcols = np.where(np.isfinite(aq[co.gcell.iloc[0]]))[0]
+    for g in rng.choice(co.gcell.to_numpy(), min(300, len(co)), replace=False):
+        c = CELLS.loc[g]; tot = np.zeros(len(mcols))
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                h = pos.get((int(c.ix) + dx, int(c.iy) + dy))
+                if h is not None: tot += aq[h, mcols]
+        errs += int(np.abs(tot - a3[g, mcols]).max() > 1e-4); checked += 1
+    print(f"3x3 brute force {cname} (iy {co.iy.min()}..{co.iy.max()}, ix {co.ix.min()}..{co.ix.max()}, lat {co.lat.min():.1f}..{co.lat.max():.1f}): {errs}/{checked} cells mismatched")
+    assert errs == 0, cname
 au = CELLS[CELLS.country == "Australia"]
-pos = {(int(a), int(b)): int(g) for a, b, g in zip(au.ix, au.iy, au.gcell)}
-rng = np.random.default_rng(0); errs = 0; checked = 0
-mcols = np.where(np.isfinite(aq[au.gcell.iloc[0]]))[0]
-for g in rng.choice(au.gcell.to_numpy(), 300, replace=False):
-    c = CELLS.loc[g]; tot = np.zeros(len(mcols))
-    for dx in (-1, 0, 1):
-        for dy in (-1, 0, 1):
-            h = pos.get((int(c.ix) + dx, int(c.iy) + dy))
-            if h is not None: tot += aq[h, mcols]
-    errs += int(np.abs(tot - a3[g, mcols]).max() > 1e-4); checked += 1
-print(f"3x3 brute force AUS (min iy={au.iy.min()}): {errs}/{checked} cells mismatched")
 
 # ---- (2c) climatology train-only ----
 YEAR_OF_M, MONTH_OF_M = ns["YEAR_OF_M"], ns["MONTH_OF_M"]

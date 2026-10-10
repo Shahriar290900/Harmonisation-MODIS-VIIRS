@@ -7,7 +7,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cell, MONTHS_LONG, note, waitCalendar } from './helpers';
+import { cell, displayKind, HAS_USA, hasRegion, MONTHS_LONG, note, SNAP_REGIONS, waitCalendar } from './helpers';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const OUT = path.join(root, 'artifacts/experience/qa');
@@ -310,7 +310,9 @@ test('L04 gallery card + index link deep-link; Back re-initialises the landing c
 test('L05 landing ⇄ workspace ×5: WebGL contexts and JS heap do not leak', async ({ page }, ti) => {
   const k = kind(ti);
   test.skip(k.tablet || k.reduced, 'leak loop runs on desktop, mobile and no-WebGL projects');
-  test.setTimeout(300_000);
+  // 5 round trips with software WebGL took ~75 s each on a slow machine with 2 workers (300 s was exceeded in trip 4);
+  // pure timing bound, no assertion is weakened.
+  test.setTimeout(600_000);
   const errs = track(page);
   await page.addInitScript(() => {
     const w = window as any;
@@ -604,4 +606,53 @@ test('L10 transition never hangs when rAF stops firing (hidden tab): overlay rem
   expect(ov.tRem - ov.tAdd, 'bounded by the transition cap').toBeLessThan(7000);
   expect(await page.evaluate(() => document.documentElement.dataset.route)).toBe('workspace');
   await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe('main');
+});
+
+// ───────────────────────────────────────────────────────────────────────────────────────────────
+test('L11 three-region gallery + index are data-driven over regions.json (Division / State labels, default stays Bangladesh)', async ({ page }, ti) => {
+  const k = kind(ti);
+  test.skip(!(k.desktop && !k.reduced) && !k.mobile, 'one WebGL desktop run and one phone run');
+  await gotoLanding(page);
+  // Bangladesh-first story: the primary CTA opens BGD, whatever else the snapshot holds.
+  await expect(page.locator('.lx-hero .lx-btn--primary')).toHaveAttribute('href', /#aoi=BGD&y=\d{4}&m=\d{1,2}/, { timeout: 20_000 });
+  await page.evaluate(() => document.getElementById('regions')!.scrollIntoView({ block: 'start' }));
+  const cards = page.locator('.lx-card[href*="aoi="]');
+  await expect(cards).toHaveCount(SNAP_REGIONS.length, { timeout: 20_000 });
+  // every region has a card whose kind label comes from the registry display kind (BGD admin1 = Division, AUS/USA admin1 = State)
+  for (const r of SNAP_REGIONS) {
+    const card = page.locator(`.lx-card[href*="aoi=${r.aoi_id}&"]`);
+    await expect(card, `${r.aoi_id} card`).toHaveCount(1);
+    await expect(card.locator('.lx-card__kind')).toContainText(displayKind(r));
+    // cells_exported drives the "5 km cells" tag: whole-country AUS / USA have none
+    await expect(card.locator('.lx-tag--cells')).toHaveCount(r.cells_exported ? 1 : 0);
+  }
+  await expect(page.locator('.lx-gal__hint span')).toContainText(/divisions/);
+  await expect(page.locator('.lx-gal__hint span')).toContainText('New South Wales');
+  // index: the row header states the same kind in lower case
+  await page.evaluate(() => document.getElementById('index')!.scrollIntoView({ block: 'start' }));
+  const heads = page.locator('.lx-ix__name span');
+  await expect(heads).toHaveCount(SNAP_REGIONS.length, { timeout: 20_000 });
+  for (const r of SNAP_REGIONS) await expect(page.locator(`.lx-ix__aoi[aria-label$="(${r.aoi_id})"] .lx-ix__name span`)).toContainText(displayKind(r).toLowerCase());
+  expect(hasRegion('AUS-NSW')).toBe(true);
+  note(ti, 'regions', SNAP_REGIONS.map((r) => r.aoi_id).join(','));
+});
+
+test('L12 USA-CA is a first-class detailed region (gallery card, hotspots, deep link)', async ({ page }, ti) => {
+  expect(HAS_USA).toBe(true);
+  const k = kind(ti);
+  test.skip(!k.desktop || k.reduced || k.nowebgl, 'one WebGL desktop run');
+  await gotoLanding(page);
+  await expect(page.locator('.lx-aside__v')).toContainText('California', { timeout: 30_000 });
+  await page.evaluate(() => document.getElementById('regions')!.scrollIntoView({ block: 'start' }));
+  const ca = page.locator('.lx-card[href*="aoi=USA-CA&"]');
+  await expect(ca).toHaveCount(1);
+  await expect(ca.locator('.lx-card__kind')).toContainText('State');
+  await expect(ca.locator('.lx-tag--cells')).toHaveCount(1);
+  await expect(page.locator('.lx-card[href*="aoi=USA&"] .lx-tag--cells')).toHaveCount(0);
+  const href = (await ca.getAttribute('href'))!;
+  await ca.focus();
+  await ca.press('Enter');
+  await expect(page).toHaveURL(new RegExp(href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  await waitCalendar(page);
+  await expect(page.locator('select[aria-label="Area of interest"]')).toHaveValue('USA-CA');
 });

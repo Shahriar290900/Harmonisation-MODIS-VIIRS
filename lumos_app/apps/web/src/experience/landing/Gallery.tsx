@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { MONTHS_LONG, MONTHS_SHORT } from '../../data/format';
 import type { Region } from '../../types';
+import { displayKind, kindPlural, type DisplayKind } from '../../data/regions';
 import { api, countWord, useNear, useSeries, workspaceHash, type AoiSeries, type Core } from './data';
 import { gsap, ScrollTrigger } from './motion';
 import { onWorkspaceLink } from './transition';
@@ -10,8 +11,6 @@ import { Glyph } from '../../ui/Glyph';
 import { ArrowRight, FlaskConical, Grid3x3, Info } from 'lucide-react';
 import { Icon3D } from '../../ui/icons/Icon3D';
 import type { Ctx } from './Landing';
-
-const KIND: Record<string, string> = { country: 'Country', admin1: 'Division' };
 
 export function Gallery({ ctx }: { ctx: Ctx }) {
   const { core, flags } = ctx;
@@ -75,7 +74,7 @@ export function Gallery({ ctx }: { ctx: Ctx }) {
   );
 }
 
-/** "Bangladesh, its 7 divisions, Australia and New South Wales." — derived from the regions list (REVIEW L5). */
+/** "Bangladesh, its 7 divisions, Australia and New South Wales, United States and California." — derived from the regions list (REVIEW L5). */
 function areaSummary(regions: Region[]): string {
   if (!regions.length) return '';
   const parts: string[] = [];
@@ -85,9 +84,9 @@ function areaSummary(regions: Region[]): string {
     if (subs.length === 0) parts.push(c.name);
     else if (subs.length === 1) parts.push(`${c.name} and ${subs[0].name}`);
     else {
-      const kinds = new Set(subs.map((r) => (r.aoi_id === 'AUS-NSW' ? 'State' : KIND[r.kind] ?? r.kind)));
-      const k = kinds.size === 1 ? [...kinds][0].toLowerCase() : 'area';
-      parts.push(`${c.name}, its ${subs.length} ${k === 'division' ? 'divisions' : k + 's'}`);
+      const kinds = new Set<DisplayKind>(subs.map((r) => displayKind(r)));
+      const plural = kinds.size === 1 ? kindPlural([...kinds][0]) : 'areas';
+      parts.push(`${c.name}, its ${subs.length} ${plural}`);
     }
   }
   const orphans = regions.filter((r) => r.kind !== 'country' && !countries.some((c) => c.country === r.country));
@@ -121,7 +120,7 @@ function useSilhouette(core: Core, region: Region): string | null {
 
 function Card({ core, region, s, i }: { core: Core; region: Region; s: AoiSeries | null; i: number }) {
   const sil = useSilhouette(core, region);
-  const kind = region.aoi_id === 'AUS-NSW' ? 'State' : KIND[region.kind] ?? region.kind;
+  const kind = displayKind(region);
   // REVIEW M4: open at that year's own peak month; "usual peak" is the all-year mean month and is labelled as such.
   const hash = s ? workspaceHash(region.aoi_id, s.bestYear, s.openMonth) : workspaceHash(region.aoi_id, 2016, 3);
   const label = `Opening the fire calendar for ${region.name}`;

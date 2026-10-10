@@ -42,9 +42,10 @@ export function Harmonize({ selection, region, manifest }: Props) {
       </div>
       {!on && <p className="muted small">Runs {model} in this browser from <code>weights.json</code> + per-cell inputs and checks parity (≤1e-3 relative) against the bundle — proof the published weights are live.</p>}
       {on && !cur && <p className="muted small">Computing…</p>}
-      {on && cur && !h && <p className="notice small">{cur.err ?? `${model} inputs are not exported for ${region?.name ?? selection.aoiId} ${selection.year} (B1 per-cell features exist for Bangladesh and New South Wales only).`}</p>}
+      {on && cur && !h && <p className="notice small">{cur.err ?? `${model} inputs are not exported for ${region?.name ?? selection.aoiId} ${selection.year} (B1 per-cell features are exported only for the detailed regions, those with features_exported in regions.json).`}</p>}
       {on && h && (
         <>
+          {h.recomputed.fallbackNotes.length > 0 && <p className="notice small" role="status"><b>Fallback in use.</b> {h.recomputed.fallbackNotes.join(' ')}</p>}
           <div className="harm__result">
             <div><span className="muted small">Browser ({MONTHS_SHORT[mi]})</span><b>{fmtNum(h.recomputed.months[mi])}</b></div>
             <div><span className="muted small">{h.exportedSource === 'activity_estimate' ? 'Exported estimate' : 'Notebook check sum'}</span><b>{fmtNum(h.exported[mi])}</b></div>

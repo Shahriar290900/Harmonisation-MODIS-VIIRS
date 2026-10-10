@@ -32,6 +32,8 @@ export interface Region {
   aoi_id: string; name: string; country: string; kind: 'country' | 'admin1'; bbox: [number, number, number, number];
   geometry_path: string; supported_calibration: boolean; iso_3166_2: string | null; note: string | null;
   cells_exported?: boolean; features_exported?: boolean;
+  /** Optional registry label (CONTRACT §9): 'Country' | 'Division' | 'State'. Derived in data/regions.ts when absent. */
+  display_kind?: string;
 }
 
 /** cells/<aoi>/<year>.json — rows are [cell_id, lon, lat, month(1-12), aqua, viirs|null, est|null] */

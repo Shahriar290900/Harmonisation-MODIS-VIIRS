@@ -1,0 +1,964 @@
+
+=== PAGE 1 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 1
+NASA SPACE APPS CHALLENGE 2026
+Harmonization of MODIS and VIIRS 
+Hot Spots
+Deep Research, Public Data Catalog, Scientific Method, UI Plan, Open-Source 
+References, and Hackathon Execution Guide
+CORE DATA
+NASA FIRMS
+MODIS + VIIRS
+CORE OUTPUT
+Harmonized
+Burning Calendar
+BUILD WINDOW
+Research pack
+3 Oct 2026
+Deliverable scope  A comprehensive practical catalog of publicly accessible resources directly useful for this 
+challenge. It is intentionally broader than the minimum MVP, but separates must-use core data from optional 
+enrichment so the team does not lose time during the hackathon.
+Prepared for team sharing. All resource names in the report are clickable hyperlinks. Public availability, product 
+versions, and service status can change; re-check source pages when downloading.
+Research snapshot: 3 October 2026
+=== PAGE 2 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 2
+Executive summary
+The challenge is a sensor-harmonization problem before it is a mapping problem. MODIS provides a long record at 
+roughly 1 km nominal fire-pixel resolution; VIIRS provides a newer record at roughly 375 m and detects many smaller 
+hotspots. Raw hotspot counts therefore create a false discontinuity when the observing system changes. A strong 
+solution should explicitly correct, quantify, and visualize that discontinuity.
+Recommended product  Build a global web application whose flagship output is a 2000-to-present Burning Activity 
+Calendar for a selected area of interest (AOI). Pair the calendar with a Sensor Lab that shows raw MODIS vs VIIRS, 
+the overlap-based calibration, uncertainty, and validation. Use Bangladesh as the first demonstration AOI and at 
+least one contrasting international AOI.
+ Must-use data: NASA FIRMS standard/archive MODIS Terra/Aqua and VIIRS S-NPP/NOAA-20/NOAA-21 active-fire 
+records.
+ Strong validation/context: MCD64A1 and VNP64A1 burned area; land-cover stratification; optional GlobFire/Global Fire 
+Atlas event products.
+ Best scientific differentiator: resolution-aware, season-aware and land-cover-aware overlap calibration instead of a 
+single global count multiplier.
+ Best UX differentiator: a calendar first, then map; every result exposes sensor mix, uncertainty, source/version, and 
+why a month is considered unusual.
+ What not to claim: do not call every hotspot a wildfire and do not present a historical anomaly score as an exact future-
+fire prediction.
+Hackathon timing from the provided Bangladesh submission portal screenshot: 240-second video and a publicly 
+accessible source-code link, with the displayed submission end of 07 Oct 2026, 11:59 PM. Re-check the portal 
+timezone and status before final submission.
+Fast decision: what to build
+Layer MVP Stretch if time remains
+Data Precomputed historical standard FIRMS + 
+live/NRT endpoint for recent days
+Additional weather, land cover, population 
+exposure, burned-area event validation
+Science Monthly/seasonal cross-sensor calibration in 
+overlap period; holdout validation
+Cell-level robust regression/GAM or 
+calibrated gradient boosting with uncertainty
+UI AOI selector, map, 26-year calendar, raw-vs-
+harmonized sensor panel, anomaly view
+Fire-event clustering/replay, export/report 
+mode, contextual layers
+Demo Bangladesh + one international contrast 
+region
+Global free-draw AOI with cached on-
+demand aggregation
+AI/ML Only where it solves calibration/anomaly or 
+classification
+Narrative assistant only if grounded in 
+computed metrics and source metadata
+=== PAGE 3 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 3
+Report map
+1. Challenge interpretation
+2. Core NASA/FIRMS data you should use
+3. Supporting datasets and validation
+4. Data access, APIs and tooling
+5. Scientific harmonization method
+6. Validation and evaluation
+7. Product and UI blueprint
+8. System architecture and data model
+9. Open-source and similar projects
+10. Kaggle, Hugging Face and Roboflow resources
+11. Research papers to read first
+12. Four-day execution plan
+13. Team roles and submission plan
+14. Risks, caveats and scientific honesty
+15. Clickable source directory
+How to use this pack  If the team has only 30 minutes, read Sections 1, 2, 5, 7 and 12. If you own the data/science 
+work, also read Sections 3, 4, 6 and 11. If you own the frontend/demo, focus on Sections 7, 8, 9 and 13.
+1. Challenge interpretation
+NASA describes the task as building a web application that harmonizes active-fire hotspot records from different 
+sensors into a burning-activity calendar, so early-warning responders, scientists and land managers can examine 
+historical patterns, unusual conditions and critical periods inside a selected AOI.
+Official 2026 challenge page - Open link - Primary challenge reference
+What "harmonize" means in practice
+ Do not concatenate rows and stop. VIIRS sees much smaller/higher-resolution thermal anomalies than MODIS; raw 
+counts are not a stable long-term measure.
+ Create a common analytical unit. Aggregate both sensors to the same AOI/grid and time unit before calibration.
+ Use the overlap period. From 2012 onward MODIS and S-NPP VIIRS overlap, allowing empirical calibration rather than 
+guessed conversion factors.
+ Preserve sensor provenance. The user should always be able to see whether a historical value was observed directly, 
+calibrated from MODIS, or generated from a mixed-sensor period.
+ Expose uncertainty. A harmonized historical estimate is not identical to a direct modern VIIRS observation. Show 
+confidence/uncertainty rather than hiding this difference.
+Judge-facing one-liner  "We turn two incompatible satellite eras into one transparent, uncertainty-aware fire-
+activity calendar - without pretending a 1 km MODIS detection is the same thing as a 375 m VIIRS detection."
+=== PAGE 4 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 4
+2. Core NASA/FIRMS data you should use
+These are the primary datasets. The MVP can be built entirely from the first five rows; the rest improve interpretation 
+and validation.
+Dataset Resolution Coverage Access Use in project Link
+MODIS Terra C6.1 
+active fire
+1 km nominal 01 Nov 2000-present CSV/JSON/SHP; 
+standard + NRT
+Historical backbone; 
+morning overpass
+FIRMS archive
+MODIS Aqua C6.1 
+active fire
+1 km nominal 03 Jul 2002-present CSV/JSON/SHP; 
+standard + NRT
+Adds afternoon 
+overpass; combine or 
+model separately
+MODIS fields
+VIIRS S-NPP active fire 375 m nominal 20 Jan 2012-present* CSV/JSON/SHP; 
+standard + NRT
+Primary overlap sensor; 
+stronger small-fire 
+response
+VIIRS fields
+VIIRS NOAA-20 active 
+fire
+375 m nominal Archive lists 01 Apr 
+2018-present
+CSV/JSON/SHP; 
+standard + NRT
+Modern redundancy / 
+denser observations
+FIRMS archive
+VIIRS NOAA-21 active 
+fire
+375 m nominal 17 Jan 2024-present CSV/JSON/SHP; NRT 
+and archive availability
+Newest VIIRS stream; 
+future continuity
+FIRMS active fire
+MCD64A1 V6.1 burned 
+area
+500 m monthly Nov 2000-present Raster / Earth Engine Secondary validation of 
+season/timing and 
+burned extent
+Dataset
+VNP64A1 V2 burned 
+area
+500 m monthly Jan 2012-present Raster / Earth Engine VIIRS-era burned-area 
+comparison/validation
+Dataset
+NASA GIBS fire layers Visualization tiles Historical layers by 
+product
+WMTS/WMS/MVT Fast map layers/fallback 
+visualization; not a 
+substitute for tabular 
+science data
+FIRMS GIBS 
+guide
+*Operational note: FIRMS states that delivery of S-NPP satellite data products will cease on 1 Nov 2026 and 
+recommends transition to NOAA-20 and NOAA-21. For your 2026 hackathon this mainly affects future-proofing: make 
+the source registry configurable and avoid hard-coding S-NPP as the only VIIRS sensor.
+Metadata inconsistency to document  The FIRMS archive page currently lists NOAA-20 coverage from 01 Apr 
+2018, while the VIIRS field-description page displays 01 Jan 2020. Use the archive/API availability for operational 
+download windows, store the source and version in your provenance table, and do not silently assume coverage.
+FIRMS fields worth keeping
+Field MODIS VIIRS Why keep it
+latitude / longitude Center of 1 km fire pixel Center of nominal 375 m pixel Spatial aggregation and 
+clustering
+acq_date + acq_time UTC acquisition UTC acquisition Daily/overpass matching and 
+deduplication
+satellite Terra / Aqua S-NPP / NOAA-20 / NOAA-21 Sensor provenance and overlap 
+modeling
+confidence 0-100 low / nominal / high Quality filtering and uncertainty
+frp MW MW Intensity proxy; useful alongside 
+counts
+scan / track Actual pixel dimensions vary 
+across scan
+Actual pixel dimensions vary 
+across scan
+Geometry/view-angle proxy
+daynight D/N D/N Diurnal patterns; nighttime 
+sensitivity differences
+=== PAGE 5 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 5
+Field MODIS VIIRS Why keep it
+type Standard product only Standard product/version 
+dependent
+Filter/flag vegetation, 
+volcano/static/offshore thermal 
+sources
+Data-quality rule  For historical analysis, prefer FIRMS standard (science-quality) data once available. NASA 
+advises that NRT data are later replaced by standard data, typically after a lag of a few months. Use NRT only for 
+the "what is happening now" panel.
+3. Supporting datasets and validation layers
+Use these selectively. They should explain or validate the fire calendar, not overwhelm the core challenge.
+Resource Coverage / form Best use Link
+MCD12Q1 V6.1 Land Cover 500 m yearly; 2001-2024 Stratify calibration by 
+cropland/forest/grassland; explain 
+seasonal burn regimes
+Open
+ESA WorldCover 2021 10 m global land cover Fine modern land-cover context; 
+useful for Bangladesh AOIs
+Open
+MOD11A1 V6.1 LST 1 km daily Temperature context; MODIS-era 
+consistent surface-temperature 
+layer
+Open
+VNP21A1D V2 LST 1 km daily VIIRS-era day land-surface-
+temperature context
+Open
+NASA EONET v3 Event API Contextual wildfire-event labels 
+and links; useful for current event 
+triage, not full ground truth
+Open
+GPM IMERG precipitation Half-hourly to monthly Rainfall/dryness context and 
+explanatory overlays
+Open
+NASA-USDA global soil moisture 0.25 degree Dryness/soil-moisture context Open
+MERRA-2 reanalysis Hourly/monthly Wind, humidity and atmospheric 
+context when a full reanalysis is 
+needed
+Open
+NASA POWER Daily API Point-based daily meteorology Fast weather enrichment for 
+selected locations
+Open
+GFED5 / GFED5.1 Gridded burned area/emissions Long-run fire/emissions 
+comparison at coarser scale
+Open
+Global Fire Atlas Individual fires, 2003-2016 Ignition, size, duration, spread; 
+event-level benchmark
+Open
+GlobFire v2 Fire event perimeters 2001-2021 Compare cluster/event 
+segmentation with MCD64A1-
+derived events
+Open
+geoBoundaries Global admin boundaries Clean Bangladesh 
+ADM0/ADM1/ADM2 and global 
+AOI selection
+Open
+WorldPop Population grids Optional exposure indicator for 
+people near hotspot clusters
+Open
+ERA5-Land Land reanalysis Weather/drought enrichment if the 
+team can handle CDS downloads
+Open
+=== PAGE 6 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 6
+Validation caution  MCD64A1 and products derived from it (including GlobFire and Global Fire Atlas) are 
+extremely useful, but they are not fully independent truth for active-fire detection. MCD64A1 itself uses MODIS 
+active-fire information. Call them secondary/consistency validation and be precise about that limitation.
+4. Data access, APIs and tooling
+4.1 FIRMS access paths
+Path What it gives you Access Link
+Archive Download Historical standard/science-
+quality CSV, JSON or shapefile; 
+country/year workflows
+Earthdata login/email workflow Open
+Active Fire downloads Last 24h, 48h, 7d; recent 
+text/SHP/KML
+Earthdata login for some 
+downloads
+Open
+Area API CSV by sensor, bbox, 1-5 day 
+range and optional date
+Free FIRMS MAP_KEY Open
+MAP_KEY Free key; current page states 
+5000 transactions / 10 minutes
+Email signup Open
+Data Availability API Check SP/NRT date availability 
+by sensor
+MAP_KEY Open
+Fire Data Academy NASA notebooks/tutorials for 
+ingestion, subsetting, 
+projections, API and visualization
+Free Open
+GIBS High-rate map visualization 
+through WMTS/WMS/MVT; 
+FIRMS page recommends it for 
+large transaction rates
+Keyless/public for many services Open
+Worldview Human visual inspection of 
+satellite imagery and thermal 
+anomaly layers
+Free web app Open
+4.2 Earth Engine shortcuts (excellent for prototyping)
+Collection Earth Engine ID Use Link
+MODIS NRT fire FIRMS Fast daily raster prototype; NRT, 
+not preferred for final historical 
+science
+Catalog
+VIIRS S-NPP NRT NASA/LANCE/SNPP_VIIRS/C2 375 m NRT raster prototype Catalog
+VIIRS NOAA-20 NRT NASA/LANCE/
+NOAA20_VIIRS/C2
+375 m NRT raster prototype Catalog
+MCD64A1 V6.1 MODIS/061/MCD64A1 Monthly burned-area validation Catalog
+VNP64A1 V2 NASA/VIIRS/002/VNP64A1 Monthly VIIRS burned-area 
+validation
+Catalog
+Recommended access strategy  Historical: download/precompute standard FIRMS once. Live demo: Area API for 
+recent hotspots. Basemap/visual imagery: GIBS. Validation/context: Earth Engine where it saves time. This 
+prevents the live website from reprocessing 26 years of points.
+=== PAGE 7 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 7
+5. Scientific harmonization method
+The method below is designed to be defensible within a hackathon: transparent baseline first, more flexible model only 
+if validation proves it helps.
+5.1 Why raw counts fail
+VIIRS 375 m can detect substantially more small hotspots than MODIS 1 km, and the difference also depends on land 
+cover, fire intensity, season, view geometry and time of overpass. Published comparisons show that relationships in 
+FRP and detection rates vary by scale and ecosystem. A single universal "VIIRS = k x MODIS" coefficient is therefore 
+easy to implement but scientifically fragile.
+5.2 Recommended pipeline
+1. Ingest and freeze provenance: Download standard FIRMS historical records. Add source product, 
+collection/version, satellite, acquisition UTC and ingestion date to every row.
+2. Normalize schema: Map all sensors into one canonical table. Keep raw fields unchanged and add derived columns 
+separately.
+3. AOI and spatial grid: For a fast MVP: aggregate at AOI-day/month. Better: use H3 or a 5 km equal-area-ish working 
+grid so both sensors are compared on the same support.
+4. Quality filtering: Flag low confidence and non-vegetation/static thermal sources where product/version permits. Do 
+not silently delete; keep counts before/after filtering.
+5. Deduplicate / cluster: Within each sensor/day, cluster nearby detections if the UI presents "fire systems" rather 
+than raw pixels. DBSCAN/HDBSCAN is reasonable, but keep raw pixel counts available.
+6. Build overlap pairs: 2012-present is the calibration era. Aggregate MODIS and VIIRS at matched AOI/grid-time 
+units. Where feasible use near-simultaneous overpasses; otherwise use day/month units and mark this limitation.
+7. Transparent baseline: Estimate robust seasonal scale factors using medians or a robust regression, preferably 
+stratified by month and land cover. This creates a VIIRS-equivalent historical MODIS activity estimate.
+8. Optional improved model: Fit a robust GLM/GAM/Huber/negative-binomial model using MODIS count, MODIS 
+FRP, month, land cover and scan/track/view proxies. Try gradient boosting only if it improves held-out years without 
+destroying interpretability.
+9. Build activity metrics: Keep at least two harmonized outputs: detection activity and FRP activity. Convert to 
+monthly percentile/z-score only for intuitive calendar display.
+10. Quantify uncertainty: Bootstrap calibration years or report fold-to-fold error/CV. Mark pre-2012 values as model-
+adjusted, not direct VIIRS observations.
+11. Validate: Hold out recent years and compare fire-season timing/events against burned-area products/event data. 
+Report MAE/RMSE/correlation and seasonal peak agreement.
+12. Precompute: Write compact Parquet/JSON tables consumed by the web app. Live API calls should cover recent 
+observations, not the whole historical archive.
+5.3 Baseline formulas you can explain in 20 seconds
+Seasonal calibration baseline  For month m and overlap years y, compute a robust ratio r_m = median[(VIIRS 
+activity + epsilon) / (MODIS activity + epsilon)]. For pre-VIIRS years, estimate VIIRS-equivalent activity as MODIS x 
+r_m. Use cross-validation and show the variability of r_m.
+A more stable alternative for sparse cells is a regression on log1p counts/FRP rather than raw ratios. For the calendar, 
+display a percentile relative to that AOI and calendar month: e.g., "92nd historical percentile for April". That avoids 
+implying a universal physical unit when the product is really a normalized activity indicator.
+5.4 What to call the output
+ Harmonized hotspot activityGood default term; clearly tied to observation.
+ VIIRS-equivalent historical activityGood for calibrated pre-2012 estimates if that is genuinely your target scale.
+=== PAGE 8 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 8
+ Burning Activity PercentileExcellent UI metric if computed relative to an AOI/month climatology.
+ Avoid: wildfire countOne satellite hotspot is not necessarily one wildfire, and multiple pixels can belong to one fire 
+event.
+ Avoid: fire probability / predictionUnless you actually train and validate a forecasting model with independent labels 
+and weather predictors.
+6. Validation and evaluation
+A good hackathon solution should show that harmonization improves continuity across the sensor transition rather than 
+only producing attractive maps.
+Test How to run it What success looks like
+Temporal holdout Fit calibration on earlier overlap years, test 
+on later years (e.g., hold out 2024-2025)
+Lower error than raw MODIS count and 
+stable monthly bias
+Sensor continuity Plot annual/monthly series before and after 
+2012 transition
+Reduced artificial jump while preserving real 
+seasonal variation
+Seasonality Compare monthly climatology before/after 
+calibration
+Peak months remain physically plausible 
+and consistent
+Land-cover slices Evaluate forest, cropland, grassland 
+separately
+No single class dominates errors; document 
+where it does
+FRP consistency Compare aggregated FRP by sensor on 
+matched units
+Strong relationship with residuals reported; 
+do not assume exact equality
+Burned-area timing Compare active-fire peak dates with 
+MCD64A1/VNP64A1 burn dates
+Reasonable timing agreement; note 
+products are not independent truth
+Event-level check Compare a few clusters with GlobFire/Global 
+Fire Atlas/EONET/imagery
+Known large events appear in expected 
+time/place
+Robustness Run with/without low-confidence or static-
+source filters
+Key calendar conclusions do not hinge on 
+one arbitrary filter
+Metrics worth putting in the demo
+ MAE or median absolute error on held-out overlap units
+ RMSE only if large outliers are meaningful to your model
+ R-squared or Spearman correlation for cross-sensor agreement
+ Monthly peak agreement / seasonal rank correlation
+ Calibration uncertainty (bootstrap interval, CV, or fold spread)
+ Coverage fraction: days/cells with valid observations, where feasible
+7. Product and UI blueprint
+The UI should make the harmonization problem visible, not hide it. A judge should understand the sensor mismatch 
+within the first minute of the demo.
+Screen What the user does What it shows Why it matters
+1. AOI Explorer Search Bangladesh/district, 
+choose preset, or draw polygon
+Current/recent MODIS + VIIRS 
+hotspots, sensor legend, date 
+slider
+Immediate spatial context and 
+interactive entry point
+2. Burning Calendar Choose year range and month/day 
+view
+26-year x 12-month heatmap of 
+harmonized activity; click any cell
+Directly answers the challenge 
+deliverable
+3. Sensor Lab Toggle Raw / Harmonized MODIS vs VIIRS overlap scatter, 
+raw counts/FRP, correction/model, 
+uncertainty
+Proves you solved harmonization 
+rather than concatenation
+4. Anomaly View Select current month or historical 
+event
+Percentile/z-score versus same-
+month climatology; "unusual" flags
+Decision-oriented insight without 
+overclaiming forecast skill
+=== PAGE 9 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 9
+Screen What the user does What it shows Why it matters
+5. Context Toggle land 
+cover/rainfall/LST/population
+Why a region/month behaves 
+differently
+Adds explainability and local 
+relevance
+6. Method & Provenance Inspect product/version/data date Source links, sensor era, standard-
+vs-NRT status, caveats
+Scientific trust and reproducibility
+7. Export (stretch) Download chart/CSV/summary AOI report with source/coverage 
+metadata
+Useful to researchers and 
+responders
+Suggested Bangladesh demo  Make Bangladesh a first-class preset, but keep the engine global. Useful AOI 
+presets could include Chattogram Hill Tracts, Sundarbans region, Sylhet and a north-west agricultural-burn region - 
+then include one contrasting global region (e.g., Mediterranean, boreal or tropical forest) to demonstrate 
+generalization.
+UI details judges will notice
+ Sensor transparency: color/toggle by Terra, Aqua, S-NPP, NOAA-20, NOAA-21.
+ Source badge: "Standard archive" versus "NRT" should be visible.
+ Calendar legend: percentile or normalized activity, not raw pixel count across eras.
+ Click-through: a calendar cell should load the corresponding map/month and show raw sensor values.
+ Uncertainty badge: High/medium/low or numeric interval with a tooltip explaining why.
+ No-data state: different from zero activity; cloud/overpass limitations make this distinction important.
+ Accessible colors and labels: do not depend on red/green alone; label high/low and sensor names.
+8. System architecture and data model
+A hackathon-friendly architecture keeps heavy geospatial work offline/precomputed and serves compact summaries to 
+the browser.
+Recommended stack  Python + Polars/Pandas + GeoPandas/H3 for ETL; DuckDB or Postgres/PostGIS for 
+aggregation; FastAPI for a thin API; Next.js/React frontend; MapLibre GL or Leaflet for maps; ECharts/Plotly for 
+calendar and diagnostic charts. GIBS can provide satellite/thermal-anomaly visual layers.
+Canonical raw table
+Column Type / example Notes
+sensor modis / viirs Logical family
+satellite Terra / Aqua / S-NPP / NOAA20 / NOAA21 Keep exact source
+datetime_utc timestamp Derived from acq_date + acq_time
+lat, lon float Original centroid
+frp_mw float Do not impute blindly
+confidence_raw string/number Preserve sensor-native representation
+confidence_class low / nominal / high Normalized derived field
+daynight D/N
+type_raw integer/null Version-dependent
+scan_km, track_km float/null Useful geometry proxy
+source_version e.g., 6.1 / 2.x Critical provenance
+=== PAGE 10 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 10
+Column Type / example Notes
+processing_class standard / nrt / rt / urt Do not mix silently
+Derived calendar table
+Column Meaning
+aoi_id / grid_id Selected AOI or common working grid
+date / year / month Calendar grain
+modis_count, viirs_count Raw sensor-specific detection totals
+modis_frp, viirs_frp Raw sensor-specific FRP sums/robust summaries
+cluster_count Optional distinct event/system approximation
+harmonized_count Calibrated common-scale activity
+harmonized_frp Calibrated FRP-style activity if modeled
+activity_percentile 0-100 within AOI/month climatology
+anomaly_z Standardized anomaly (robust if possible)
+uncertainty Bootstrap interval/CV/fold spread
+source_mix Which satellites contributed
+quality_flags No-data, low coverage, NRT, sparse calibration, etc.
+9. Open-source and similar projects
+Competition ethics  A public repository from a current 2026 competitor can be studied as a benchmark, but do not 
+copy its code, wording, UI, datasets, or claimed results into your submission. Build an independently designed 
+solution and cite any code you actually reuse according to its license.
+Project Why inspect it License note Link
+IGNIS - current 2026 same-
+challenge public submission
+Very close benchmark: 26-year 
+calendar, FIRMS/GIBS, DBSCAN, 
+FRP, anomaly/trend, Bangladesh 
+module, open science assets. 
+Useful to understand the bar; 
+differentiate scientifically and 
+visually.
+MIT Repository
+MODIS-VIIRS-fires (Meredith 
+Franklin)
+R pipeline reading FIRMS 
+MODIS/VIIRS CSV, converting to 
+UTM and using HDBSCAN to 
+identify persistent combustion 
+sources; directly relevant clustering 
+reference.
+MIT Repository
+hotspot-disambiguation (LINKS) Code/models for classifying 
+satellite hotspots as wildfires using 
+EFFIS cross-referencing; pairs with 
+the HF dataset below.
+Check repo Repository
+wildfire dataset pipeline 
+(JasmineW6214)
+Reusable 1 km daily multi-source 
+wildfire dataset-generation pipeline 
+using Earth Engine; helpful for 
+grid/feature engineering.
+See repo Repository
+=== PAGE 11 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 11
+Project Why inspect it License note Link
+viirs-modis-fire-map Older MODIS/VIIRS fire map 
+example; useful for timeline/vector-
+tile visualization patterns.
+Check repo Repository
+fireMap FIRMS + weather/FWI-style map 
+application; useful product 
+reference, not core harmonization 
+science.
+MIT reported Repository
+FireSight Client-side FIRMS NRT 
+mapping/dedup example; useful for 
+lightweight frontend ideas.
+Check repo Repository
+Call for Code fires-api-nodejs Fire report ingestion/API patterns 
+and GeoJSON backend example.
+Check repo Repository
+fire-map (kjaymiller) FastAPI/Postgres-style FIRMS 
+history architecture reference.
+Check repo Repository
+Current Space Apps concept signals
+Public team pages already show multiple teams converging on ETL, deduplication, GIS and historical calendars. 
+Celestial X, for example, publicly describes an automated FIRMS ETL pipeline, spatial mismatch handling and a 
+deduplicated fire calendar. Ember Almanac describes a 25-year harmonized fire calendar. Treat this as confirmation 
+that a plain fire map will not stand out; the differentiator needs to be scientific calibration, evidence, uncertainty, a clear 
+user workflow, or a novel but defensible interaction.
+Celestial X team page - Open link - Current 2026 team concept
+Ember Almanac team page - Open link - Current 2026 team concept
+Past Space Apps / adjacent precedent
+Searches did not surface an earlier Space Apps challenge with this exact title. A related 2020 Space Apps project, 
+"Mayas" for the Quiet Planet challenge, used VIIRS S-NPP active-fire information alongside settlement/ecological 
+context. Use past fire applications primarily as UX inspiration; your 2026 requirement is specifically cross-sensor 
+harmonization.
+NASA Space Apps 2020 - Mayas / Quiet Planet - Open link - Historical Space Apps fire-data precedent
+10. Kaggle, Hugging Face and Roboflow resources
+10.1 Hugging Face - directly useful
+Dataset What is there Use / caution Link
+LINKS hotspot-disambiguation 
+dataset
+2.23 GB; MODIS/VIIRS hotspots 
+cross-referenced with EFFIS 
+burned areas; ~500k stratified 
+sample; features include FRP, 
+temperatures, confidence, type, 
+resolution, time, lat/lon; CC BY 4.0.
+Useful optional classifier/feature-
+engineering reference for 
+separating wildfire-like hotspots 
+from other thermal anomalies. Do 
+not treat Europe-trained labels as 
+Bangladesh ground truth.
+Open
+Indonesian Wildfire Panel Dataset 
+2012-2025
+0.25-degree monthly 
+Sumatra/Kalimantan panel; VIIRS 
+FIRMS + ERA5 + 
+land/peat/concession features; 
+Parquet; CC BY 4.0.
+Very useful schema/modeling 
+template for tropical fire data; 
+geographic transfer should be 
+treated cautiously.
+Open
+wildfire-dataset-pipeline 11 documented notebooks; 1 km 
+daily grid combining open 
+geospatial sources; parameterized 
+Earth Engine extraction.
+Good reusable ETL/grid pattern if 
+you add prediction/context features 
+later; not needed for the core 
+harmonization MVP.
+Open
+=== PAGE 12 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 12
+10.2 Kaggle - convenience copies and notebooks
+Kaggle is best used for quick exploration or notebook ideas; for the final challenge, cite and prefer NASA FIRMS as the 
+authoritative source.
+Vijayveer Singh Kaggle datasets page - Open link - Includes a dataset titled "NASA FIRMS Active Fire Data 
+(MODIS/VIIRS)" (reported as 4 files / ~138 MB in indexed search results).
+TabNet regressor notebook on NASA FIRMS data - Open link - ML/EDA inspiration; not a harmonization method by 
+itself.
+PCA notebook on NASA FIRMS data - Open link - Exploratory feature-analysis reference.
+10.3 Roboflow Universe - optional computer vision
+These image datasets are not substitutes for FIRMS hotspot records. Only use them if your team has finished the core 
+calendar and wants an optional visual verification/classification module.
+Dataset Role Link
+Wildfire Satellite2 Satellite image classification/detection style 
+dataset; community curated
+Open
+Wildfire Satellite Community satellite wildfire image dataset Open
+Satellite Wildfire Detection Small satellite wildfire detection dataset; 
+useful only for CV prototype
+Open
+Priority rule  Do not spend the hackathon training a satellite-image detector unless your calendar/harmonization is 
+already complete. The official task is about reconciling MODIS and VIIRS hotspot records over time.
+11. Research papers to read first
+Paper Title Why it matters Link
+Giglio, Schroeder & Justice (2016) The Collection 6 MODIS active fire 
+detection algorithm and fire products
+Explains MODIS C6 detection 
+behavior, false alarms, probability of 
+detection and product design.
+Read
+Schroeder et al. (2014) The New VIIRS 375 m active fire 
+detection data product
+Foundational VIIRS 375 m algorithm 
+paper; explains why VIIRS detects 
+more/smaller fires and maps 
+perimeters more coherently.
+Read
+Li et al. (2018) Comparison of Fire Radiative Power 
+Estimates From VIIRS and MODIS 
+Observations
+Critical harmonization evidence: FRP 
+relationship varies with spatial scale, 
+season/ecosystem and MODIS view 
+angle.
+Read
+Xu et al. (2020) Fire Detection and Fire Radiative 
+Power in Forests and Low-Biomass 
+Lands in Northeast Asia: MODIS 
+versus VIIRS
+Shows major detection differences, 
+especially low-biomass/cropland, and 
+demonstrates duplicate removal / 
+near-simultaneous comparisons.
+Read
+Giglio et al. (2018) The Collection 6 MODIS burned area 
+mapping algorithm and product
+Methodology behind MCD64A1, 
+which is useful for secondary 
+validation.
+Read
+Andela et al. (2019) The Global Fire Atlas of individual fire 
+size, duration, speed and direction
+Event-level fire metrics and global 
+data product built from MCD64A1; 
+useful event benchmark.
+Read
+Artés et al. (2019) A global wildfire dataset for the 
+analysis of fire regimes and fire 
+behaviour (GlobFire)
+Global fire-event perimeters derived 
+from MCD64A1; useful for cluster 
+comparison.
+Read
+=== PAGE 13 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 13
+Paper Title Why it matters Link
+Urbanelli et al. (2023) A Multimodal Supervised Machine 
+Learning Approach for Satellite-
+based Wildfire Identification in 
+Europe
+Hotspot disambiguation using 
+MODIS/VIIRS + burned-area labels; 
+directly linked to the HF dataset.
+Read
+Artes et al./2024 active-fire dating 
+validation
+Active fire-based dating accuracy for 
+Landsat burned area maps...
+Shows agreement varies by biome, 
+distance and fire size - a reminder not 
+to assume one validation rule 
+globally.
+Read
+What the literature implies for your method
+ Resolution bias is fundamental: VIIRS 375 m has a greater response to relatively small fires than MODIS 1 km.
+ FRP helps but is not magically sensor-invariant: published comparisons show FRP differences vary by scale, season, 
+ecosystem and viewing geometry.
+ Use matched observations when possible: near-simultaneous comparisons are stronger than arbitrary same-month 
+point matching.
+ Land cover matters: low-biomass/cropland and forests can show different omission behavior; stratification is defensible.
+ Aggregate before overfitting: a stable 5 km/day or AOI/day comparison is usually more realistic for a four-day 
+hackathon than pixel-perfect cross-sensor physics.
+ Show uncertainty: sensor transfer is an estimation problem, not a perfect conversion.
+12. Four-day execution plan
+The submission screenshot provided by the team shows a 07 Oct 2026, 11:59 PM end. With this report dated 03 Oct, 
+the plan below prioritizes a complete, defensible MVP before stretch features.
+Date Science/data Backend/frontend Demo/QA
+Oct 3 Get MAP_KEY + Earthdata 
+access; download Bangladesh 
+standard FIRMS overlap; canonical 
+schema; first raw comparison
+Repo setup; AOI + map skeleton; 
+data contracts
+Finalize product name/story; 
+assign roles; verify submission 
+portal requirements
+Oct 4 Build monthly/day aggregations; 
+baseline calibration; holdout 
+validation; exported Parquet/JSON
+Calendar heatmap + Sensor Lab 
+charts; API endpoints/cache
+Capture validation screenshots; 
+write methodology in README
+Oct 5 Add land-cover stratification or 
+event clustering only if baseline is 
+stable
+Connect AOI/map/calendar; 
+provenance panel; responsive 
+layout
+Run end-to-end demo with fresh 
+clone; source attributions
+Oct 6 Freeze model unless a bug is 
+found; one international contrast 
+AOI
+Polish, accessibility, no-data/error 
+states; production deploy
+Record full draft video; collect 
+teammate feedback; repository 
+cleanup
+Oct 7 Only critical fixes; snapshot 
+data/version
+Freeze several hours before 
+deadline; public source link test
+Record final 3:45-3:55 video; test 
+links in incognito; submit early; re-
+check portal timezone
+Do not let perfect harmonization block a working demo  A transparent robust baseline with measured error is 
+stronger than an opaque advanced model that is not validated. Ship the baseline, then add sophistication behind a 
+feature flag if it demonstrably helps.
+13. Team roles and submission plan
+Role Owner focus Definition of done
+Science / harmonization lead Sensor overlap, calibration model, validation, 
+caveats
+Reproducible notebook/script + metrics + 
+method text
+=== PAGE 14 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 14
+Role Owner focus Definition of done
+Data / backend lead FIRMS downloads, provenance, 
+precompute, API/cache
+One command builds compact data artifacts; 
+API stays fast
+Frontend / GIS lead Map, AOI selection, calendar, sensor 
+controls
+Judges can select AOI and understand raw 
+vs harmonized in <60s
+UX / visualization + QA Interaction flow, responsive mobile, legends, 
+accessibility
+No confusing raw/harmonized state; 
+source/caveat labels present
+Story / video / documentation 4-minute demo, README, impact, credits Public links tested, claims match computed 
+results, video under 240s
+Suggested 240-second video
+Time Content
+0:00-0:25 Problem: two sensor eras; 1 km MODIS and 375 m VIIRS raw 
+counts are not directly comparable.
+0:25-1:05 Select Bangladesh AOI. Show raw MODIS vs VIIRS overlap and the 
+discontinuity.
+1:05-1:50 Turn on harmonization. Explain overlap calibration and uncertainty 
+in one sentence.
+1:50-2:35 Open the 26-year calendar; click a high-activity month; show map 
+and sensor provenance.
+2:35-3:10 Show anomaly/percentile and one context/validation layer. 
+Emphasize historical critical periods, not exact prediction.
+3:10-3:35 Show Sensor Lab validation metric / holdout result and 
+methodology/source panel.
+3:35-4:00 Impact, global portability, open data/open source, and next step. 
+End before the 240 s cap.
+Submission hygiene checklist
+ Public source-code link opens in an incognito browser without requesting permission.
+ No API keys, MAP_KEY, Earthdata tokens, Hugging Face tokens or secrets are committed.
+ README lists every dataset and license/attribution; NASA is not implied to endorse the app.
+ Data build date, product versions and standard/NRT status are visible.
+ Video is <=240 seconds and does not show features that are absent from the public build.
+ Fallback/no-data states are tested before recording.
+ Re-check the Bangladesh event portal for deadline/timezone changes immediately before submission.
+14. Risks, caveats and scientific honesty
+Risk Why it matters Mitigation
+Hotspot != wildfire FIRMS thermal anomalies may include 
+agricultural burning, volcanoes, gas flares, hot 
+smoke or other hot sources.
+Use "hotspot" / "burning activity" by default; 
+filter/flag type and persistent sources; only call 
+an event wildfire when supported.
+No detection != no fire Cloud cover, overpass timing, sensor 
+saturation/geometry and thresholds can hide 
+activity.
+Represent missing/low-coverage separately 
+from zero; show data-quality flags.
+Sensor resolution mismatch VIIRS detects smaller hotspots than MODIS. Calibrate in overlap period on common 
+space/time units; never compare raw counts as 
+a long trend.
+=== PAGE 15 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 15
+Risk Why it matters Mitigation
+FRP mismatch FRP relationships vary by spatial scale, view 
+angle and ecosystem.
+Aggregate and validate; do not assume FRP is 
+exactly interchangeable across sensors.
+NRT vs standard NRT is designed for timeliness and later 
+replaced by standard quality.
+Use standard for historical baseline; NRT only 
+for recent operational panel and label it.
+Type-field version issue FIRMS reports a historical Collection-2 
+Vxx14IMGML Type-field bug in product 
+versions 1/2, corrected and reprocessed to v3 
+in May 2025.
+Use current processed versions; keep source 
+version in provenance; avoid mixing old cached 
+files.
+S-NPP transition FIRMS states S-NPP delivery ceases 01 Nov 
+2026.
+Make VIIRS source list configurable; 
+NOAA-20/21 should keep the product alive.
+Validation dependence MCD64A1 uses MODIS active-fire information, 
+and several event datasets derive from 
+MCD64A1.
+Describe these as secondary consistency 
+checks, not independent absolute truth.
+Competition overlap A same-challenge 2026 repository is already 
+public.
+Do independent work; use it only as a 
+benchmark; cite any reused open-source 
+components and comply with competition rules.
+15. Clickable source directory
+This directory consolidates the links scattered throughout the report. "Core" means directly relevant to the official 
+challenge; "support" means useful for validation, context, benchmarking or implementation.
+Official challenge and submission context
+Official NASA Space Apps challenge - Open link
+Bangladesh local portal (verify current submission details) - Open link
+NASA FIRMS - core
+FIRMS home - Open link
+Active Fire downloads - Open link
+Archive Download - Open link
+Area API - Open link
+MAP_KEY - Open link
+Data Availability API - Open link
+FIRMS API tutorial - Open link
+Fire Data Academy - Open link
+MODIS hotspot field definitions - Open link
+VIIRS hotspot field definitions - Open link
+FIRMS GIBS tutorial - Open link
+FIRMS QGIS tutorial - Open link
+FIRMS ArcGIS tutorial - Open link
+NASA visualization and Earth Engine
+NASA GIBS API docs - Open link
+GIBS Access Basics - Open link
+NASA Worldview - Open link
+Earth Engine MODIS FIRMS NRT - Open link
+Earth Engine S-NPP VIIRS NRT - Open link
+Earth Engine NOAA-20 VIIRS NRT - Open link
+=== PAGE 16 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 16
+Burned area / validation / context
+MCD64A1 V6.1 - Open link
+MCD64A1 DOI - Open link
+VNP64A1 V2 - Open link
+VNP64A1 DOI - Open link
+MCD12Q1 land cover - Open link
+MOD11A1 LST - Open link
+VNP21A1D LST - Open link
+NASA EONET v3 - Open link
+GPM IMERG - Open link
+NASA-USDA soil moisture - Open link
+MERRA-2 - Open link
+NASA POWER daily API - Open link
+External public geospatial/fire data
+GFED5 data - Open link
+Global Fire Atlas DOI - Open link
+Global Fire Atlas paper - Open link
+GlobFire v2 - Open link
+ESA WorldCover - Open link
+geoBoundaries API - Open link
+WorldPop data - Open link
+ERA5-Land - Open link
+Hugging Face / Kaggle / Roboflow
+HF: hotspot-disambiguation dataset - Open link
+HF: Indonesian Wildfire Panel - Open link
+HF: wildfire dataset pipeline - Open link
+Kaggle datasets by Vijayveer Singh - Open link
+Kaggle TabNet FIRMS notebook - Open link
+Kaggle PCA FIRMS notebook - Open link
+Roboflow Wildfire Satellite2 - Open link
+Roboflow Wildfire Satellite - Open link
+Roboflow Satellite Wildfire Detection - Open link
+Open-source projects
+IGNIS - current 2026 same-challenge public submission - Open link
+MODIS-VIIRS-fires (Meredith Franklin) - Open link
+hotspot-disambiguation (LINKS) - Open link
+wildfire dataset pipeline (JasmineW6214) - Open link
+viirs-modis-fire-map - Open link
+fireMap - Open link
+FireSight - Open link
+Call for Code fires-api-nodejs - Open link
+fire-map (kjaymiller) - Open link
+=== PAGE 17 ===
+NASA Space Apps Challenge 2026 | MODIS + VIIRS Hot Spots | Team Research Pack
+Page 17
+Research papers
+The Collection 6 MODIS active fire detection algorithm and fire products - Open link
+The New VIIRS 375 m active fire detection data product - Open link
+Comparison of Fire Radiative Power Estimates From VIIRS and MODIS Observations - Open link
+Fire Detection and Fire Radiative Power in Forests and Low-Biomass Lands in Northeast Asia: MODIS versus 
+VIIRS - Open link
+The Collection 6 MODIS burned area mapping algorithm and product - Open link
+The Global Fire Atlas of individual fire size, duration, speed and direction - Open link
+A global wildfire dataset for the analysis of fire regimes and fire behaviour (GlobFire) - Open link
+A Multimodal Supervised Machine Learning Approach for Satellite-based Wildfire Identification in Europe - 
+Open link
+Active fire-based dating accuracy for Landsat burned area maps... - Open link
+Final recommended scope
+If you build only five things  (1) a defensible cross-sensor calibration using the overlap period, (2) a 26-year 
+burning calendar, (3) a raw-vs-harmonized Sensor Lab, (4) a map that drills into calendar cells, and (5) a 
+provenance/uncertainty panel. Everything else is optional.
+This keeps the project faithful to the official challenge, scientifically explainable, demonstrable in under four minutes, 
+and realistic within the remaining hackathon window.

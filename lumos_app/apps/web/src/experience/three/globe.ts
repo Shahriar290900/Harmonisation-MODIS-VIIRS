@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { gsap } from 'gsap';
-import type { GlobeHandle, HotPoint } from '../contract';
+import type { GlobeHandle, GlobeHome, HotPoint } from '../contract';
 import { srgb, clampDpr, createLoop, createRenderer, damp, disposeRenderer, disposeTree, hostSize, seeded, smooth, SERIES_COLORS } from './util';
 import { defaultBasemapUrl, loadCountries } from './data';
 
 const DEG = Math.PI / 180;
-const BGD = { lon: 90.35, lat: 23.7 };
+/** Default focus/highlight (Bangladesh-first story); overridden per mount by `opts.home` (from regions.json). */
+const DEFAULT_HOME = { iso3: 'BGD', lon: 90.35, lat: 23.7 };
 
 /** lon/lat (deg) → unit-sphere xyz. lon=0,lat=0 faces +Z; north = +Y. */
 function ll(lon: number, lat: number, r: number, out: Float32Array | number[], o: number): void {
@@ -285,7 +286,7 @@ async function buildLandDots(fc: GeoJSON.FeatureCollection, samples: number, sig
 }
 
 // ───────────────────────── mount ─────────────────────────
-export interface GlobeOptions { reducedMotion: boolean; quality: 'high' | 'low'; basemapUrl?: string; heatRamp?: boolean }
+export interface GlobeOptions { reducedMotion: boolean; quality: 'high' | 'low'; basemapUrl?: string; heatRamp?: boolean; home?: GlobeHome }
 
 export function mountGlobe(host: HTMLElement, opts: GlobeOptions): GlobeHandle | null {
   const renderer = createRenderer(host, opts.quality);
@@ -400,14 +401,15 @@ export function mountGlobe(host: HTMLElement, opts: GlobeOptions): GlobeHandle |
     ring.position.set(p[0], p[1], p[2]);
     ring.lookAt(p[0] * 2, p[1] * 2, p[2] * 2);
   };
-  placeRing(BGD.lon, BGD.lat);
+  const HOME = { ...DEFAULT_HOME, ...(opts.home ?? {}) };
+  placeRing(HOME.lon, HOME.lat);
 
   // ───── state ─────
   const st = {
     pTarget: 0, p: 0,
-    autoLon: BGD.lon - 38, // start with Bangladesh coming round from the east
+    autoLon: HOME.lon - 38, // start with the home region (Bangladesh by default) coming round from the east
     dLon: 0, dLat: 0, vLon: 0, vLat: 0,
-    pin: 0, fLon: BGD.lon, fLat: BGD.lat,
+    pin: 0, fLon: HOME.lon, fLat: HOME.lat,
     viewLon: 0, viewLat: 0,
     mask: new THREE.Vector3(1, 1, 1), maskTarget: new THREE.Vector3(1, 1, 1),
     dragging: false, lastX: 0, lastY: 0, w: 1, h: 1, baseDist: 3.4
@@ -421,7 +423,7 @@ export function mountGlobe(host: HTMLElement, opts: GlobeOptions): GlobeHandle |
   const geoAbort = new AbortController();
   loadCountries(opts.basemapUrl ?? defaultBasemapUrl(), geoAbort.signal).then((fc) => {
     if (!fc || disposed) return;
-    const { all, hi } = buildOutlines(fc, 'BGD');
+    const { all, hi } = buildOutlines(fc, HOME.iso3);
     lines.geometry.setAttribute('position', new THREE.BufferAttribute(all, 3));
     hiLines.geometry.setAttribute('position', new THREE.BufferAttribute(hi, 3));
     for (const o of [lines, hiLines]) o.geometry.computeBoundingSphere();

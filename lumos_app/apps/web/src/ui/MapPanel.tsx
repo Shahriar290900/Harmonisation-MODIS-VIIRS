@@ -5,6 +5,7 @@ import type { Map as MlMap, GeoJSONSource } from 'maplibre-gl';
 import type { CellsFile, Region, Selection } from '../types';
 import { SERIES_COLORS } from '../types';
 import { fmtCompact, fmtNum, monthLabel } from '../data/format';
+import { noCellsHint } from '../data/regions';
 import { RAMP_CSS, valueColor } from './scale';
 import type { CellState } from './glyphs';
 
@@ -16,6 +17,8 @@ const SERIES_OPTS: { k: MapSeries; label: string; color?: string }[] = [
 
 interface Props {
   region: Region | undefined; geo: GeoJSON.FeatureCollection | GeoJSON.Feature | null;
+  /** All regions of the snapshot: lets the no-cells message name the exported sub-regions (from `cells_exported`). */
+  regions?: Region[];
   cells: { loaded: boolean; file: CellsFile | null; error?: string | null; retry?: () => void }; selection: Selection; visible?: boolean;
   /** Display state of the AOI-month record (REVIEW M5): a missing month is never shown as '0 active cells'. */
   monthState?: CellState;
@@ -36,7 +39,7 @@ function hasWebGL(): boolean {
 
 interface CellPt { id: string; lon: number; lat: number; aqua: number | null; viirs: number | null; est: number | null; v: number | null }
 
-export function MapPanel({ region, geo, cells, selection, visible = true, monthState }: Props) {
+export function MapPanel({ region, regions, geo, cells, selection, visible = true, monthState }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -187,7 +190,7 @@ export function MapPanel({ region, geo, cells, selection, visible = true, monthS
             {failed && <p className="notice" role="status">{failed} Showing a table instead — the calendar, chart and evidence still work.</p>}
             {cells.error ? <p className="muted">{subIcon(cells, monthState)}{legendSub(cells, 0, monthState)}</p>
               : monthState === 'missing' ? <p className="muted">{legendSub(cells, 0, monthState)}</p>
-              : <CellTable pts={pts} loaded={cells.loaded} hasFile={!!cells.file} />}
+              : <CellTable pts={pts} loaded={cells.loaded} hasFile={!!cells.file} noFileText={noFileText(region, regions)} />}
           </div>
         )}
       </div>
@@ -224,9 +227,15 @@ function popupNode(p: Record<string, unknown>): HTMLElement {
   return root;
 }
 
-function CellTable({ pts, loaded, hasFile }: { pts: CellPt[]; loaded: boolean; hasFile: boolean }) {
+/** Why there is no cell grid: not exported for this AOI (e.g. whole-country AUS / USA) vs. exported but absent for this year. */
+export function noFileText(region: Region | undefined, regions: Region[] = []): string {
+  if (region?.cells_exported === true) return 'No 5 km cell grid file for this year (missing, not zero).';
+  return `No 5 km cell grid is exported for this AOI (${noCellsHint(region, regions)}).`;
+}
+
+function CellTable({ pts, loaded, hasFile, noFileText: noFile }: { pts: CellPt[]; loaded: boolean; hasFile: boolean; noFileText: string }) {
   if (!loaded) return <p className="muted">Loading cells…</p>;
-  if (!hasFile) return <p className="muted">No 5 km cell grid is exported for this AOI (whole-country Australia is too large; pick New South Wales).</p>;
+  if (!hasFile) return <p className="muted">{noFile}</p>;
   const top = [...pts].sort((a, b) => (b.v ?? 0) - (a.v ?? 0)).slice(0, 60);
   return (
     <div className="table-wrap">

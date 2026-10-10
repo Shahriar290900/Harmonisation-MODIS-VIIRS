@@ -50,7 +50,7 @@ async function start() {
     if (!globe) { stage.textContent = 'WebGL unavailable'; return; }
     const idx = await (await fetch('/data/index.json')).json();
     const snap = idx.default as string;
-    const pts = await loadHotPoints('/', snap, ['BGD', 'AUS-NSW'], Number(qs.get('year') ?? 2020));
+    const pts = await loadHotPoints('/', snap, ['BGD', 'AUS-NSW', 'USA-CA'], Number(qs.get('year') ?? 2020));
     globe.setPoints(pts);
     globe.setProgress(p0);
     globe.setSeries(seriesSel.value as 'all');

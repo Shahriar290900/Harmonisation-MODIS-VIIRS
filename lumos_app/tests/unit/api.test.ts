@@ -12,6 +12,7 @@ describe('createDataApi', () => {
     expect(m.schema_version).toBe('1.0');
     const regions = await api.loadRegions(SNAP_ID);
     expect(regions.map((r) => r.aoi_id)).toContain('AUS-NSW');
+    expect(regions.map((r) => r.aoi_id)).toContain('BGD');
     const geo = await api.loadGeo(SNAP_ID, regions[0]);
     expect(geo.type).toBe('FeatureCollection');
     const a = await api.loadActivity(SNAP_ID, 'BGD', 2016);

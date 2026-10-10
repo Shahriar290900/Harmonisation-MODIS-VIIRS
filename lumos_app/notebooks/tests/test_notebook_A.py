@@ -5,6 +5,7 @@
    synthetic fixture bundle (fixtures/out/lumos_bundle), plus Natural Earth stand-ins under ne/.
    Missing on purpose: VIIRS-SNPP 2016 Australia (-> 404 -> "missing"). The fixture's 2025 files are an
    incomplete current year; viirs-snpp 2025 Bangladesh is header-only (-> ok, 0 rows, noted).
+   Default countries are Bangladesh, Australia and United_States (3 x 39 = 117 FIRMS files).
    Corrupted on purpose: viirs-snpp 2013 Bangladesh is an HTML page (-> "error").
 2. Serves it with `python -m http.server`, executes the generated lumos_A_fetch.ipynb with nbconvert
    (LUMOS_FIRMS_BASE / LUMOS_NE_BASE / LUMOS_SKIP_WHEELS=1 / LUMOS_WORK=tmp) and checks the manifest.
@@ -29,10 +30,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-LUMOS = HERE.parent
+NOTEBOOKS = HERE.parent
+LUMOS = HERE.parents[1]
 FIXTURE = LUMOS / "fixtures" / "out" / "lumos_bundle"
-NB = HERE / "lumos_A_fetch.ipynb"
-PY = HERE / "lumos_A_fetch.py"
+NB = NOTEBOOKS / "lumos_A_fetch.ipynb"
+PY = NOTEBOOKS / "lumos_A_fetch.py"
 
 
 def free_port():
@@ -109,9 +111,17 @@ def e2e(tmp: Path):
         man = json.loads((b / "manifests" / "sources.json").read_text())
         by = {r["id"]: r for r in man}
         fc = [r for r in man if r["kind"] == "firms_country"]
-        check(len(fc) == 2 * (25 + 14), f"{len(fc)} FIRMS country records (2 countries x 39 sensor-years)")
+        check(len(fc) == 3 * (25 + 14), f"{len(fc)} FIRMS country records (3 countries x 39 sensor-years)")
         check(all(by[f"{s}_2025_{c}"]["status"] == "ok" for s in ("modis", "viirs-snpp")
-                  for c in ("Bangladesh", "Australia")), "2025 (current-year) files fetched")
+                  for c in ("Bangladesh", "Australia", "United_States")), "2025 (current-year) files fetched")
+        us = by["viirs-snpp_2020_United_States"]
+        check(us["status"] == "ok" and us["country"] == "United_States" and us["rows"]
+              and us["url"] == f"http://127.0.0.1:{port}/data/country/viirs-snpp/2020/viirs-snpp_2020_United_States.csv"
+              and us["local_path"] == "raw/firms_country/viirs-snpp/2020/viirs-snpp_2020_United_States.csv"
+              and (b / us["local_path"]).exists(),
+              "United_States: underscore name in id, URL, local_path and manifest country")
+        check(sorted({r["country"] for r in fc}) == ["Australia", "Bangladesh", "United_States"],
+              "manifest countries = Bangladesh, Australia, United_States")
         h0 = by["viirs-snpp_2025_Bangladesh"]
         check(h0["rows"] == 0 and "header-only" in h0["note"], "header-only 2025 file -> ok, 0 rows, noted")
         check(by["viirs-snpp_2016_Australia"]["status"] == "missing"
@@ -132,6 +142,8 @@ def e2e(tmp: Path):
               and (b / "README_bundle.md").exists(), "env_A/config_A/README written")
         check(not list(b.rglob("*.part*")), "no partial files")
         check("Summary" in out1 or "Bangladesh" in out1, "summary table printed")
+        check("United_States" in out1 and "FIRMS country archives: 117 files" in out1,
+              "run log shows the 117-file plan and a United_States summary column")
         cfg = json.loads((b / "manifests" / "config_A.json").read_text())
         check(cfg["SKIP_WHEELS"] is True and cfg["api_key_used"] is False, "config_A flags recorded")
         out2 = execute_notebook(env, tmp, "run2.ipynb")
@@ -259,6 +271,27 @@ def unit(tmp: Path):
     jobs = A.area_api_jobs(A._MAP_KEY, ["Bangladesh"], ["VIIRS_SNPP_NRT"], 12)
     check(len(jobs) == 3 and [j["url"].split("/")[-2] for j in jobs] == ["5", "5", "2"],
           "Area API: 12 days -> chunks of 5,5,2")
+    # United_States: default config, bbox for the optional NRT step, underscore and space spellings
+    check(A.COUNTRIES == ["Bangladesh", "Australia", "United_States"], "default COUNTRIES include United_States")
+    check(A.country_slug("United States") == "United_States" == A.country_slug(" United_States "),
+          "country_slug: space -> underscore")
+    uj = A.area_api_jobs("SECRETK123", ["United_States"], ["VIIRS_SNPP_NRT"], 5, today=A.datetime(2025, 9, 10).date())
+    uj2 = A.area_api_jobs("SECRETK123", ["United States"], ["VIIRS_SNPP_NRT"], 5, today=A.datetime(2025, 9, 10).date())
+    w, so, e, n = A.COUNTRY_BBOX["United_States"]
+    check(len(uj) == 1 and uj[0]["id"] == "api_VIIRS_SNPP_NRT_United_States_2025-09-06_5d"
+          and "/-179.2,18.9,-66.9,71.5/5/2025-09-06" in uj[0]["url"] and uj[0]["country"] == "United_States"
+          and uj[0]["local_path"] == "raw/firms_api/VIIRS_SNPP_NRT/United_States/VIIRS_SNPP_NRT_United_States_2025-09-06_5d.csv"
+          and [j["id"] for j in uj2] == [j["id"] for j in uj] and w < -125 and e > -67 and so < 20 and n > 70,
+          "Area API United_States: one box covering CONUS+AK+HI, underscore id/path, same for 'United States'")
+    check("SECRETK123" not in uj[0]["url_redacted"] and "{MAP_KEY}" in uj[0]["url_redacted"],
+          "Area API United_States: key redacted in url_redacted")
+    fj = A.firms_country_jobs(A.COUNTRIES, A.MODIS_YEARS, A.VIIRS_YEARS)
+    check(len(fj) == 117 and sum(j["country"] == "United_States" for j in fj) == 39
+          and any(j["url"].endswith("/data/country/modis/2020/modis_2020_United_States.csv") for j in fj)
+          and any(j["url"].endswith("/data/country/viirs-snpp/2020/viirs-snpp_2020_United_States.csv") for j in fj),
+          "firms_country_jobs: 117 default jobs, United_States URLs match FIRMS file names")
+    st = A.summary_table({j["id"]: dict(j, status="ok", rows=5) for j in fj if j["year"] == 2020})
+    check(list(st.columns) == ["Australia", "Bangladesh", "United_States"], "summary_table has a United_States column")
     A.FIRMS_BASE = base
     jobs = [dict(j, url=j["url"].replace(j["url"].split("/api/")[0], base),
                  url_redacted=j["url_redacted"]) for j in jobs]
@@ -337,7 +370,7 @@ def unit(tmp: Path):
 def main():
     keep = "--keep" in sys.argv
     assert FIXTURE.exists(), "run fixtures/make_fixture_bundle.py first"
-    subprocess.run([sys.executable, str(HERE / "build_ipynb.py")], check=True)
+    subprocess.run([sys.executable, str(NOTEBOOKS / "build_ipynb_A.py")], check=True)
     tmp = Path(tempfile.mkdtemp(prefix="lumosA_test_"))
     try:
         unit(tmp)

@@ -1,0 +1,4 @@
+time	role	url	result
+2026-10-10T09:30:17Z	R2-gap	https://firms.modaps.eosdis.nasa.gov/content/academy/data_api/firms_api_use.html	OK via WebFetch
+2026-10-10T09:30:35Z	R2-gap	https://firms.modaps.eosdis.nasa.gov/content/tutorials/gibs/	OK via WebFetch
+2026-10-10T09:31:21Z	R2-gap	https://eonet.gsfc.nasa.gov/docs/v3	OK via WebFetch

@@ -176,17 +176,25 @@ ANOMALY_Z = 1.0
 CELL_EST_MIN = 1.0          # contract §6: cells json keeps rows with aqua>0 or viirs>0 or est>=this
 CELL_EST_LADDER = [1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0]   # raised (and recorded) if an AOI-year file exceeds the budget
 CELL_FILE_BUDGET_MB = float(os.environ.get("LUMOS_CELL_BUDGET_MB", "15"))       # v1.1 budget per AOI-year cells file
-FEATURE_EXPORT_AOIS = ["AUS-NSW", "BGD"]    # per-cell B1 input features (features/<aoi>/<year>.json) so the app can recompute B1
+FEATURE_EXPORT_AOIS = ["AUS-NSW", "BGD", "USA-CA"]    # per-cell B1 input features (features/<aoi>/<year>.json) so the app can recompute B1 (v1.2: + USA-CA)
 FEATURE_FILE_BUDGET_MB = float(os.environ.get("LUMOS_FEATURE_BUDGET_MB", "15"))
 PLATFORM_OUTAGE_MIN = 30    # a MODIS platform with 0 rows in a country-month while the other has ≥ this → outage (missing, not zero)
-AOI_COUNTRIES = ["Bangladesh", "Australia"]
-AOI_ADMIN1 = {"Australia": ["AU-NSW"]}       # keyed on Natural Earth iso_3166_2 (v1.1); Bangladesh: all divisions
+# v1.2 addendum (CONTRACT §8): three regions. Country keys are the FIRMS file names exactly as in sources.json (`United_States`);
+# the display name (regions.json `country`, AOI `name`) replaces `_` by a space; Natural Earth names the country differently
+# (admin-0 `ADMIN`/`NAME` = "United States of America", `ADM0_A3` = USA), so the NE match is an explicit table, not string equality.
+AOI_COUNTRIES = ["Bangladesh", "Australia", "United_States"]
+COUNTRY_ISO3 = {"Bangladesh": "BGD", "Australia": "AUS", "India": "IND", "Myanmar": "MMR", "Nepal": "NPL", "Bhutan": "BTN",
+                "United_States": "USA", "Indonesia": "IDN", "Thailand": "THA", "Brazil": "BRA", "Canada": "CAN"}
+COUNTRY_DISPLAY = {"United_States": "United States"}            # FIRMS slug → display; every other slug → slug.replace("_", " ")
+NE_ADMIN0_NAMES = {"United_States": ["United States of America", "United States"]}   # NE admin-0/admin-1 country names, tried after the ISO3 match
+AOI_ADMIN1 = {"Australia": ["AU-NSW"], "United_States": ["US-CA"]}       # keyed on Natural Earth iso_3166_2 (v1.1); Bangladesh: all divisions
 # v1.1 display-name alias table (modern spellings); ISO 3166-2 BD-A..BD-H
 ADMIN1_DISPLAY = {"BD-A": "Barishal", "BD-B": "Chattogram", "BD-C": "Dhaka", "BD-D": "Khulna", "BD-E": "Rajshahi",
-                  "BD-F": "Rangpur", "BD-G": "Sylhet", "BD-H": "Mymensingh", "AU-NSW": "New South Wales"}
+                  "BD-F": "Rangpur", "BD-G": "Sylhet", "BD-H": "Mymensingh", "AU-NSW": "New South Wales", "US-CA": "California"}
+ADMIN1_DISPLAY_KIND = {"Bangladesh": "Division"}   # UI label for admin-1 areas (CONTRACT §9 display_kind); other countries: State
 NAME_ALIASES = {"Chittagong": "Chattogram", "Barisal": "Barishal", "Jessore": "Jashore", "Bogra": "Bogura", "Comilla": "Cumilla"}
-EXPECTED_ADMIN1 = {"Bangladesh": ["BD-A", "BD-B", "BD-C", "BD-D", "BD-E", "BD-F", "BD-G", "BD-H"], "Australia": ["AU-NSW"]}
-CELLS_EXPORT_SKIP_AOIS = ["AUS"]  # v1.1: whole-Australia cell grids are not exported; NSW is
+EXPECTED_ADMIN1 = {"Bangladesh": ["BD-A", "BD-B", "BD-C", "BD-D", "BD-E", "BD-F", "BD-G", "BD-H"], "Australia": ["AU-NSW"], "United_States": ["US-CA"]}
+CELLS_EXPORT_SKIP_AOIS = ["AUS", "USA"]  # v1.1/v1.2: whole-country AUS and USA cell grids are not exported; AUS-NSW, USA-CA, BGD (+divisions) are
 WRITE_DETECTIONS_PARQUET = os.environ.get("LUMOS_WRITE_DETECTIONS", "0") == "1"   # off by default (minutes + ~1 GB on real data)
 LLM_MAX_BYTES_CAP = 30e9    # LLM weights cap: min(30 GB, 0.5 × free RAM) (and ≤ 0.85 × free VRAM on GPU)
 INPUT_WALK_MAX_DEPTH = 6    # depth-limited search of /kaggle/input
@@ -226,6 +234,37 @@ def free_ram_gb():
             mem = {l.split(":")[0]: int(l.split()[1]) for l in open("/proc/meminfo")}
             return mem.get("MemAvailable", 0) / 1e6
         except Exception: return float("nan")
+
+def country_display(c):
+    """FIRMS country slug → display name (`United_States` → `United States`)."""
+    return COUNTRY_DISPLAY.get(c, c.replace("_", " "))
+
+def ne_country_match(props, iso, c):
+    """True if a Natural Earth admin-0 or admin-1 feature belongs to FIRMS country slug `c` (ISO3 `iso`): ISO3 in ADM0_A3/ISO_A3/adm0_a3
+    first, else one of the explicit NE names (`NE_ADMIN0_NAMES`, e.g. United_States → 'United States of America'), else the slug with spaces."""
+    if iso in (props.get("ADM0_A3"), props.get("ISO_A3"), props.get("adm0_a3")): return True
+    names = NE_ADMIN0_NAMES.get(c, []) + [c.replace("_", " ")]
+    return any(props.get(k) in names for k in ("ADMIN", "NAME", "admin"))
+
+def panel_memory_plan(cells_per_country, nm, n_base_cols, n_countries=None):
+    """Estimate (before any dense array is allocated) the size of the cell × month panel. Only cells with >=1 detection (either sensor,
+    any year) enter the universe (CONTRACT §3), so the panel is sparse in space; the dense part is cells × `nm` months.
+    bytes per cell-month in the final panel `P`: `n_base_cols` float32 base columns + gcell, m (int32) + cidx, year (int16) + month (int8)
+    + month_sin, month_cos, lat (float32) + one float32 one-hot per country + holdout/SPLIT/FEAT_OK/TARGET_OK (1 byte each).
+    Peak while a country is built: ~22 dense float32 temporaries of that country plus the finished base columns of the others."""
+    nco = n_countries or len(cells_per_country)
+    cells = int(sum(cells_per_country.values())); cm = cells * nm
+    per_cm = n_base_cols * 4 + 4 + 4 + 2 + 2 + 1 + 3 * 4 + 4 * nco + 4
+    big = int(max(cells_per_country.values())) if cells_per_country else 0
+    peak_build = (big * nm * 22 * 4 + (cells - big) * nm * n_base_cols * 4) / 1e9
+    return {"n_cells": cells, "cells_per_country": {k: int(v) for k, v in cells_per_country.items()}, "n_months": int(nm), "cell_months": int(cm),
+            "bytes_per_cell_month": int(per_cm), "panel_gb": round(cm * per_cm / 1e9, 2), "peak_country_build_gb": round(peak_build, 2)}
+
+def grid_key_in_range(ix, iy):
+    """True where (ix, iy) packs into the int64 cell key `(ix+IX_OFF)*KEY_MUL + (iy+IY_OFF)` without aliasing (0 <= iy+IY_OFF < KEY_MUL, ix+IX_OFF >= 0)."""
+    import numpy as _np
+    ix = _np.asarray(ix); iy = _np.asarray(iy)
+    return (ix + IX_OFF >= 0) & (iy + IY_OFF >= 0) & (iy + IY_OFF < KEY_MUL)
 
 class Timer:
     def __init__(self, name): self.name = name
@@ -640,8 +679,6 @@ jdump(ENV, RUN_DIR / "env_B.json", indent=1)
 
 # %%
 # ===================== INGEST (contract §3) =====================
-COUNTRY_ISO3 = {"Bangladesh": "BGD", "Australia": "AUS", "India": "IND", "Myanmar": "MMR", "Nepal": "NPL", "Bhutan": "BTN",
-                "United_States": "USA", "Indonesia": "IDN", "Thailand": "THA", "Brazil": "BRA", "Canada": "CAN"}
 PLATFORMS = ["aqua", "terra", "snpp", "noaa20"]
 PLAT_CODE = {p: i for i, p in enumerate(PLATFORMS)}
 SENSOR_FAMILY = {"aqua": "modis", "terra": "modis", "snpp": "viirs-snpp", "noaa20": "viirs-noaa20"}
@@ -715,6 +752,7 @@ def ingest_file(src):
     ts = ts[keep]
     ym = (ts.dt.year.to_numpy() * 12 + ts.dt.month.to_numpy() - 1).astype(np.int32)
     ix, iy, key = lonlat_to_cell(lon, lat)
+    assert grid_key_in_range(ix, iy).all(), f"{src['id']}: cell index outside the packable key range (IX_OFF/IY_OFF/KEY_MUL)"   # whole globe fits; guards the packing
     typ = pd.to_numeric(df["type"], errors="coerce").to_numpy(np.float64) if "type" in df.columns else np.full(len(df), np.nan)
     stats["type_missing"] = int(np.isnan(typ).sum())
     main = (typ == 0) | np.isnan(typ)    # NRT files may lack `type`: counted as main, logged
@@ -837,12 +875,13 @@ stop_hook("ingest")
 
 # %% [markdown]
 # ## Phase 2 · Section 2.6 — Grid, panel, features and areas
-# **What this cell does:** Decides for every country, platform and month whether data is complete, partial or missing (header-only files, platform outages, months after the last date of a current-year file and months before a satellite's start are missing or partial, never zero), builds the cell × month arrays with the model features (3×3 neighbourhood, train-only climatology, month, latitude, country), checkpoints them, then assigns cells to the areas of interest: each country plus Bangladesh's divisions and New South Wales, using the Natural Earth polygons.
+# **What this cell does:** Decides for every country, platform and month whether data is complete, partial or missing (header-only files, platform outages, months after the last date of a current-year file and months before a satellite's start are missing or partial, never zero), builds the cell × month arrays with the model features (3×3 neighbourhood, train-only climatology, month, latitude, country), checkpoints them, then assigns cells to the areas of interest: each country plus Bangladesh's divisions, New South Wales and California, using the Natural Earth polygons.
 #
 # **Steps**
 #
 # - [ ] 2.6.1 Run the cell.
-# - [ ] 2.6.2 Read `panel <country>: N cells` for each country, then `panel: 2 countries, N cells × M months = ... cell-months (2001–2025)`.
+# - [ ] 2.6.2 Read `panel <country>: N cells` for each country, then `panel: 3 countries, N cells × M months = ... cell-months (2001–2025)`.
+# - [ ] 2.6.2a Before the panel is built, read `panel plan: ... panel arrays ≈ X GB, peak while building the largest country ≈ Y GB (free RAM Z GB)`. A `WARNING: estimated panel memory exceeds 60% of free RAM` line means the kernel may run out of memory; write down the numbers (they are also in `metrics.json` under `panel_memory`).
 # - [ ] 2.6.3 Read the `availability <country> <platform>: complete=... partial=[...] missing=...` lines.
 # - [ ] 2.6.4 A `NOTE: BD-H (Mymensingh) is absent from this Natural Earth file ...` line is expected: Natural Earth's Dhaka polygon still contains Mymensingh.
 # - [ ] 2.6.5 Read `Bangladesh: k cells assigned to the nearest division (≤0.1°), u cells unassigned ...`.
@@ -851,10 +890,10 @@ stop_hook("ingest")
 # **Check before moving on**
 #
 # - [ ] Aqua availability lists `2002-07` as partial and S-NPP lists `2012-01` as partial (the satellites' first months).
-# - [ ] The AOI lines include `BGD`, the Bangladesh divisions (`BGD-A` ...), `AUS` and `AUS-NSW`, each with cells > 0.
+# - [ ] The AOI lines include `BGD`, the Bangladesh divisions (`BGD-A` ...), `AUS`, `AUS-NSW`, `USA` and `USA-CA`, each with cells > 0.
 # - [ ] Unassigned Bangladesh cells are a small share of the `BGD` cells (offshore detections).
 #
-# **If it fails:** If the kernel dies here (Australia is the largest array), restart and Run All: ingest is reused from its checkpoint. Note the RSS in the log for the report; real Australia scale is untested. If AOIs are missing, the Natural Earth files from 1.8 are missing from the bundle.
+# **If it fails:** If the kernel dies here (Australia and the United States are the largest arrays), restart and Run All: ingest is reused from its checkpoint. Note the RSS in the log for the report; real Australia and United States scale is untested. The United States file includes Alaska, Hawaii and territories, but only cells with at least one detection enter the panel, so memory grows with the number of such cells, not with the area. If AOIs are missing, the Natural Earth files from 1.8 are missing from the bundle.
 #
 # **Time:** estimate: 2–10 min (fixture: under 1 s)
 
@@ -1026,18 +1065,29 @@ with Timer("panel" + ("(resumed)" if _pan is not None else "")):
         STATUS = {c: {p: np.array(v, np.int8) for p, v in d.items()} for c, d in _sj["status"].items()}
         STATUS_NOTES = {c: {p: {int(k): v for k, v in d.items()} for p, d in dd.items()} for c, dd in _sj["notes"].items()}
         with np.load(PANEL_DIR / "partial.npz") as z: PARTIAL_RAW = {k: z[k] for k in z.files}
+        PANEL_MEMORY = json.load(open(PANEL_DIR / "panel_memory.json")) if (PANEL_DIR / "panel_memory.json").exists() else {}
     else:
         _cells, _per, STATUS, STATUS_NOTES, PARTIAL_RAW = [], [], {}, {}, {}
+        # sparse in space (cells with >=1 detection only), dense in time: estimate the panel before allocating (USA ≈ AUS in cell count)
+        PANEL_MEMORY = panel_memory_plan(AGG.groupby("country", observed=True)["key"].nunique().to_dict(), NM, len(PANEL_BASE_KEYS), len(COUNTRIES))
+        _free = free_ram_gb(); PANEL_MEMORY["free_ram_gb_at_start"] = None if not np.isfinite(_free) else round(_free, 1)
+        log(f"panel plan: {PANEL_MEMORY['n_cells']:,} cells {PANEL_MEMORY['cells_per_country']} × {NM} months = {PANEL_MEMORY['cell_months']:,} cell-months; "
+            f"panel arrays ≈ {PANEL_MEMORY['panel_gb']} GB, peak while building the largest country ≈ {PANEL_MEMORY['peak_country_build_gb']} GB "
+            f"(free RAM {PANEL_MEMORY['free_ram_gb_at_start']} GB)")
+        if np.isfinite(_free) and max(PANEL_MEMORY["panel_gb"], PANEL_MEMORY["peak_country_build_gb"]) > 0.6 * _free:
+            PANEL_MEMORY["warning"] = "estimated panel memory exceeds 60% of free RAM"
+            log("WARNING: " + PANEL_MEMORY["warning"] + ": the kernel may run out of memory in 2.6 / 2.8; restart and Run All resumes from the ingest checkpoint")
         for cidx, c in enumerate(COUNTRIES):
             cells_c, cols_c, st_c, nt_c, part_c = build_country_panel(c, cidx)
             _cells.append(cells_c); _per.append(cols_c); STATUS[c] = st_c; STATUS_NOTES[c] = nt_c; PARTIAL_RAW.update(part_c)
-            log(f"panel {c}: {len(cells_c):,} cells · RSS {rss_gb():.2f} GB")
+            log(f"panel {c}: {len(cells_c):,} cells ({len(cells_c) * NM:,} cell-months) · RSS {rss_gb():.2f} GB")
         CELLS = pd.concat(_cells, ignore_index=True); del _cells
         P = {}
         for k in PANEL_BASE_KEYS:     # watchdog #5: concatenate one key at a time and free the per-country parts (no astype copy)
             P[k] = np.concatenate([d.pop(k) for d in _per]) if len(_per) > 1 else _per[0].pop(k).copy()
         del _per
         PANEL_DIR.mkdir(parents=True, exist_ok=True)
+        jdump(PANEL_MEMORY, PANEL_DIR / "panel_memory.json", indent=1)
         CELLS.to_parquet(PANEL_DIR / "cells.parquet", index=False)
         for k in PANEL_BASE_KEYS: np.save(PANEL_DIR / f"{k}.npy", P[k])
         jdump({"status": {c: {p: v.tolist() for p, v in d.items()} for c, d in STATUS.items()},
@@ -1045,7 +1095,7 @@ with Timer("panel" + ("(resumed)" if _pan is not None else "")):
               PANEL_DIR / "status.json")
         np.savez(PANEL_DIR / "partial.npz", **PARTIAL_RAW) if PARTIAL_RAW else np.savez(PANEL_DIR / "partial.npz", _empty=np.zeros(1))
         PARTIAL_RAW.pop("_empty", None)
-        stage_save("panel", [PANEL_DIR / "cells.parquet", PANEL_DIR / "status.json", PANEL_DIR / "partial.npz"] +
+        stage_save("panel", [PANEL_DIR / "cells.parquet", PANEL_DIR / "status.json", PANEL_DIR / "partial.npz", PANEL_DIR / "panel_memory.json"] +
                    [PANEL_DIR / f"{k}.npy" for k in PANEL_BASE_KEYS], {"n_cells": int(len(CELLS)), "NM": int(NM)})
     PARTIAL_RAW.pop("_empty", None)
     CELLS["gcell"] = np.arange(len(CELLS), dtype=np.int32)
@@ -1064,7 +1114,8 @@ with Timer("panel" + ("(resumed)" if _pan is not None else "")):
     P["lat"] = CELLS["lat"].to_numpy(np.float32)[P["gcell"]]
     for ci_, c in enumerate(COUNTRIES):
         P[f"country_{ISO[c]}"] = (P["cidx"] == ci_).astype(np.float32)
-    log(f"panel: {len(COUNTRIES)} countries, {NCELL:,} cells × {NM} months = {N:,} cell-months ({YEAR_MIN}–{YEAR_MAX})")
+    log(f"panel: {len(COUNTRIES)} countries, {NCELL:,} cells × {NM} months = {N:,} cell-months ({YEAR_MIN}–{YEAR_MAX}) · RSS {rss_gb():.2f} GB")
+    PANEL_MEMORY["rss_gb_after_panel"] = round(rss_gb(), 2)
     for c in COUNTRIES:
         for p in ["aqua", "terra", "snpp"]:
             st = STATUS[c][p]
@@ -1100,6 +1151,12 @@ def admin1_code(props, expected=None):
         if v in _NAME_TO_ISO: return _NAME_TO_ISO[v]
     return None
 
+def dissolve_features(fs):
+    """One (Multi)Polygon for all Natural Earth features that share an iso_3166_2 code (NSW + Lord Howe Island; California's mainland
+    and Channel Islands if NE ships them as separate features, otherwise the single MultiPolygon is used as is)."""
+    geoms = [shape(f["geometry"]) for f in fs]
+    return unary_union(geoms) if len(geoms) > 1 else geoms[0]
+
 AOI_NOTES = []
 with Timer("aoi_assign"):
     ADM0 = load_geojson("ne_110m_admin_0_countries.geojson")
@@ -1109,14 +1166,13 @@ with Timer("aoi_assign"):
         iso = ISO[c]; geom = None
         if ADM0:
             for f in ADM0["features"]:
-                pr = f.get("properties", {})
-                if iso in (pr.get("ADM0_A3"), pr.get("ISO_A3"), pr.get("adm0_a3")) or c.replace("_", " ") in (pr.get("ADMIN"), pr.get("NAME")):
+                if ne_country_match(f.get("properties", {}), iso, c):
                     geom = shape(f["geometry"]); break
         cm = (CELLS["country"] == c).to_numpy()
-        AOIS.append({"aoi_id": iso, "name": c.replace("_", " "), "country": c, "kind": "country", "geometry": geom, "cellmask": cm,
-                     "iso_3166_2": None, "ne_names": [c.replace("_", " ")] if geom is not None else [], "note": None})
+        AOIS.append({"aoi_id": iso, "name": country_display(c), "country": c, "kind": "country", "geometry": geom, "cellmask": cm,
+                     "iso_3166_2": None, "ne_names": ([NE_ADMIN0_NAMES.get(c, [country_display(c)])[0]] if geom is not None else []), "note": None})
         if not ADM1: continue
-        feats = [f for f in ADM1["features"] if (f.get("properties", {}).get("adm0_a3") == iso or f.get("properties", {}).get("admin") == c.replace("_", " "))]
+        feats = [f for f in ADM1["features"] if ne_country_match({k: v for k, v in f.get("properties", {}).items() if k in ("adm0_a3", "admin")}, iso, c)]
         groups, skipped = {}, []
         for f in feats:
             code = admin1_code(f["properties"], EXPECTED_ADMIN1.get(c) if c == "Bangladesh" else None)
@@ -1134,8 +1190,7 @@ with Timer("aoi_assign"):
         adm_list = []
         for code, fs in sorted(groups.items()):
             if wanted is not None and code not in wanted: continue
-            geoms = [shape(f["geometry"]) for f in fs]
-            g = unary_union(geoms) if len(geoms) > 1 else geoms[0]
+            g = dissolve_features(fs)
             shapely.prepare(g)
             inside = shapely.contains_xy(g, lon, lat)
             ne_names = [str(f["properties"].get("name")) for f in fs]
@@ -1391,7 +1446,7 @@ with Timer("B0"):
                                                 "ratios": ratios, "fallback_global_r": r, "key_format": "ISO3-MM (MM = UTC calendar month 01..12)",
                                                 "computed_on": f"train years {TRAIN_YEARS[0]}–{TRAIN_YEARS[-1]}, spatial-holdout blocks excluded, "
                                                                "ratio = Σ viirs_snpp_count / Σ aqua_count per country × calendar month",
-                                                "countries": {ISO[c]: c for c in COUNTRIES}, "link": "identity"}}
+                                                "countries": {ISO[c]: country_display(c) for c in COUNTRIES}, "link": "identity"}}
         log(f"B0 global ratio r = {r:.3f}")
     except Exception as e:
         register_failure("B0", e)
@@ -1943,7 +1998,7 @@ with Timer("backcast_series"):
 
 # %% [markdown]
 # ## Phase 2 · Section 2.14 — Export the app bundle
-# **What this cell does:** Writes the app bundle before the research stages: monthly activity records per area and year (validated against `activity.schema.json`), cell grids (15 MB per file budget), B1 input features for AUS-NSW and BGD, the optional recent NRT layer, scrubbed sources, regions and boundaries, model weights (B1 JSON, B2 JSON, D1 ONNX with an onnxruntime parity check), model cards, metrics, `comparison.csv`, figures, manifest and checksums. It copies the bundle to `/kaggle/working/lumos_app_bundle/` and zips it to `/kaggle/working/lumos_app_bundle.zip`.
+# **What this cell does:** Writes the app bundle before the research stages: monthly activity records per area and year (validated against `activity.schema.json`), cell grids (15 MB per file budget), B1 input features for BGD, AUS-NSW and USA-CA, the optional recent NRT layer, scrubbed sources, regions and boundaries, model weights (B1 JSON, B2 JSON, D1 ONNX with an onnxruntime parity check), model cards, metrics, `comparison.csv`, figures, manifest and checksums. It copies the bundle to `/kaggle/working/lumos_app_bundle/` and zips it to `/kaggle/working/lumos_app_bundle.zip`.
 #
 # **Steps**
 #
@@ -1951,6 +2006,7 @@ with Timer("backcast_series"):
 # - [ ] 2.14.2 Read `activity records: N; schema errors: 0 (validator: ...)`.
 # - [ ] 2.14.3 Read `ONNX parity: {...}`.
 # - [ ] 2.14.4 Lines `cells <aoi> <year>: est cutoff raised to ...` mean a cell file was over budget and its cutoff was raised and recorded; that is expected for large areas.
+# - [ ] 2.14.4a Cell grids (`cells/<aoi>/<year>.json`) are written for `BGD` and its divisions, `AUS-NSW` and `USA-CA` only; whole-country `AUS` and `USA` have none. B1 feature files (`features/<aoi>/<year>.json`) exist for `BGD`, `AUS-NSW` and `USA-CA`.
 # - [ ] 2.14.5 Read `app bundle [core (before research stages Q1/Q2)]: ... zip ... MB`.
 #
 # **Check before moving on**
@@ -2149,7 +2205,8 @@ def model_card(mid):
 def write_figures(fig_dir):
     fig_dir.mkdir(parents=True, exist_ok=True); made = []
     t = pd.to_datetime([f"{y}-{m:02d}-01" for y, m in zip(YEAR_OF_M, MONTH_OF_M)])
-    for a in [a for a in AOIS if a["kind"] == "country"] + [a for a in AOIS if a["aoi_id"] == "AUS-NSW"]:
+    # v1.2: every country (BGD, AUS, USA) plus the detailed admin-1 regions with B1 features (AUS-NSW, USA-CA)
+    for a in [a for a in AOIS if a["kind"] == "country"] + [a for a in AOIS if a["kind"] == "admin1" and a["aoi_id"] in FEATURE_EXPORT_AOIS]:
         s = SERIES[a["aoi_id"]]
         fig, ax = plt.subplots(figsize=(13, 4.2))
         ax.plot(t, s["aqua"], color=COL["aqua"], lw=1.4, label="MODIS Aqua (source, raw)")
@@ -2260,7 +2317,7 @@ def write_cells(a, out_dir):
 FEATURE_DYNAMIC = ["aqua_count", "aqua_day", "aqua_night", "aqua_frp_sum", "aqua_frp_mean", "aqua_conf_mean", "aqua_scan_mean",
                    "terra_count", "aqua_count_3x3"]
 def write_features(a, out_dir):
-    """features/<aoi>/<year>.json — compact per-cell B1 inputs so the app can recompute B1 in JS (v1.1, AUS-NSW and BGD only).
+    """features/<aoi>/<year>.json — compact per-cell B1 inputs so the app can recompute B1 in JS (v1.1: BGD and AUS-NSW; v1.2 adds USA-CA).
     Rows absent from `rows` have all dynamic features = 0; month_sin/cos derive from month; lat and aqua_clim come from `cells`;
     country one-hot is constant per AOI; aqua_count_raw = aqua_count. `check.b1_sum_by_month` is B's own B1 AOI sum."""
     if MODELS.get("B1_poisson", {}).get("status") != "ok": FEATURE_EXPORT_LOG[a["aoi_id"]] = "skipped: B1 not available"; return
@@ -2336,7 +2393,10 @@ def export_core(out):
         else:
             c = CELLS[a["cellmask"]]; bbox = [float(c.lon.min()), float(c.lat.min()), float(c.lon.max()), float(c.lat.max())]
         has_obs = bool(np.nansum(SERIES[a["aoi_id"]]["viirs_model"][np.isin(YEAR_OF_M, TRAIN_YEARS)]) > 0)
-        regions.append({"aoi_id": a["aoi_id"], "name": a["name"], "country": a["country"], "kind": a["kind"], "bbox": bbox,
+        regions.append({"aoi_id": a["aoi_id"], "name": a["name"], "country": country_display(a["country"]), "kind": a["kind"],
+                         "parent": next((x["aoi_id"] for x in AOIS if x["kind"] == "country" and x["country"] == a["country"]), None) if a["kind"] == "admin1" else None,
+                         "display_kind": "Country" if a["kind"] == "country" else ADMIN1_DISPLAY_KIND.get(a["country"], "State"),
+                         "bbox": bbox,
                          "geometry_path": f"geo/{a['aoi_id']}.geojson" if g is not None else None,
                          "supported_calibration": bool(RELEASE_STAGE == "validated_calibration" and has_obs),
                          "iso_3166_2": a.get("iso_3166_2"), "natural_earth_names": a.get("ne_names"), "note": a.get("note"),
@@ -2397,7 +2457,7 @@ def export_finalize(out, phase):
                              "seeds": [r["seed"] for r in MODELS[mid]["seed_runs"]]}
                        for mid in MODELS if MODELS[mid].get("seed_runs")},
         "qml_subset_comparison": QML, "qllm": QLLM, "backcast_summary": BACKCAST_SUMMARY, "split_manifest": SPLIT_MANIFEST,
-        "checksum_report": CHECKSUM_REPORT, "timings_s": TIMINGS, "device": DEVICE, "quick_test": QUICK_TEST,
+        "checksum_report": CHECKSUM_REPORT, "panel_memory": PANEL_MEMORY, "timings_s": TIMINGS, "device": DEVICE, "quick_test": QUICK_TEST,
         "availability": {c: {p: {"partial_months": [f"{YEAR_OF_M[m]}-{MONTH_OF_M[m]:02d}" for m in np.where(STATUS[c][p] == ST_PARTIAL)[0]],
                                  "missing_months": int((STATUS[c][p] == ST_MISSING).sum()),
                                  "notes_sample": sorted({v for v in STATUS_NOTES[c][p].values() if "before the" not in v})[:12]}
@@ -2954,7 +3014,7 @@ stage_save("final", [APP_STAGE / "manifest.json"], {"selected": SELECTED})
 # - [ ] 2.18.1 Run the cell and read the summary table.
 # - [ ] 2.18.2 Read `Selected model (validation only): ... | release stage: ...`.
 # - [ ] 2.18.3 Read `Device: cuda ... blocked network attempts: 0`.
-# - [ ] 2.18.4 Look at the figures below (time series for BGD, AUS and AUS-NSW, model comparison, test scatter, QML subset comparison).
+# - [ ] 2.18.4 Look at the figures below (time series for BGD, AUS-NSW and USA-CA, plus AUS and USA, model comparison, test scatter, QML subset comparison).
 # - [ ] 2.18.5 Download `/kaggle/working/lumos_app_bundle.zip`: right-hand **Output** panel (or the committed version's **Output** tab) → `lumos_app_bundle.zip` → **Download**. Files in an interactive session disappear when it stops, so download now or commit with **Save Version → Save & Run All**.
 #
 # **Check before moving on**
@@ -3015,7 +3075,7 @@ except Exception:
 # - [ ] Open `manifest.json` in the bundle: `release_stage` is `observed_comparison` or `validated_calibration`, `synthetic` is false, and `release_reason` makes sense.
 # - [ ] Open `figures/timeseries_BGD.png`: the estimate continues smoothly into the VIIRS series with no jump at 2012, and Aqua sits below VIIRS.
 # - [ ] Open `metrics.json` or `comparison.csv`: note the selected model and its test interval coverage (aim: near 0.80).
-# - [ ] Open `runs/<ts>/run_log.json` (in `/kaggle/working`): note the timings and the RSS memory for Australia (ingest and panel lines).
+# - [ ] Open `runs/<ts>/run_log.json` (in `/kaggle/working`): note the timings and the RSS memory for Australia and the United States (ingest and panel lines).
 # - [ ] Run `python notebooks/tests/check_bundle.py <unzipped lumos_app_bundle>` locally (without `--fixture`); it must pass on the real bundle (DATA-03).
 # - [ ] Q2 shows `ok` if you attached a model, or `skipped` if you did not; never anything in between.
 # - [ ] Give `lumos_app_bundle.zip` to Claude Code, which unzips it to `apps/web/public/data/<snapshot_id>/`.

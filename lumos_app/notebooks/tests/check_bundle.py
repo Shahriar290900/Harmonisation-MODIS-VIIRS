@@ -129,8 +129,15 @@ def main():
     print("== regions (ISO-keyed, modern names) ==")
     ids = {r["aoi_id"]: r for r in regions}
     check(all(re.fullmatch(r"[A-Z]{3}(-[A-Z0-9]{1,3})?", i) for i in ids), f"aoi ids ISO-based: {sorted(ids)}")
-    check(all(r.get("iso_3166_2") and i == r["iso_3166_2"].replace("BD-", "BGD-").replace("AU-", "AUS-") for i, r in ids.items() if r["kind"] == "admin1"),
+    check(all(r.get("iso_3166_2") and i == {"BD": "BGD", "AU": "AUS", "US": "USA"}[r["iso_3166_2"][:2]] + r["iso_3166_2"][2:] for i, r in ids.items() if r["kind"] == "admin1"),
           "admin1 aoi_id derived from iso_3166_2")
+    check(all(isinstance(r.get("cells_exported"), bool) and isinstance(r.get("features_exported"), bool) for r in regions),
+          "every region carries cells_exported / features_exported booleans")
+    check(all(r["kind"] == "country" or r.get("parent") in ids for r in regions) and all(r.get("parent") is None for r in regions if r["kind"] == "country"),
+          "registry: admin1 regions have a parent country aoi_id present in regions.json; countries have none")
+    check(all((B / "cells" / i).is_dir() == r["cells_exported"] for i, r in ids.items()), "cells_exported flag matches cells/<aoi>/ on disk")
+    check(all((B / "features" / i).is_dir() == r["features_exported"] for i, r in ids.items()), "features_exported flag matches features/<aoi>/ on disk")
+    check(all((B / "activity" / i).is_dir() for i in ids), "activity/<aoi>/ exists for every region")
     names = {r["name"] for r in regions}
     check(not ({"Chittagong", "Barisal"} & names), "display names use modern spellings")
     check(all((B / r["geometry_path"]).exists() for r in regions if r["geometry_path"]), "every geometry_path exists")
@@ -138,7 +145,7 @@ def main():
     print("== cells / features / models ==")
     sizes = [p.stat().st_size / 1e6 for p in (B / "cells").rglob("*.json")]
     check(max(sizes) <= 15.0, f"cells files ≤ 15 MB (max {max(sizes):.2f} MB over {len(sizes)} files)")
-    check(not (B / "cells" / "AUS").exists(), "no whole-Australia cell grid (v1.1)")
+    check(not (B / "cells" / "AUS").exists() and not (B / "cells" / "USA").exists(), "no whole-country AUS / USA cell grid (v1.1, v1.2 addendum)")
     sel = met["selected_model_id"]
     for mid in ("B0_identity", "B0_ratio", "B0_month_ratio", "B1_poisson", "D1_mlp"):
         card = json.load(open(B / "models" / mid / "model_card.json"))
@@ -163,7 +170,7 @@ def main():
     # B1 recomputed in plain numpy from features/<aoi>/<year>.json (what the JS port does)
     wb1 = json.load(open(B / "models" / "B1_poisson" / "weights.json"))
     worst, nchk = 0.0, 0
-    for aid in ("BGD", "AUS-NSW"):
+    for aid in sorted(i for i, r in ids.items() if r["features_exported"]):
         for y in (2008, 2016, 2022):
             fp = B / "features" / aid / f"{y}.json"
             ok = check(fp.exists(), f"features/{aid}/{y}.json exists") if y == 2016 else fp.exists()
@@ -191,7 +198,10 @@ def main():
                 if ref is None: continue
                 worst = max(worst, abs(rate[k] - ref) / max(1.0, ref)); nchk += 1
     check(nchk > 0 and worst < 2e-3, f"B1 recomputed from features/*.json + weights.json (JS path): {nchk} AOI-months, max rel diff {worst:.2e}")
-    check(not (B / "features" / "AUS").exists() and not (B / "features" / "BGD-A").exists(), "features exported only for AUS-NSW and BGD")
+    check(sorted(p.name for p in (B / "features").iterdir()) == ["AUS-NSW", "BGD", "USA-CA"] and not (B / "features" / "AUS").exists()
+          and not (B / "features" / "USA").exists() and not (B / "features" / "BGD-A").exists(), "features exported only for AUS-NSW, BGD and USA-CA")
+    check({"country_BGD", "country_AUS", "country_USA"} <= set(wb1["feature_names"]), "B1 weights carry a one-hot term per country (BGD, AUS, USA)")
+    check({"BGD-01", "AUS-01", "USA-01", "USA-12"} <= set(json.load(open(B / "models" / "B0_month_ratio" / "weights.json"))["ratios"]), "B0_month_ratio has ratios for BGD, AUS and USA (USA-01..USA-12)")
     rec = list((B / "recent").glob("*.json"))
     if rec:
         rd = json.load(open(rec[0]))
@@ -220,9 +230,31 @@ def main():
         if sel.startswith("B0_"):
             check(all(r["estimated_viirs_reference_detections"] is not None for r in t08), "AUS 2008: B0 estimate unaffected by the Terra outage")
         check(all(r["value_status"] == "demo" for r in R("BGD", 2015)) and man["release_stage"] == "ui_prototype", "synthetic → demo / ui_prototype")
-        check(set(ids) >= {"BGD", "AUS", "AUS-NSW", "BGD-A", "BGD-B", "BGD-C", "BGD-G"} and "BGD-H" not in ids
+        check(set(ids) == {"BGD", "BGD-A", "BGD-B", "BGD-C", "BGD-D", "BGD-E", "BGD-F", "BGD-G", "AUS", "AUS-NSW", "USA", "USA-CA"} and "BGD-H" not in ids
               and ids["BGD-B"]["name"] == "Chattogram" and ids["BGD-A"]["name"] == "Barishal", "fixture mirrors real NE: 7 divisions, no BGD-H, modern display names")
         check("Lord Howe Island" in ids["AUS-NSW"]["natural_earth_names"], "AU-NSW dissolves NSW + Lord Howe Island")
+        check(ids["USA"]["name"] == "United States" and ids["USA"]["country"] == "United States" and ids["USA"]["kind"] == "country"
+              and ids["USA-CA"]["name"] == "California" and ids["USA-CA"]["country"] == "United States" and ids["USA-CA"]["kind"] == "admin1"
+              and ids["USA-CA"]["parent"] == "USA" and ids["USA-CA"]["iso_3166_2"] == "US-CA" and ids["USA-CA"]["display_kind"] == "State"
+              and ids["BGD-C"]["display_kind"] == "Division" and ids["AUS-NSW"]["display_kind"] == "State" and ids["BGD"]["display_kind"] == "Country",
+              "USA / USA-CA registry entries: names, display country, kind, parent, iso_3166_2, display_kind")
+        check([ids[i]["cells_exported"] for i in ("BGD", "BGD-A", "AUS", "AUS-NSW", "USA", "USA-CA")] == [True, True, False, True, False, True]
+              and [ids[i]["features_exported"] for i in ("BGD", "BGD-A", "AUS", "AUS-NSW", "USA", "USA-CA")] == [True, False, False, True, False, True],
+              "cells_exported / features_exported flags follow CONTRACT §9 (AUS, USA aggregate-only)")
+        check(met["split_manifest"]["countries"] == ["Australia", "Bangladesh", "United_States"], f"3 countries in the split manifest: {met['split_manifest']['countries']}")
+        us = [r for y in range(2003, 2025) for r in R("USA", y)]
+        check(len(us) == 22 * 12 and all(r["value_status"] == "demo" for r in us if r["split"] != "none") and any(r["raw_modis_detections"] for r in us),
+              "USA activity: 22 years × 12 records, synthetic → value_status demo, Aqua counts present")
+        usca = [r for y in range(2013, 2021) for r in R("USA-CA", y)]
+        check(any(r["raw_viirs_reference_detections"] for r in usca) and all(r["extract_status"] == "complete" for r in usca), "USA-CA 2013-2020: VIIRS reference present, extract complete")
+        acv = json.load(open(B / "cells" / "USA-CA" / "2020.json"))
+        check(acv["proj"] == "lambert-cea" and acv["cell_size_m"] == 5000 and len(acv["rows"]) > 0
+              and all(31.0 < r[2] < 43.0 and -126.0 < r[1] < -113.0 for r in acv["rows"]), f"USA-CA cells are inside California's bounding box ({len(acv['rows'])} rows)")
+        bb = ids["USA-CA"]["bbox"]
+        check(-125.0 < bb[0] < -123.0 and 31.5 < bb[1] < 33.5 and -115.0 < bb[2] < -113.5 and 41.5 < bb[3] < 43.0, f"USA-CA bbox is California's extent {bb}")
+        fig = {p.name for p in (B / "figures").glob("timeseries_*.png")}
+        check(fig == {f"timeseries_{i}.png" for i in ("BGD", "AUS", "AUS-NSW", "USA", "USA-CA")}, f"time-series figures: {sorted(fig)}")
+        check("panel_memory" in met and met["panel_memory"].get("n_cells", 0) > 0, f"metrics.json carries panel_memory {met.get('panel_memory')}")
 
     print(f"\n{len(PASSES)} passed, {len(FAILS)} failed")
     if FAILS:

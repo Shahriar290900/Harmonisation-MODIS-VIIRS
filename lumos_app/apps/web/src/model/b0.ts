@@ -3,10 +3,36 @@
 import type { ActivityRecord, CellsFile } from '../types';
 import type { B0Weights } from '../data/schemas';
 import { parseUtcMonth } from '../data/format';
+import { iso3Of } from '../data/regions';
 
-/** 'BGD-A' → 'BGD', 'AUS-NSW' → 'AUS' (ratios are per country). */
+/** 'BGD-A' → 'BGD', 'AUS-NSW' → 'AUS', 'USA-CA' → 'USA' (ratios are per country). */
 export function iso3OfAoi(aoiId: string): string {
-  return aoiId.split('-')[0].toUpperCase();
+  return iso3Of(aoiId);
+}
+
+/**
+ * Months (1-12) for which weights.json has no own `${ISO3}-MM` ratio for this AOI's country, i.e. where b0Ratio uses
+ * fallback_global_r (or nothing). Never silent: callers surface this as a visible label (e.g. a snapshot whose
+ * weights predate the USA addition has no `USA-MM` keys).
+ */
+export function b0FallbackMonths(w: B0Weights, aoiId: string): number[] {
+  const iso = iso3OfAoi(aoiId), out: number[] = [];
+  for (let m = 1; m <= 12; m++) {
+    const r = w.ratios[`${iso}-${String(m).padStart(2, '0')}`];
+    if (!(typeof r === 'number' && Number.isFinite(r))) out.push(m);
+  }
+  return out;
+}
+
+/** Human-readable label for a B0 fallback, or null when the country has its own ratios for every month. */
+export function b0FallbackNote(w: B0Weights, aoiId: string): string | null {
+  const months = b0FallbackMonths(w, aoiId);
+  if (!months.length) return null;
+  const iso = iso3OfAoi(aoiId);
+  const g = typeof w.fallback_global_r === 'number' && Number.isFinite(w.fallback_global_r);
+  return g
+    ? `No ${iso} ratios in weights.json for ${months.length === 12 ? 'any month' : `${months.length} month${months.length > 1 ? 's' : ''}`}: the global fallback ratio (${w.fallback_global_r!.toFixed(2)}) is used instead. It is not a ${iso}-specific ratio.`
+    : `No ${iso} ratios and no global fallback in weights.json for ${months.length === 12 ? 'any month' : `${months.length} month${months.length > 1 ? 's' : ''}`}: those months have no estimate (shown as missing, not zero).`;
 }
 
 /** Ratio for an AOI's country and calendar month (1-12); falls back to fallback_global_r, else null. */

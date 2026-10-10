@@ -13,12 +13,13 @@ function Key({ icon, name }: { icon: LucideIcon; name: string }) {
 }
 import { valueColor } from '../../ui/scale';
 import type { Region } from '../../types';
+import { displayKindLower } from '../../data/regions';
 import { useNear, useSeries, workspaceHash, type AoiSeries } from './data';
 import { onWorkspaceLink } from './transition';
 import { Reveal } from './motion';
 import type { Ctx } from './Landing';
 
-const KIND_LABEL = (r: Region) => (r.aoi_id === 'AUS-NSW' ? 'state' : r.kind === 'country' ? 'country' : 'division');
+const KIND_LABEL = (r: Region) => displayKindLower(r);
 
 export function IndexList({ ctx }: { ctx: Ctx }) {
   const { core, flags } = ctx;

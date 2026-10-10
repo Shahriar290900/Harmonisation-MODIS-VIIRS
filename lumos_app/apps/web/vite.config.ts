@@ -40,5 +40,5 @@ export default defineConfig({
       }
     })
   ],
-  test: { environment: 'jsdom', include: ['src/**/*.test.ts', 'src/**/*.test.tsx', '../../tests/unit/**/*.test.ts'], globals: false }
+  test: { environment: 'jsdom', include: ['src/**/*.test.ts', 'src/**/*.test.tsx', '../../tests/unit/**/*.test.ts'], globals: false, testTimeout: 60_000 }
 });

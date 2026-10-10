@@ -8,13 +8,13 @@ Everything built so far passes its tests. Nothing has run on real NASA data or o
 
 | Part | Status | Evidence |
 | --- | --- | --- |
-| Notebook A (fetch) | Passes on a local mirror | Downloader tests (retries, 404, rate limits, key redaction) pass |
-| Notebook B (train) | Passes on synthetic data | Quick run 130 s, 0 errors; bundle check 38/38; unit, resume and leakage tests pass |
+| Notebook A (fetch) | Passes on a local mirror | Downloader tests (retries, 404, rate limits, key redaction) pass; now fetches 3 countries (117 FIRMS files) |
+| Notebook B (train) | Passed on synthetic data before the USA update (historical 2-country run; not re-run for 3 regions) | Quick run 130 s, 0 errors; bundle check 38/38; unit, resume and leakage tests pass. The three-region update (USA, California) is **not yet in the shipped `lumos_B_train.py`**: it still defines Bangladesh and Australia only and logs `panel: 2 countries` in its guide text. Steps 2.6.2, 2.6 check, 2.14.4a and 2.18.4 below describe the updated notebook (the target); see `lumos_app/STATUS.md` |
 | Notebook guide cells | Added | 1.1–1.12 and 2.1–2.18, one markdown cell above every code cell |
-| Web app: data workspace | Passes | Type check clean, 367/367 unit tests, build OK |
+| Web app: data workspace | Passes | Type check clean, unit tests and build OK at the earlier 10 Oct check (367 unit tests then); the three-region update is being re-tested, see `lumos_app/STATUS.md` |
 | Web app: 3D landing | Passes | Last full browser run 81/82; the one timing test was fixed and passes |
 | Real FIRMS download | Not run | The sandbox cannot reach NASA servers |
-| Real-scale training (Australia) | Not run | About 90M cell-months estimated |
+| Real-scale training (Australia, United States) | Not run | Australia was estimated at about 90M cell-months; the United States panel has not been sized |
 | Real phones, real GPU frame rates | Not tested | Only emulated in headless Chromium |
 | Public deployment | Not done | Waits for your go-ahead |
 
@@ -22,9 +22,24 @@ Known small issues, none blocking:
 
 - The landing page also downloads the workspace code early (about 100 kB gzip).
 - Layout breakpoints are read once; rotating a tablet may need a reload.
-- The repo copy of `notebooks/tests/test_notebook_A.py` expects the old folder layout. Run it from `/lumos/notebook_A` until it is fixed.
+- The United States download (whole country, no bounding box) and its processing time and memory have not been measured on real data.
 - Natural Earth has 7 Bangladesh divisions (no Mymensingh), so Mymensingh is counted inside its neighbour.
 - Organizer rules on reusing preparation work are still unconfirmed (step 0.3.2).
+
+## Regions covered (three-region spec, 10 Oct 2026)
+
+| Region | FIRMS country file name | Areas of interest (AOI ids) | Detailed view (5 km cells and B1 features) |
+| --- | --- | --- | --- |
+| Bangladesh | `Bangladesh` | `BGD` + 7 divisions `BGD-A` … `BGD-G` | `BGD` (divisions have cell grids only) |
+| Australia | `Australia` | `AUS` + `AUS-NSW` (New South Wales) | `AUS-NSW` only; whole-country `AUS` is aggregate only |
+| United States | `United_States` | `USA` + `USA-CA` (California) | `USA-CA` only; whole-country `USA` is aggregate only |
+
+- Notebook A downloads 3 countries × (25 MODIS + 14 VIIRS) years = **117 FIRMS files**, plus 2 Natural Earth files.
+- The whole United States is downloaded (under 1 GB in total, no bounding box). "Bounded" is done in the app: country totals for `USA`, detailed grids only for `USA-CA`, the same pattern as `AUS` / `AUS-NSW`.
+- The app opens on Bangladesh by default. Bangladesh, New South Wales and California are the three detailed regions.
+- `schema_version` stays `1.0`. The extra AOIs are recorded in `lumos_app/CONTRACT.md`, §8 (v1.2 addendum: AOI set extended). Older bundles (Bangladesh and Australia only) remain valid.
+- None of this has been run on real data yet.
+- Notebook A is updated for three countries. Notebook B and its guide text (`STEP_INDEX.md`) are not yet. Until they are, the Phase 2 checks marked "three-region" (2.6.2, 2.6 AOI check, 2.14.4a, 2.18.4) will not match what the notebook prints. Do not start Phase 2 until Claude confirms Notebook B was updated.
 
 ## How to use this runbook
 
@@ -58,7 +73,7 @@ Gate: you have both zips unpacked, a phone-verified Kaggle account, and you know
 - [ ] 0.2.3 In the folder, run `npm install`. It takes 1–2 minutes.
 - [ ] 0.2.4 Run `npm run dev` and open http://localhost:5173. Confirm the landing page loads with the DEMO DATA label.
 - [ ] 0.2.5 Click **Open the fire calendar** and confirm the workspace loads. Stop the server with Ctrl+C.
-- [ ] 0.2.6 Run `npm test`. Expect 367 passed.
+- [ ] 0.2.6 Run `npm test`. Expect every unit test to pass (the count grows as tests are added; `lumos_app/STATUS.md` has the latest).
 - [ ] 0.2.7 Run `git init` (if there is no `.git` folder), then `git add -A && git commit -m "baseline"`, so you can always roll back.
 - [ ] 0.2.8 Keep `notebooks/lumos_A_fetch.ipynb` and `notebooks/lumos_B_train.ipynb` handy for Phase 1 and 2.
 
@@ -102,7 +117,7 @@ Check before moving on:
 
 Sets the countries, year ranges, politeness limits for the downloader and the output folder (`/kaggle/working/lumos_bundle`). It only defines settings and prints nothing.
 
-- [ ] 1.2.1 Check `COUNTRIES` (default Bangladesh and Australia). Leave `EXTRA_COUNTRIES = []` unless you were asked to add training countries; each extra country adds download time.
+- [ ] 1.2.1 Check `COUNTRIES` (default Bangladesh, Australia and United_States; a space in a name becomes an underscore). Leave `EXTRA_COUNTRIES = []` unless you were asked to add training countries; each extra country adds download time.
 - [ ] 1.2.2 Leave `MODIS_YEARS` (2001–2025) and `VIIRS_YEARS` (2012–2025) as they are.
 - [ ] 1.2.3 Set `FETCH_API_NRT = True` only if you added the `FIRMS_MAP_KEY` secret in 1.1.6. Otherwise leave it `False`.
 - [ ] 1.2.4 Leave `TRY_NOAA20 = False` (that FIRMS folder is unverified; it would only log 404s).
@@ -152,8 +167,8 @@ Check before moving on:
 Downloads every FIRMS yearly country CSV (MODIS 2001–2025 and VIIRS S-NPP 2012–2025 for each country), validates each file, and writes the manifest as it goes. Files already downloaded in this session are reused if their SHA-256 matches.
 
 - [ ] 1.6.1 Run the cell. The first lines show the Python version, the bundle path and the base URLs.
-- [ ] 1.6.2 Look for `FIRMS country archives: 78 files, 4 workers` (2 countries × (25 MODIS + 14 VIIRS) years with the default config).
-- [ ] 1.6.3 Watch the per-file lines `[  i/78] ok|missing|error <id> <rows> <MB> <note>`. Australia files are the largest and take longest.
+- [ ] 1.6.2 Look for `FIRMS country archives: 117 files, 4 workers` (3 countries × (25 MODIS + 14 VIIRS) years with the default config).
+- [ ] 1.6.3 Watch the per-file lines `[  i/117] ok|missing|error <id> <rows> <MB> <note>`. Ids use the underscore name, for example `modis_2020_United_States`. The Australia and United_States files are the largest and take longest.
 - [ ] 1.6.4 Lines like `HTTP 429 for ... retry 1/3 in 12.0s` are normal: the downloader is waiting as FIRMS asked.
 - [ ] 1.6.5 If you see `circuit breaker` or `HTTP 403; stopping all requests`, the remaining files from that host are recorded as `error`.
 - [ ] 1.6.6 Wait for the closing line `FIRMS country archives: done in ...s (ok=..., missing=..., error=...)`.
@@ -183,7 +198,7 @@ Check before moving on:
 Downloads the Natural Earth GeoJSON files (world countries; states and provinces) into `lumos_bundle/context/` and checks each is a valid FeatureCollection.
 
 - [ ] 1.8.1 Run the cell.
-- [ ] 1.8.2 Look for `Natural Earth boundaries: 2 files, 4 workers`, then two `ok` lines with a feature count.
+- [ ] 1.8.2 Look for `Natural Earth boundaries: 2 files, 4 workers`, then two `ok` lines with a feature count. Notebook B later cuts the Bangladesh divisions, New South Wales and California out of the states-and-provinces file.
 
 Check before moving on:
 
@@ -329,10 +344,10 @@ Check before moving on:
 
 ### 2.6 Grid, panel, features and areas
 
-Marks each country, satellite and month as complete, partial or missing (never zero), builds the cell × month arrays with model features, and assigns cells to Bangladesh, its divisions, Australia and New South Wales.
+Marks each country, satellite and month as complete, partial or missing (never zero), builds the cell × month arrays with model features, and assigns cells to Bangladesh and its divisions, Australia and New South Wales, and the United States and California.
 
 - [ ] 2.6.1 Run the cell.
-- [ ] 2.6.2 Read `panel <country>: N cells` per country, then `panel: 2 countries, N cells × M months = ... cell-months (2001–2025)`.
+- [ ] 2.6.2 Read `panel <country>: N cells` per country, then `panel: 3 countries, N cells × M months = ... cell-months (2001–2025)`.
 - [ ] 2.6.3 Read the `availability <country> <platform>: complete=... partial=[...] missing=...` lines.
 - [ ] 2.6.4 A `NOTE: BD-H (Mymensingh) is absent from this Natural Earth file ...` line is expected.
 - [ ] 2.6.5 Read `Bangladesh: k cells assigned to the nearest division (≤0.1°), u cells unassigned ...`.
@@ -341,7 +356,7 @@ Marks each country, satellite and month as complete, partial or missing (never z
 Check before moving on:
 
 - [ ] Aqua lists `2002-07` as partial and S-NPP lists `2012-01` as partial (each satellite's first month).
-- [ ] The AOI lines include `BGD`, `BGD-A` …, `AUS` and `AUS-NSW`, each with cells > 0.
+- [ ] The AOI lines include `BGD`, `BGD-A` …, `AUS`, `AUS-NSW`, `USA` and `USA-CA`, each with cells > 0.
 - [ ] Unassigned Bangladesh cells are a small share of `BGD` cells (offshore detections).
 
 ### 2.7 Freeze the splits
@@ -444,6 +459,7 @@ Writes the full app bundle before the research stages (activity records, cell gr
 - [ ] 2.14.2 Read `activity records: N; schema errors: 0 (validator: ...)`.
 - [ ] 2.14.3 Read `ONNX parity: {...}`.
 - [ ] 2.14.4 Lines `cells <aoi> <year>: est cutoff raised to ...` mean a large file was trimmed to its 15 MB budget; expected for large areas.
+- [ ] 2.14.4a Cell grids (`cells/<aoi>/<year>.json`) are written for `BGD` and its divisions, `AUS-NSW` and `USA-CA` only; whole-country `AUS` and `USA` have none. B1 feature files (`features/<aoi>/<year>.json`) exist for `BGD`, `AUS-NSW` and `USA-CA`.
 - [ ] 2.14.5 Read `app bundle [core (before research stages Q1/Q2)]: ... zip ... MB`.
 
 Check before moving on:
@@ -501,7 +517,7 @@ Prints one row per model, the subset comparison, the selected model with release
 - [ ] 2.18.1 Run the cell and read the summary table.
 - [ ] 2.18.2 Read `Selected model (validation only): ... | release stage: ...`.
 - [ ] 2.18.3 Read `Device: cuda ... blocked network attempts: 0`.
-- [ ] 2.18.4 Look at the figures (time series for BGD, AUS and AUS-NSW, model comparison, test scatter, QML subset comparison).
+- [ ] 2.18.4 Look at the figures (time series for BGD, AUS-NSW and USA-CA, plus AUS and USA if present, model comparison, test scatter, QML subset comparison).
 - [ ] 2.18.5 Download `lumos_app_bundle.zip` from the **Output** panel now, or commit with **Save Version → Save & Run All**. Interactive session files disappear when the session stops.
 
 Check before moving on:
@@ -543,6 +559,7 @@ Check before moving on:
 - [ ] 3.3.2 Check Aqua (cyan) sits below VIIRS (violet) almost every month.
 - [ ] 3.3.3 Check Bangladesh peaks in its dry season (roughly February–April). If the peak is elsewhere, flag it in 3.5.
 - [ ] 3.3.4 Open `figures/timeseries_AUS-NSW.png`. Look for the 2019–20 Black Summer spike in VIIRS. It is a real event and must stay visible.
+- [ ] 3.3.4a Open `figures/timeseries_USA-CA.png`. Check the VIIRS line sits above Aqua and the estimate runs into VIIRS around 2012 with no step. Note California's peak months; do not assume them in advance. If a figure for `USA` or `AUS` exists, check the same.
 - [ ] 3.3.5 Open `figures/test_scatter_aoi_month.png`. Points should hug the diagonal, with no big group far above or below.
 - [ ] 3.3.6 Open `figures/model_comparison.png` and `figures/qml_subset_comparison.png`. Note which model wins and how Q1 compares on the matched subset.
 
@@ -550,6 +567,7 @@ Check before moving on:
 
 - [ ] No visible jump at 2012 in the harmonized series.
 - [ ] Black Summer is visible in NSW.
+- [ ] California and Bangladesh show no visible jump at 2012 either.
 
 ### 3.4 Sanity-check the numbers
 
@@ -557,8 +575,8 @@ Check before moving on:
 - [ ] 3.4.2 Open `comparison.csv`. Find the test area-month MAE of the selected model, B0\_identity and B0\_month\_ratio.
 - [ ] 3.4.3 Check interval coverage on test is between 0.70 and 0.90 for an 80% interval.
 - [ ] 3.4.4 Check the active-cell subgroup errors are not much worse than the all-cell errors.
-- [ ] 3.4.5 Open `activity/AUS/2016.json` or any month with a missing source. Missing values must be `null`, never `0`.
-- [ ] 3.4.6 Open `runs/<ts>/run_log.json` on Kaggle and note Australia's ingest time and peak memory for future runs.
+- [ ] 3.4.5 Open `activity/AUS/2016.json`, `activity/USA/2016.json` or any month with a missing source. Missing values must be `null`, never `0`.
+- [ ] 3.4.6 Open `runs/<ts>/run_log.json` on Kaggle and note Australia's and the United States' ingest time and peak memory for future runs.
 
 Check before moving on:
 
@@ -575,7 +593,7 @@ Check before moving on:
 
 - [ ] 3.6.1 Too few cells or many `missing` files: re-check Phase 1's summary table, then re-run Notebook A.
 - [ ] 3.6.2 Coverage far from 0.80: ask Claude Code to review the interval method in Notebook B section 2.11.
-- [ ] 3.6.3 Out of memory on Australia: set `RUN_QML = False` first, then ask Claude Code to cap the Australia panel.
+- [ ] 3.6.3 Out of memory on Australia or the United States: set `RUN_QML = False` first, then ask Claude Code to cap that country's panel.
 - [ ] 3.6.4 Any re-run: change one thing at a time and record it in this doc.
 
 ## Phase 4 — Load real data into the app with Claude Code
@@ -611,6 +629,7 @@ Check before moving on:
 - [ ] 4.3.6 Select Bangladesh, March of a recent year. Check the evidence drawer's numbers against `activity/BGD/<year>.json`.
 - [ ] 4.3.7 Turn on **Harmonize in your browser**. The parity badge must pass.
 - [ ] 4.3.8 Select New South Wales, December 2019. The Black Summer spike shows in the calendar and chart.
+- [ ] 4.3.8a Select California (`USA-CA`) and a recent year. Check the evidence drawer's numbers against `activity/USA-CA/<year>.json`. Then select the whole `USA` and confirm it shows the country calendar and chart but no 5 km cell map layer.
 - [ ] 4.3.9 Export CSV and Print brief once; check they carry the new snapshot id.
 - [ ] 4.3.10 Open Models: the comparison table shows real metrics; QML is labelled research.
 
@@ -732,7 +751,7 @@ Gate: submission filed before the deadline with the live link, code link, video 
 
 ### 7.3 Record the demo video
 
-- [ ] 7.3.1 Follow the 4-minute outline in PRD v1 §11 (two-camera problem → Bangladesh calendar → compare sensors → calibration and held-out result → NSW, mobile, offline → limits and next step).
+- [ ] 7.3.1 Follow the 4-minute outline in PRD v1 §11 (two-camera problem → Bangladesh calendar → compare sensors → calibration and held-out result → NSW and California, mobile, offline → limits and next step).
 - [ ] 7.3.2 Record the landing scroll at 1440 px with reduced motion OFF.
 - [ ] 7.3.3 Show the workspace on a phone, installed as an app.
 - [ ] 7.3.4 Show the Harmonize-in-your-browser parity badge (proof the trained weights are live).
@@ -748,7 +767,7 @@ Gate: submission filed before the deadline with the live link, code link, video 
 
 ### 7.5 Pitch day
 
-- [ ] 7.5.1 Install the app on the demo laptop and phone the night before; load Bangladesh and NSW once so they are cached.
+- [ ] 7.5.1 Install the app on the demo laptop and phone the night before; load Bangladesh, NSW and California once so they are cached.
 - [ ] 7.5.2 Test the venue Wi-Fi; if it fails, demo offline.
 - [ ] 7.5.3 Prepare answers: why not just multiply by a ratio (we tested that; it is our baseline), how do you handle clouds (we don't claim to), why Bangladesh (kilns and crop burning season).
 - [ ] 7.5.4 Rehearse the 4-minute and 30-second versions twice with a timer.

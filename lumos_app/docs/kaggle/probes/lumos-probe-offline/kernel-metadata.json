@@ -1,0 +1,16 @@
+{
+  "id": "shahriarhameem/lumos-probe-offline",
+  "title": "Lumos Probe Offline",
+  "code_file": "probe.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "machine_shape": "NvidiaTeslaT4",
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": ["shahriarhameem/lumos-a-fetch"],
+  "model_sources": []
+}

@@ -1,0 +1,141 @@
+{
+ "model_id": "B0_month_ratio",
+ "description": "Per country \u00d7 calendar-month train ratio \u00d7 aqua count (transparent; ratios in weights.json).",
+ "status": "ok",
+ "error": null,
+ "target": "viirs_snpp_count (type 0, cell-month)",
+ "prediction": "estimated_viirs_reference_detections",
+ "unit": "expected S-NPP VIIRS type-0 detections per 5 km cell per UTC calendar month; AOI value = sum over the AOI's cells",
+ "features": [
+  "aqua_count",
+  "country",
+  "month"
+ ],
+ "feature_order": [
+  "aqua_count",
+  "country",
+  "month"
+ ],
+ "feature_definitions": {
+  "aqua_count": "Aqua MODIS type-0 detections in the 5 km cell and UTC calendar month (transform log1p)",
+  "country": "FIRMS country of the cell (ISO3 in ratio key)",
+  "month": "UTC calendar month 1..12"
+ },
+ "train_years": [
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2020
+ ],
+ "val_years": [
+  2021,
+  2022
+ ],
+ "test_years": [
+  2023,
+  2024
+ ],
+ "spatial_holdout": "20% of 100 km blocks excluded from train",
+ "info": {
+  "formula": "est = r[country, month] * aqua_count (global r fallback)",
+  "ratios": {
+   "AUS-01": 3.615863141524106,
+   "AUS-02": 3.7064846416382253,
+   "AUS-03": 3.784,
+   "AUS-04": 3.8947368421052633,
+   "AUS-05": 3.26,
+   "AUS-06": 3.375478927203065,
+   "AUS-07": 3.4613259668508287,
+   "AUS-08": 3.548856548856549,
+   "AUS-09": 3.5118549511854953,
+   "AUS-10": 3.657142857142857,
+   "AUS-11": 3.6671732522796354,
+   "AUS-12": 3.546434494195688,
+   "BGD-01": 3.4387096774193546,
+   "BGD-02": 3.641646489104116,
+   "BGD-03": 3.523699421965318,
+   "BGD-04": 3.1829787234042555,
+   "BGD-05": 4.040268456375839,
+   "BGD-06": 4.2,
+   "BGD-07": 2.5625,
+   "BGD-08": 3.75,
+   "BGD-09": 2.7777777777777777,
+   "BGD-10": 2.347826086956522,
+   "BGD-11": 2.9444444444444446,
+   "BGD-12": 2.953125,
+   "USA-01": 2.9367088607594938,
+   "USA-02": 3.721311475409836,
+   "USA-03": 3.7298850574712645,
+   "USA-04": 3.518987341772152,
+   "USA-05": 3.6551724137931036,
+   "USA-06": 4.080882352941177,
+   "USA-07": 3.477744807121662,
+   "USA-08": 3.298019801980198,
+   "USA-09": 3.556048834628191,
+   "USA-10": 3.6433566433566433,
+   "USA-11": 3.3045454545454547,
+   "USA-12": 3.7613636363636362
+  }
+ },
+ "val_summary": {
+  "cell_month": {
+   "n": 109344,
+   "mae": 0.1356496819678475,
+   "rmse": 0.7594175650957982,
+   "bias": -0.0017209754183447985,
+   "poisson_deviance": 2.54226735569728,
+   "sum_obs": 12469.0,
+   "sum_pred": 12280.821663856506
+  },
+  "aoi_month": {
+   "n": 288,
+   "mae": 8.840684813757738,
+   "rmse": 15.73177450399775,
+   "bias": -1.5633469712403085,
+   "poisson_deviance": 17.1335195884035,
+   "sum_obs": 19347.0,
+   "sum_pred": 18896.75607228279
+  }
+ },
+ "test_summary": {
+  "cell_month": {
+   "n": 109344,
+   "mae": 0.12914653041094482,
+   "rmse": 0.7227049705952271,
+   "bias": -0.0028712967373070958,
+   "poisson_deviance": 2.5019486553401733,
+   "sum_obs": 11440.0,
+   "sum_pred": 11126.040929555893
+  },
+  "aoi_month": {
+   "n": 288,
+   "mae": 8.742296969725025,
+   "rmse": 15.44198481164166,
+   "bias": -1.908731830616792,
+   "poisson_deviance": 19.150496831979396,
+   "sum_obs": 17202.0,
+   "sum_pred": 16652.285232782364
+  }
+ },
+ "interval": {
+  "q_low": -0.29496920892743766,
+  "q_high": 1.0986122886681098,
+  "n_val_aoi_months": 288,
+  "formula": "low=(\u0177+1)\u00b7exp(q_low)\u22121, high=(\u0177+1)\u00b7exp(q_high)\u22121, clipped \u22650",
+  "nominal": 0.8,
+  "test_coverage": 0.8090277777777778,
+  "n_test_aoi_months": 288
+ },
+ "selected": true,
+ "synthetic_training_data": true,
+ "intended_use": "Retrospective harmonised fire-activity calendar (VIIRS S-NPP scale) for 2003\u20132012; comparison for 2012+.",
+ "limitations": "FIRMS detections are not burned area; no cloud-cover denominator (coverage_fraction null); relationship may drift with land use; Terra kept separate.",
+ "app_recompute": {
+  "weights": "models/B0_month_ratio/weights.json",
+  "how": "est = ratios[f'{iso3}-{month:02d}'] * aqua_count  (cell-month; sum over cells for an AOI)"
+ }
+}

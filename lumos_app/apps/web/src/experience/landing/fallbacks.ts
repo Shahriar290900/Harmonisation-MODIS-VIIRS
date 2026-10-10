@@ -4,7 +4,7 @@ import type { GlobeHandle, HotPoint, PixelCompareHandle } from '../contract';
 import { BASE_URL } from './data';
 
 const D2R = Math.PI / 180;
-const FOCUS = { lon: 90.35, lat: 23.7 };
+const DEFAULT_FOCUS = { lon: 90.35, lat: 23.7 }; // Bangladesh-first story; callers pass the regions.json focus
 
 let landPromise: Promise<number[][][] | null> | null = null;
 function loadLand(): Promise<number[][][] | null> {
@@ -45,8 +45,9 @@ function setupCanvas(host: HTMLElement, cls: string) {
   return { c, ctx, resize, size: () => ({ w, h }) };
 }
 
-/** Orthographic canvas globe: land, graticule, hotspots; progress zooms to Bangladesh. */
-export function mountFallbackGlobe(host: HTMLElement, opts: { reducedMotion: boolean; layout: () => { cx: number; cy: number; r: number } }): GlobeHandle {
+/** Orthographic canvas globe: land, graticule, hotspots; progress zooms to `opts.focus` (default Bangladesh). */
+export function mountFallbackGlobe(host: HTMLElement, opts: { reducedMotion: boolean; layout: () => { cx: number; cy: number; r: number }; focus?: { lon: number; lat: number } }): GlobeHandle {
+  const FOCUS = opts.focus ?? DEFAULT_FOCUS;
   const { c, ctx, resize, size } = setupCanvas(host, 'lx-fallback-canvas');
   let land: number[][][] | null = null;
   let points: HotPoint[] = [];
@@ -136,7 +137,7 @@ export function mountFallbackGlobe(host: HTMLElement, opts: { reducedMotion: boo
   return {
     setPoints(p) { points = p; draw(); },
     setProgress(p) { progress = Math.max(0, Math.min(1, p)); draw(); kick(); },
-    async focus() { /* fallback always focuses Bangladesh via progress */ },
+    async focus() { /* fallback always focuses opts.focus via progress */ },
     setSeries(s) { series = s; draw(); },
     resize() { resize(); draw(); },
     dispose() { disposed = true; halt(); io?.disconnect(); document.removeEventListener('visibilitychange', onVis); c.remove(); }

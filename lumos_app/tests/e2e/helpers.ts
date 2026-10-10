@@ -1,4 +1,5 @@
 import { expect, type Page, type TestInfo } from '@playwright/test';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -63,3 +64,15 @@ export function note(ti: TestInfo, type: string, description: string) {
   ti.annotations.push({ type, description });
   console.log(`[${ti.project.name}] ${type}: ${description}`);
 }
+
+// ───────── three-region set (CONTRACT §8/§9): the AOI list is read from the snapshot on disk, never hard-coded ─────────
+const PUBLIC_DATA = path.resolve(here, '../../apps/web/public/data');
+export interface SnapRegion { aoi_id: string; name: string; country: string; kind: 'country' | 'admin1'; cells_exported?: boolean; features_exported?: boolean }
+const readJson = <T,>(p: string): T => JSON.parse(fs.readFileSync(p, 'utf8')) as T;
+export const SNAP = readJson<{ default: string }>(path.join(PUBLIC_DATA, 'index.json')).default;
+export const SNAP_REGIONS = readJson<SnapRegion[]>(path.join(PUBLIC_DATA, SNAP, 'regions.json'));
+export const hasRegion = (id: string) => SNAP_REGIONS.some((r) => r.aoi_id === id);
+/** Registry display kind (CONTRACT §9): admin1 in Bangladesh = Division, elsewhere = State. */
+export const displayKind = (r: SnapRegion) => (r.kind === 'country' ? 'Country' : r.aoi_id.startsWith('BGD') ? 'Division' : 'State');
+/** True when the snapshot carries the three-region AOI set (USA + USA-CA). */
+export const HAS_USA = hasRegion('USA') && hasRegion('USA-CA');

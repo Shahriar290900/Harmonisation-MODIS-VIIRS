@@ -15,6 +15,7 @@ import { PwaToast, StatusLine, snapshotAge, usePwa } from './ui/PwaStatus';
 import { STATE_LABEL, type CellState } from './ui/glyphs';
 import { Glyph } from './ui/Glyph';
 import { fmtNum, monthLabel } from './data/format';
+import { DEFAULT_AOI } from './data/regions';
 import { ArrowRight, CalendarDays, FileText, FlaskConical, Info, Map as MapIcon, Pause, Play, TrendingDown, TrendingUp } from 'lucide-react';
 import { Icon3D } from './ui/icons/Icon3D';
 
@@ -43,8 +44,8 @@ export function App() {
   useEffect(() => {
     if (!core) return;
     if (!aoiOk) {
-      const first = core.regions.find((r) => core.manifest.aois.includes(r.aoi_id)) ?? core.regions[0];
-      setSelection({ aoiId: first?.aoi_id ?? 'BGD' });
+      const first = core.regions.find((r) => r.aoi_id === DEFAULT_AOI && core.manifest.aois.includes(r.aoi_id)) ?? core.regions.find((r) => core.manifest.aois.includes(r.aoi_id)) ?? core.regions[0];
+      setSelection({ aoiId: first?.aoi_id ?? DEFAULT_AOI });
     }
     if (!yearOk && allYears.length) setSelection({ year: allYears.includes(2016) ? 2016 : allYears[allYears.length - 1] });
   }, [core, sel.aoiId, sel.year, aoiOk, yearOk]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -139,7 +140,7 @@ export function App() {
       <CompareChart flat={flat} selection={sel} onSelect={onSelect} height={desktop ? 190 : mobile ? 210 : 250} />
     </section>
   );
-  const mapPanel = <MapPanel region={region} geo={geo} cells={cells} selection={sel} visible={!mobile || tab === 'map'} monthState={monthState} />;
+  const mapPanel = <MapPanel region={region} regions={core.regions} geo={geo} cells={cells} selection={sel} visible={!mobile || tab === 'map'} monthState={monthState} />;
   const evidence = (
     <Evidence record={record} state={monthState} yearError={act.errors.get(sel.year)} offline={act.offline} onRetry={act.retry}
       selection={sel} region={region} manifest={m} snapshotPath={core.snapshotPath} sources={core.sources}

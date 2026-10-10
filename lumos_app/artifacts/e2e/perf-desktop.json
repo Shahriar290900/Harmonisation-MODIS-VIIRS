@@ -1,0 +1,63 @@
+{
+  "project": "desktop",
+  "firstLoad_sw_block": {
+    "requests": 39,
+    "rawBytes": 2149696,
+    "gzipBytes": 531022,
+    "brotliBytes": 432987,
+    "msToCalendar": 3813,
+    "perfApi": {
+      "entries": 38,
+      "transferSize": 679649,
+      "decoded": 2148725
+    },
+    "top": [
+      "/assets/maplibre-gl-9KMBQ8mX.js raw=940425 gz=256319",
+      "/assets/index-DwbOObmB.js raw=349664 gz=110659",
+      "/basemap/ne_110m_admin_0_countries.geojson raw=206017 gz=69301",
+      "/data/lumos-20261010T094200Z-e3d5f980/sources.json raw=74334 gz=8674",
+      "/assets/maplibre-gl-DknwiH50.css raw=69347 gz=9969",
+      "/data/lumos-20261010T094200Z-e3d5f980/manifest.json raw=66998 gz=28630",
+      "/assets/index-gg6k7gDN.css raw=30711 gz=7393",
+      "/data/lumos-20261010T094200Z-e3d5f980/cells/BGD/2016.json raw=20934 gz=4031"
+    ]
+  },
+  "selectionLatencyMs": {
+    "samples": [
+      29.6,
+      66.8,
+      93,
+      31.3,
+      48.1,
+      26.8,
+      64.4,
+      26.9,
+      32.6,
+      56
+    ],
+    "median": 48.1,
+    "max": 93
+  },
+  "firstLoad_sw_allow": {
+    "requests": 39,
+    "rawBytes": 2149696,
+    "gzipBytes": 531022,
+    "brotliBytes": 432987,
+    "msToCalendar": 3838,
+    "perfApi": {
+      "entries": 38,
+      "transferSize": 206315,
+      "decoded": 2148725
+    },
+    "top": [
+      "/assets/maplibre-gl-9KMBQ8mX.js raw=940425 gz=256319",
+      "/assets/index-DwbOObmB.js raw=349664 gz=110659",
+      "/basemap/ne_110m_admin_0_countries.geojson raw=206017 gz=69301",
+      "/data/lumos-20261010T094200Z-e3d5f980/sources.json raw=74334 gz=8674",
+      "/assets/maplibre-gl-DknwiH50.css raw=69347 gz=9969",
+      "/data/lumos-20261010T094200Z-e3d5f980/manifest.json raw=66998 gz=28630",
+      "/assets/index-gg6k7gDN.css raw=30711 gz=7393",
+      "/data/lumos-20261010T094200Z-e3d5f980/cells/BGD/2016.json raw=20934 gz=4031"
+    ]
+  }
+}

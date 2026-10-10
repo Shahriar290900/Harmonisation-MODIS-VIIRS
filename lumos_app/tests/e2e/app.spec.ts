@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
-import { MONTHS, cell, gotoApp, isMobile, note, openEvidence, selectAoi, shot, showCalendar, trackErrors, waitCalendar } from './helpers';
+import { HAS_USA, MONTHS, SNAP, SNAP_REGIONS, cell, gotoApp, hasRegion, isMobile, note, openEvidence, selectAoi, shot, showCalendar, trackErrors, waitCalendar } from './helpers';
 
 test.describe('Lumos Fire Calendar e2e', () => {
   test('01 loads with DEMO banner, UI-prototype stage tag, no console errors', async ({ page }, ti) => {
@@ -89,9 +89,45 @@ test.describe('Lumos Fire Calendar e2e', () => {
     await shot(page, ti, '04-missing');
   });
 
-  test('05 AOI switch BGD -> BGD-B -> AUS-NSW, 2001-2002 unsupported', async ({ page }, ti) => {
+  test('04b whole-country AUS / USA: no cell grid, the map says which state to pick (driven by cells_exported)', async ({ page }, ti) => {
+    test.skip(isMobile(ti), 'table-mode message is checked on desktop/tablet');
+    const countries = SNAP_REGIONS.filter((r) => r.kind === 'country' && r.cells_exported === false);
+    expect(countries.map((r) => r.aoi_id)).toContain('AUS');
+    expect(countries.map((r) => r.aoi_id)).toContain('USA');
+    for (const c of countries) {
+      const subs = SNAP_REGIONS.filter((r) => r.kind === 'admin1' && r.country === c.country && r.cells_exported);
+      await page.goto(`./?nowebgl#aoi=${c.aoi_id}&y=2016&m=6`);
+      await waitCalendar(page);
+      const fb = page.locator('.map__fallback');
+      await expect(fb).toContainText(`whole-country ${c.name} is too large`);
+      for (const s of subs) await expect(fb).toContainText(s.name);
+    }
+  });
+
+  test('04c AOI picker lists every region of regions.json, grouped by country; default stays Bangladesh', async ({ page }, ti) => {
     await gotoApp(page, '#aoi=BGD&y=2016&m=3');
-    for (const [id, name] of [['BGD-B', 'Chattogram'], ['AUS-NSW', 'New South Wales']] as const) {
+    const sel = page.locator('select[aria-label="Area of interest"]');
+    await expect(sel).toHaveValue('BGD'); // default region stays Bangladesh
+    const values = await sel.locator('option').evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value));
+    expect(values.sort()).toEqual(SNAP_REGIONS.map((r) => r.aoi_id).sort());
+    const groups = await sel.locator('optgroup').evaluateAll((gs) => gs.map((g) => (g as HTMLOptGroupElement).label));
+    expect(groups).toEqual([...new Set(SNAP_REGIONS.map((r) => r.country))]);
+  });
+
+  test('04d USA-CA opens with its cell grid', async ({ page }, ti) => {
+    expect(HAS_USA).toBe(true);
+    await gotoApp(page, '#aoi=BGD&y=2016&m=3');
+    await selectAoi(page, 'USA-CA');
+    await expect(page.locator('.cal-panel .panel__title')).toContainText('California');
+    await expect(page.locator('.map__legend-sub, .map__fallback')).not.toContainText('No cell grid exported', { timeout: 15_000 });
+    note(ti, 'usa-ca', 'cells + features first-class');
+  });
+
+  test('05 AOI switch BGD -> BGD-B -> AUS-NSW -> USA-CA, 2001-2002 unsupported', async ({ page }, ti) => {
+    await gotoApp(page, '#aoi=BGD&y=2016&m=3');
+    // names come from regions.json
+    const walk = ['BGD-B', 'AUS-NSW', 'USA-CA'].filter(hasRegion).map((id) => [id, SNAP_REGIONS.find((r) => r.aoi_id === id)!.name] as const);
+    for (const [id, name] of walk) {
       await selectAoi(page, id);
       await expect(page.locator('.cal-panel .panel__title')).toContainText(name);
       await expect(page.locator('.map .panel__title')).toContainText(name);
@@ -135,7 +171,7 @@ test.describe('Lumos Fire Calendar e2e', () => {
     fs.mkdirSync(ti.outputDir, { recursive: true });
     fs.writeFileSync(`${ti.outputDir}/export.csv`, csv);
     note(ti, 'csv-filename', dl.suggestedFilename());
-    const snap = 'lumos-20261009T182337Z-9e1ef412';
+    const snap = SNAP;
     expect(csv).toContain(snap);
     expect(csv).toMatch(/ui_prototype/);
     const header = csv.split(/\r?\n/).find((l) => /period_start_utc/.test(l)) ?? '';
