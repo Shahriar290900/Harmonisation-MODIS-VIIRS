@@ -1,0 +1,303 @@
+{
+ "model_id": "D1_mlp",
+ "description": "PyTorch MLP (128-128-64, Poisson NLL), exported to ONNX with preprocessing embedded.",
+ "status": "ok",
+ "error": null,
+ "target": "viirs_snpp_count (type 0, cell-month)",
+ "prediction": "estimated_viirs_reference_detections",
+ "unit": "expected S-NPP VIIRS type-0 detections per 5 km cell per UTC calendar month; AOI value = sum over the AOI's cells",
+ "features": [
+  "aqua_count",
+  "aqua_day",
+  "aqua_night",
+  "aqua_frp_sum",
+  "aqua_frp_mean",
+  "aqua_conf_mean",
+  "aqua_scan_mean",
+  "terra_count",
+  "aqua_count_3x3",
+  "month_sin",
+  "month_cos",
+  "lat",
+  "aqua_clim",
+  "country_AUS",
+  "country_BGD",
+  "country_USA"
+ ],
+ "feature_order": [
+  "aqua_count",
+  "aqua_day",
+  "aqua_night",
+  "aqua_frp_sum",
+  "aqua_frp_mean",
+  "aqua_conf_mean",
+  "aqua_scan_mean",
+  "terra_count",
+  "aqua_count_3x3",
+  "month_sin",
+  "month_cos",
+  "lat",
+  "aqua_clim",
+  "country_AUS",
+  "country_BGD",
+  "country_USA"
+ ],
+ "feature_definitions": {
+  "aqua_count": "Aqua MODIS type-0 detections in the 5 km cell and UTC calendar month (transform log1p)",
+  "aqua_day": "Aqua type-0 detections with daynight=D (log1p)",
+  "aqua_night": "Aqua type-0 detections with daynight=N (log1p)",
+  "aqua_frp_sum": "sum of FRP (MW) of Aqua type-0 detections with finite frp (log1p)",
+  "aqua_frp_mean": "aqua_frp_sum / number of those detections; 0 if none (log1p)",
+  "aqua_conf_mean": "mean MODIS confidence (0-100) of Aqua type-0 detections; 0 if none (identity)",
+  "aqua_scan_mean": "mean scan (km) of Aqua type-0 detections; 0 if none (log1p)",
+  "terra_count": "Terra MODIS type-0 detections in the cell-month (log1p); separate series, never pooled into the target",
+  "aqua_count_3x3": "sum of aqua_count over the 3x3 block of cells (ix-1..ix+1, iy-1..iy+1) incl. itself; cells outside the universe add 0 (log1p)",
+  "month_sin": "sin(2*pi*(month-1)/12), month 1..12 (identity)",
+  "month_cos": "cos(2*pi*(month-1)/12) (identity)",
+  "lat": "latitude (deg) of the cell centre = degrees(asin((iy+0.5)*5000/6371007.181)) (identity)",
+  "aqua_clim": "mean aqua_count of this cell for this calendar month over the TRAIN years 2013-2020 (available months only) (log1p)",
+  "country_AUS": "1 if the cell belongs to Australia (FIRMS country file) else 0 (identity)",
+  "country_BGD": "1 if the cell belongs to Bangladesh (FIRMS country file) else 0 (identity)",
+  "country_USA": "1 if the cell belongs to United_States (FIRMS country file) else 0 (identity)"
+ },
+ "train_years": [
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2020
+ ],
+ "val_years": [
+  2021,
+  2022
+ ],
+ "test_years": [
+  2023,
+  2024
+ ],
+ "spatial_holdout": "20% of 100 km blocks excluded from train",
+ "info": {
+  "selected_seed": 2,
+  "hidden": [
+   128,
+   128,
+   64
+  ],
+  "amp_bf16": true,
+  "n_train": 34803042,
+  "n_train_eligible": 34803042,
+  "device": "cuda"
+ },
+ "val_summary": {
+  "cell_month": {
+   "n": 10972320,
+   "mae": 0.1882312734637165,
+   "rmse": 1.9810271697594852,
+   "bias": 0.005282710327937248,
+   "poisson_deviance": 0.453092339663109,
+   "sum_obs": 2646877.0,
+   "sum_pred": 2704840.5881854324
+  },
+  "aoi_month": {
+   "n": 288,
+   "mae": 1149.1868358094855,
+   "rmse": 4323.2935026445575,
+   "bias": 270.43706833126686,
+   "poisson_deviance": 313.9415701341986,
+   "sum_obs": 2954353.0,
+   "sum_pred": 3032238.8756794045
+  }
+ },
+ "test_summary": {
+  "cell_month": {
+   "n": 10972320,
+   "mae": 0.24764474305718193,
+   "rmse": 2.089468029746304,
+   "bias": 0.013361616842295016,
+   "poisson_deviance": 0.5180405702909886,
+   "sum_obs": 3538421.0,
+   "sum_pred": 3685028.9357110523
+  },
+  "aoi_month": {
+   "n": 288,
+   "mae": 1324.6391413914691,
+   "rmse": 5640.045343345729,
+   "bias": 554.8647989375162,
+   "poisson_deviance": 353.4246728223581,
+   "sum_obs": 3736806.0,
+   "sum_pred": 3896607.0620940053
+  }
+ },
+ "interval": {
+  "q_low": -0.4640214555186449,
+  "q_high": 0.3490611609728788,
+  "n_val_aoi_months": 72,
+  "formula": "low=(\u0177+1)\u00b7exp(q_low)\u22121, high=(\u0177+1)\u00b7exp(q_high)\u22121, clipped \u22650",
+  "nominal": 0.8,
+  "fitted_on": "validation AOI-months of the gated non-overlapping regions BGD, AUS-NSW, USA-CA (one pooled interval, applied to every AOI)",
+  "test_coverage": 0.8055555555555556,
+  "n_test_aoi_months": 72,
+  "test_coverage_by_aoi": {
+   "AUS": {
+    "coverage": 1.0,
+    "n": 24,
+    "kind": "country",
+    "gated": false
+   },
+   "AUS-NSW": {
+    "coverage": 1.0,
+    "n": 24,
+    "kind": "admin1",
+    "gated": true
+   },
+   "BGD": {
+    "coverage": 0.5,
+    "n": 24,
+    "kind": "country",
+    "gated": true
+   },
+   "BGD-A": {
+    "coverage": 0.5,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-B": {
+    "coverage": 0.5833333333333334,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-C": {
+    "coverage": 0.4166666666666667,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-D": {
+    "coverage": 0.2916666666666667,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-E": {
+    "coverage": 0.4166666666666667,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-F": {
+    "coverage": 0.2916666666666667,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-G": {
+    "coverage": 0.5,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "USA": {
+    "coverage": 0.9583333333333334,
+    "n": 24,
+    "kind": "country",
+    "gated": false
+   },
+   "USA-CA": {
+    "coverage": 0.9166666666666666,
+    "n": 24,
+    "kind": "admin1",
+    "gated": true
+   }
+  }
+ },
+ "selected": false,
+ "synthetic_training_data": false,
+ "intended_use": "Retrospective harmonised fire-activity calendar (VIIRS S-NPP scale) for 2003\u20132012; comparison for 2012+.",
+ "limitations": "FIRMS detections are not burned area; no cloud-cover denominator (coverage_fraction null); relationship may drift with land use; Terra kept separate.",
+ "onnx_io": {
+  "file": "models/D1_mlp/model.onnx",
+  "input": {
+   "name": "x",
+   "dtype": "float32",
+   "shape": [
+    "N",
+    16
+   ],
+   "features": [
+    "aqua_count",
+    "aqua_day",
+    "aqua_night",
+    "aqua_frp_sum",
+    "aqua_frp_mean",
+    "aqua_conf_mean",
+    "aqua_scan_mean",
+    "terra_count",
+    "aqua_count_3x3",
+    "month_sin",
+    "month_cos",
+    "lat",
+    "aqua_clim",
+    "country_AUS",
+    "country_BGD",
+    "country_USA"
+   ],
+   "values": "RAW feature values (preprocessing is embedded)"
+  },
+  "output": {
+   "name": "rate",
+   "dtype": "float32",
+   "shape": [
+    "N"
+   ],
+   "meaning": "expected VIIRS S-NPP detections per cell-month"
+  },
+  "opset": 17
+ },
+ "onnx": {
+  "path": "models/D1_mlp/model.onnx",
+  "input": "x: float32[N, 16] raw features in FEATURES order",
+  "output": "rate: float32[N]",
+  "input_name": "x",
+  "output_name": "rate",
+  "input_features": [
+   "aqua_count",
+   "aqua_day",
+   "aqua_night",
+   "aqua_frp_sum",
+   "aqua_frp_mean",
+   "aqua_conf_mean",
+   "aqua_scan_mean",
+   "terra_count",
+   "aqua_count_3x3",
+   "month_sin",
+   "month_cos",
+   "lat",
+   "aqua_clim",
+   "country_AUS",
+   "country_BGD",
+   "country_USA"
+  ],
+  "opset": 17,
+  "dynamic_axes": {
+   "x": [
+    0
+   ],
+   "rate": [
+    0
+   ]
+  },
+  "preprocessing": "embedded (log1p on LOG1P features, then (z-mean)/scale); feed RAW feature values",
+  "sha256": "1954ffd5e8189f15489d7f31673c1e55dd323f9de2881cc3f15c629456e7026e",
+  "parity": {
+   "n": 2048,
+   "max_abs_diff": 9.5367431640625e-07,
+   "max_rel_diff": 1.4859652992527117e-06,
+   "passed": true
+  }
+ }
+}

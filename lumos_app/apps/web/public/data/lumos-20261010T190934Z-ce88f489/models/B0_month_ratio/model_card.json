@@ -1,0 +1,216 @@
+{
+ "model_id": "B0_month_ratio",
+ "description": "Per country \u00d7 calendar-month train ratio \u00d7 aqua count (transparent; ratios in weights.json).",
+ "status": "ok",
+ "error": null,
+ "target": "viirs_snpp_count (type 0, cell-month)",
+ "prediction": "estimated_viirs_reference_detections",
+ "unit": "expected S-NPP VIIRS type-0 detections per 5 km cell per UTC calendar month; AOI value = sum over the AOI's cells",
+ "features": [
+  "aqua_count",
+  "country",
+  "month"
+ ],
+ "feature_order": [
+  "aqua_count",
+  "country",
+  "month"
+ ],
+ "feature_definitions": {
+  "aqua_count": "Aqua MODIS type-0 detections in the 5 km cell and UTC calendar month (transform log1p)",
+  "country": "FIRMS country of the cell (ISO3 in ratio key)",
+  "month": "UTC calendar month 1..12"
+ },
+ "train_years": [
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2020
+ ],
+ "val_years": [
+  2021,
+  2022
+ ],
+ "test_years": [
+  2023,
+  2024
+ ],
+ "spatial_holdout": "20% of 100 km blocks excluded from train",
+ "info": {
+  "formula": "est = r[country, month] * aqua_count (global r fallback)",
+  "ratios": {
+   "AUS-01": 9.297496603920047,
+   "AUS-02": 9.754991268230519,
+   "AUS-03": 7.478788086977431,
+   "AUS-04": 6.970610562845678,
+   "AUS-05": 7.091517612202348,
+   "AUS-06": 7.173255126893312,
+   "AUS-07": 7.254519830310623,
+   "AUS-08": 8.437858862752362,
+   "AUS-09": 8.590436995458365,
+   "AUS-10": 9.042902502801644,
+   "AUS-11": 9.584153005464481,
+   "AUS-12": 9.679216700535747,
+   "BGD-01": 10.984293193717278,
+   "BGD-02": 8.423580786026202,
+   "BGD-03": 4.17659791189203,
+   "BGD-04": 4.37248797056326,
+   "BGD-05": 6.6571428571428575,
+   "BGD-06": 3.2758620689655173,
+   "BGD-07": 9.5,
+   "BGD-08": 2.8181818181818183,
+   "BGD-09": 4.0,
+   "BGD-10": 12.428571428571429,
+   "BGD-11": 10.053892215568862,
+   "BGD-12": 9.619402985074627,
+   "USA-01": 4.753853835112026,
+   "USA-02": 4.2858024691358025,
+   "USA-03": 4.428122291864003,
+   "USA-04": 5.315721683358305,
+   "USA-05": 7.287271360561263,
+   "USA-06": 8.221374636979672,
+   "USA-07": 8.529556957291382,
+   "USA-08": 9.523212108898822,
+   "USA-09": 8.382615350156787,
+   "USA-10": 5.23601593625498,
+   "USA-11": 5.141306096187872,
+   "USA-12": 5.530163447251114
+  }
+ },
+ "val_summary": {
+  "cell_month": {
+   "n": 10972320,
+   "mae": 0.20470345335683307,
+   "rmse": 2.415830071287144,
+   "bias": 8.66915549617539e-05,
+   "poisson_deviance": 3.140810906710417,
+   "sum_obs": 2646877.0,
+   "sum_pred": 2647828.207482338
+  },
+  "aoi_month": {
+   "n": 288,
+   "mae": 1385.1039356274737,
+   "rmse": 5570.796864083656,
+   "bias": 87.53685328364372,
+   "poisson_deviance": 685.8073753698727,
+   "sum_obs": 2954353.0,
+   "sum_pred": 2979563.6137456894
+  }
+ },
+ "test_summary": {
+  "cell_month": {
+   "n": 10972320,
+   "mae": 0.28221682081120997,
+   "rmse": 2.747755044513996,
+   "bias": 0.019585860723518422,
+   "poisson_deviance": 3.6544823738694947,
+   "sum_obs": 3538421.0,
+   "sum_pred": 3753323.3313338757
+  },
+  "aoi_month": {
+   "n": 288,
+   "mae": 1600.7419961012072,
+   "rmse": 5891.511602334217,
+   "bias": 874.4363991518816,
+   "poisson_deviance": 468.5995455146819,
+   "sum_obs": 3736806.0,
+   "sum_pred": 3988643.682955742
+  }
+ },
+ "interval": {
+  "q_low": -0.5219958855686351,
+  "q_high": 0.5675590942740177,
+  "n_val_aoi_months": 72,
+  "formula": "low=(\u0177+1)\u00b7exp(q_low)\u22121, high=(\u0177+1)\u00b7exp(q_high)\u22121, clipped \u22650",
+  "nominal": 0.8,
+  "fitted_on": "validation AOI-months of the gated non-overlapping regions BGD, AUS-NSW, USA-CA (one pooled interval, applied to every AOI)",
+  "test_coverage": 0.8333333333333334,
+  "n_test_aoi_months": 72,
+  "test_coverage_by_aoi": {
+   "AUS": {
+    "coverage": 1.0,
+    "n": 24,
+    "kind": "country",
+    "gated": false
+   },
+   "AUS-NSW": {
+    "coverage": 0.9583333333333334,
+    "n": 24,
+    "kind": "admin1",
+    "gated": true
+   },
+   "BGD": {
+    "coverage": 0.6666666666666666,
+    "n": 24,
+    "kind": "country",
+    "gated": true
+   },
+   "BGD-A": {
+    "coverage": 0.25,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-B": {
+    "coverage": 0.625,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-C": {
+    "coverage": 0.3333333333333333,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-D": {
+    "coverage": 0.375,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-E": {
+    "coverage": 0.4166666666666667,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-F": {
+    "coverage": 0.3333333333333333,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-G": {
+    "coverage": 0.3333333333333333,
+    "n": 24,
+    "kind": "admin1",
+    "gated": false
+   },
+   "USA": {
+    "coverage": 0.9583333333333334,
+    "n": 24,
+    "kind": "country",
+    "gated": false
+   },
+   "USA-CA": {
+    "coverage": 0.875,
+    "n": 24,
+    "kind": "admin1",
+    "gated": true
+   }
+  }
+ },
+ "selected": false,
+ "synthetic_training_data": false,
+ "intended_use": "Retrospective harmonised fire-activity calendar (VIIRS S-NPP scale) for 2003\u20132012; comparison for 2012+.",
+ "limitations": "FIRMS detections are not burned area; no cloud-cover denominator (coverage_fraction null); relationship may drift with land use; Terra kept separate.",
+ "app_recompute": {
+  "weights": "models/B0_month_ratio/weights.json",
+  "how": "est = ratios[f'{iso3}-{month:02d}'] * aqua_count  (cell-month; sum over cells for an AOI)"
+ }
+}

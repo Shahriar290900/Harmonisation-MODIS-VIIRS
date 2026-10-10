@@ -17,7 +17,7 @@ export const ManifestSchema = z
     years: z.array(z.number().int()).min(1),
     synthetic: z.boolean().optional(),
     release_reason: z.string().optional(),
-    value_status_default: z.string().optional(),
+    value_status_default: z.string().nullable().optional(),
     files: z.record(z.string()).optional()
   })
   .passthrough();
