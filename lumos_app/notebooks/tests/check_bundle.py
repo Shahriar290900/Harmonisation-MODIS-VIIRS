@@ -4,7 +4,10 @@
 * Builds a JSON schema from the monthly-record example in CONTRACT.md §6 (field list + example value types/enums) and validates
   every activity record with jsonschema.
 * Verifies checksums.sha256 and manifest.json file hashes.
-* Re-derives the v1.1 gate decision from metrics.json.
+* Re-derives the v1.1 validation gate from metrics.json (AOI-month MAE pooled over the NON-OVERLAPPING gated regions, v1.2) and the
+  per-region release stage (selected model vs B0_identity / B0_month_ratio on each region's test MAE + that region's interval coverage).
+* Checks interval_empirical_holdout_coverage semantics (region-level test coverage; null for whole-country AUS/USA and divisions), the
+  regions.json flags against the files on disk, and that no exported file contains a developer-local absolute path (/Users/, /kaggle/, /home/).
 * Recomputes the selected B0_month_ratio estimate from models/B0_month_ratio/weights.json + cells/*.json, and B1 from
   models/B1_poisson/weights.json + features/<aoi>/<year>.json (the app's JS path).
 * Fixture-specific invariants (AUS 2016 VIIRS null, Jan 2012 partial, 2012 backcast, header-only 2025, Terra 2008 outage,
@@ -108,7 +111,7 @@ def main():
 
     print("== v1.1 gate re-derived from metrics.json ==")
     g = met["gate"]
-    def vm(mid, sg="all", level="aoi_month"):
+    def vm(mid, sg="gate_units", level="aoi_month"):
         try: return met["models"][mid]["val"][level][sg]["mae"]
         except Exception: return None
     bc = {m: vm(m) for m in ("B1_poisson", "B0_month_ratio") if vm(m) is not None}
@@ -126,6 +129,54 @@ def main():
           "release_reason explains the selection / release stage")
     check(all(m not in [x[1] for x in passing] for m in ("Q1_vqc", "Q2_qllm")), "Q1/Q2 are not selection candidates")
 
+    print("== v1.2 per-region release stage re-derived from metrics.json ==")
+    rel = met["release"]
+    units = rel["gate_regions"]
+    ids0 = {r["aoi_id"]: r for r in regions}
+    check(set(units) <= set(ids0) and not any(ids0[u].get("parent") in units for u in units),
+          f"gated regions are non-overlapping (no gated region nested in another): {units}")
+    check(g.get("gate_regions") == units and "gate_units" in met["models"][met["selected_model_id"]]["val"]["aoi_month"],
+          "validation gate pooled over the gated regions only (gate_units subgroup present)")
+    sel0 = met["selected_model_id"]
+    def tm(mid, u):
+        try: return met["models"][mid]["test"]["aoi_month"][f"aoi:{u}"]["mae"]
+        except Exception: return None
+    stages = []
+    for u in units:
+        s_m, i_m, r_m = tm(sel0, u), tm("B0_identity", u), tm("B0_month_ratio", u)
+        bi = sel0 != "B0_identity" and s_m is not None and i_m is not None and s_m < i_m
+        br = sel0 != "B0_month_ratio" and s_m is not None and r_m is not None and s_m < r_m
+        ci = (met["models"][sel0].get("interval") or {}).get("test_coverage_by_aoi", {}).get(u, {})
+        cok = ci.get("coverage") is not None and abs(ci["coverage"] - 0.80) <= 0.10 + 1e-9
+        exp = "validated_calibration" if (bi and br and cok) else "observed_comparison"
+        got = rel["regions"][u]
+        stages.append(exp)
+        check(got["stage_if_real"] == exp and got["beats_B0_identity"] == bi and got["beats_B0_month_ratio"] == br and got["coverage_ok"] == cok,
+              f"region {u}: release {got['stage']} (would be {got['stage_if_real']}) re-derived {exp}; beats identity={bi}, beats month_ratio={br}, coverage={ci.get('coverage')} n={ci.get('n')}")
+    exp_overall = "ui_prototype" if met["synthetic"] else (min(stages, key=["ui_prototype", "observed_comparison", "validated_calibration"].index) if stages else "observed_comparison")
+    check(met["release_stage"] == man["release_stage"] == rel["stage"] == exp_overall,
+          f"overall release_stage = weakest region = {exp_overall} (metrics {met['release_stage']}, manifest {man['release_stage']})")
+    check(set(man["release_regions"]) == set(units) and all(man["release_regions"][u]["stage"] == rel["regions"][u]["stage"] for u in units),
+          "manifest.release_regions mirrors metrics release.regions")
+    check(all(u in met["release_reason"] for u in units), "release_reason lists every gated region")
+    check(all(r["supported_calibration"] == (r["aoi_id"] in units and rel["regions"][r["aoi_id"]]["stage"] == "validated_calibration") for r in regions),
+          "regions.json supported_calibration is true only for a gated region whose own stage is validated_calibration")
+    check(all(r.get("evaluation_unit") == (r["aoi_id"] in units) for r in regions), "regions.json evaluation_unit marks exactly the gated regions")
+    check(set(rel["reported_separately"]) == {r["aoi_id"] for r in regions} - set(units), "whole-country AUS/USA and divisions are reported separately, not gated")
+    print("== interval_empirical_holdout_coverage semantics (v1.2: region-level test coverage) ==")
+    cov_by = (met["models"][sel0].get("interval") or {}).get("test_coverage_by_aoi", {})
+    bad_cov = []
+    for f in sorted((B / "activity").rglob("*.json")):
+        for r in json.load(open(f)):
+            c = r["interval_empirical_holdout_coverage"]
+            if r["estimated_viirs_reference_detections"] is None:
+                if c is not None: bad_cov.append((f.name, r["period_start_utc"], "coverage on a record without estimate"))
+            elif r["aoi_id"] in units:
+                if c is None or abs(c - round(cov_by[r["aoi_id"]]["coverage"], 4)) > 1e-9: bad_cov.append((r["aoi_id"], r["period_start_utc"], c))
+            elif c is not None or "interval_empirical_holdout_coverage is null" not in r["reason"]:
+                bad_cov.append((r["aoi_id"], r["period_start_utc"], c))
+    check(not bad_cov, f"coverage field: gated regions carry their own region coverage, AUS/USA/divisions null with a documented reason ({len(bad_cov)} violations) {bad_cov[:2]}")
+
     print("== regions (ISO-keyed, modern names) ==")
     ids = {r["aoi_id"]: r for r in regions}
     check(all(re.fullmatch(r"[A-Z]{3}(-[A-Z0-9]{1,3})?", i) for i in ids), f"aoi ids ISO-based: {sorted(ids)}")
@@ -141,6 +192,17 @@ def main():
     names = {r["name"] for r in regions}
     check(not ({"Chittagong", "Barisal"} & names), "display names use modern spellings")
     check(all((B / r["geometry_path"]).exists() for r in regions if r["geometry_path"]), "every geometry_path exists")
+
+    print("== no developer-local absolute paths in any exported file ==")
+    hits = []
+    for pth in sorted(B.rglob("*")):
+        if pth.is_file():
+            data = pth.read_bytes()
+            for m in (b"/Users/", b"/kaggle/", b"/home/"):
+                if m in data: hits.append((str(pth.relative_to(B)), m.decode()))
+    check(not hits, f"no '/Users/', '/kaggle/' or '/home/' path in any exported file ({len(hits)} hits) {hits[:3]}")
+    skip_reason = (met.get("qllm") or {}).get("reason") or ""
+    check("under <input>" in skip_reason or met["qllm"].get("status") != "skipped", f"Q2 skip reason uses the <input> placeholder: {skip_reason!r}")
 
     print("== cells / features / models ==")
     sizes = [p.stat().st_size / 1e6 for p in (B / "cells").rglob("*.json")]

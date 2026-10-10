@@ -91,7 +91,7 @@ export function explainMonth(rec: ActivityRecord | null | undefined, ctx: Explai
     let t = `The harmonized estimate is ${fmtNum(est, 1)} VIIRS-equivalent detections`;
     if (isNum(lo) && isNum(hi)) {
       t += ` (${isNum(rec.interval_nominal_level) ? fmtPct(rec.interval_nominal_level) + ' ' : ''}interval ${fmtNum(lo, 1)}–${fmtNum(hi, 1)}`;
-      if (isNum(rec.interval_empirical_holdout_coverage)) t += `; empirical holdout coverage ${fmtPct(rec.interval_empirical_holdout_coverage)}`;
+      if (isNum(rec.interval_empirical_holdout_coverage)) t += `; empirical holdout coverage ${fmtPct(rec.interval_empirical_holdout_coverage)} for test years in ${ctx.aoiName ?? 'this region'}`;
       t += ')';
     }
     if (s(rec.model_id)) t += `, from model ${rec.model_id}`;

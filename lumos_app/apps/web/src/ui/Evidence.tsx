@@ -62,7 +62,7 @@ export function Evidence({ record: r, state: st, yearError, offline, onRetry, se
           <Group title="VIIRS-scale estimate">
             <KV k="Estimate" v={fmtNum(r.estimated_viirs_reference_detections)} c={SERIES_COLORS.estimate} big />
             <KV k={`${fmtPct(r.interval_nominal_level)} interval`} v={r.estimate_interval_low != null ? `${fmtNum(r.estimate_interval_low)} – ${fmtNum(r.estimate_interval_high)}` : '—'} />
-            <KV k="Empirical holdout coverage" v={fmtPct(r.interval_empirical_holdout_coverage)} />
+            <KV k="Empirical holdout coverage" v={r.interval_empirical_holdout_coverage != null ? `${fmtPct(r.interval_empirical_holdout_coverage)} (test years, ${region?.name ?? 'this region'})` : 'Not measured (whole-country or ungated area)'} />
             <KV k="Model" v={r.model_id ? <a href={`${snapshotPath}models/${r.model_id}/model_card.json`} target="_blank" rel="noreferrer">{r.model_id}<Icon3D icon={ExternalLink} tone="cyan" size={12} className="i3d--inline" /></a> : '—'} />
           </Group>
           <Group title="Status">
@@ -96,6 +96,16 @@ export function Evidence({ record: r, state: st, yearError, offline, onRetry, se
           <Group title="Harmonize in your browser" wide>
             <Harmonize record={r} selection={selection} region={region} manifest={manifest} />
           </Group>
+          {region?.country === 'United States' && (
+            <Group title="USA Notes" wide>
+              <ul className="prov">
+                <li>Includes Alaska and Hawaii.</li>
+                <li>Excludes FIRMS types 1, 2, and 3 (prescribed, agricultural, and other non-wildfire burning).</li>
+                <li>The 5 km grid is unmeasured at the USA scale.</li>
+                {region.aoi_id === 'USA-CA' && <li>California inherits national B0_month_ratio coefficients.</li>}
+              </ul>
+            </Group>
+          )}
         </div>
       )}
       {expanded && !r && st === 'missing' && <p className="muted">No record exists for this month in the snapshot. Missing is shown as missing, never as zero.</p>}

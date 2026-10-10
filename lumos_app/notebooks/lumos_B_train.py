@@ -37,7 +37,7 @@
 # | 2.13 Backcast and anomalies | 12 | 2003–2012 VIIRS-scale estimate, intervals, anomaly flags | < 5 min |
 # | 2.14 Export the app bundle | 13 | Write and zip the app bundle (before research stages) | 2–10 min |
 # | 2.15 Research: simulated quantum Q1 | 14 | Research: simulated variational quantum regressor on a 4,000-row subset | 5–20 min |
-# | 2.16 Research: QLLM Q2 | 15 | Research: LLM-guided vs random search over Q1 designs (needs a local model) | < 1 min / 20–90 min |
+# | 2.16 Research: QLLM Q2 | 15 | Research: LLM-guided vs random search over Q1 designs (needs a local model) | < 1 min / 20–45 min |
 # | 2.17 Research results and bundle refresh | 16 | Research scores on a test subset; refresh bundle metrics and zip | < 3 min |
 # | 2.18 Final summary and download | 17 | Summary table, release stage, figures, download the zip | < 1 min |
 #
@@ -71,7 +71,7 @@
 # - **Synthetic versus real.** If the input is the synthetic test fixture (detected by four separate markers), the notebook forces `release_stage = ui_prototype` and `value_status = demo`, and prints an HONEST NOTE banner. Those numbers say nothing about real fires.
 # - **Keys are never printed.** Notebook B needs no key; `sources.json` is scrubbed again before export.
 # - **Honesty rules:** missing source files are never treated as zero (header-only or truncated current-year files, platform outages and partial first months are detected); selection uses validation only; the test years (2023–2024) are opened exactly once, at the end.
-# - **The release stage is decided per region, not once for everything.** The gate uses three non-overlapping evaluation regions: Bangladesh (`BGD`), New South Wales (`AUS-NSW`) and California (`USA-CA`). Whole-country `AUS` and `USA` and the Bangladesh divisions overlap those regions (they would be counted twice) and are reported separately, never gated. `validated_calibration` needs the selected model to beat both B0_identity and B0_month_ratio on test AOI-month MAE in every gated region, and every region's 80% interval coverage within ±10 points of 0.80. Each region has only 24 test AOI-months (12 months × 2 years), so these coverage numbers are coarse; the notebook says so in the reason.
+# - **The release stage is decided per region, not once for everything.** The gate uses three non-overlapping evaluation regions: Bangladesh (`BGD`), New South Wales (`AUS-NSW`) and California (`USA-CA`). Whole-country `AUS` and `USA` and the Bangladesh divisions overlap those regions (they would be counted twice) and are reported separately, never gated. `validated_calibration` needs the selected model to beat both B0_identity and B0_month_ratio on test AOI-month MAE in every gated region, and every region's 80% interval coverage within ±10 points of 0.80. Each region has at most 24 test AOI-months (12 months × 2 years), so these coverage numbers are coarse; the notebook says so in the reason.
 # - **Type rule.** `type` exists only in standard FIRMS data; near-real-time (NRT) rows have no `type`. Standard rows with `type == 0` are the main count, other types are static sources, standard rows without a `type` are counted nowhere, and NRT rows are never used for training (they stay in a separate recent layer or mark their month partial).
 # - **Research stages are research.** Q1 and Q2 are simulated on classical hardware; no quantum-advantage claim, and they never become the app's estimator.
 #
@@ -304,20 +304,26 @@ _ABS_PATH_RES = [(re.compile(r"(?<![\w.:/-])/Users/[^\s\"'<>,;)\]}\\]+"), "<loca
                  (re.compile(r"[A-Za-z]:\\\\(?:Users|home)[^\s\"'<>,;)\]}\\]*"), "<local-path>")]
 LOCAL_PATH_MARKERS = (b"/Users/", b"/kaggle/", b"/home/")      # scanned for in every exported file
 
+_SUBS_CACHE = {}
 def _local_path_subs():
-    """(absolute path string, placeholder) pairs for this run, longest first. Documented placeholders: <run> <work> <bundle> <input> <home> <local-path> <kaggle-path>."""
-    out = []
-    for ph, nm_ in [("<run>", "RUN_DIR"), ("<work>", "WORK"), ("<bundle>", "BUNDLE"), ("<input>", "INPUT_ROOT")]:
-        if nm_ in globals():
-            for s in {str(globals()[nm_]), str(Path(globals()[nm_]).resolve())}:
+    """(absolute path string, placeholder) pairs for this run, longest first. Documented placeholders: <run> <work> <bundle> <input> <home> <local-path> <kaggle-path>.
+    Cached per set of path values (resolve() touches the file system and scrub_str is called thousands of times)."""
+    raw = tuple((ph, str(globals()[nm_])) for ph, nm_ in [("<run>", "RUN_DIR"), ("<work>", "WORK"), ("<bundle>", "BUNDLE"), ("<input>", "INPUT_ROOT")] if nm_ in globals())
+    key = raw + (str(Path.home()),)
+    if key not in _SUBS_CACHE:
+        out = []
+        for ph, s0 in raw:
+            for s in {s0, str(Path(s0).resolve())}:
                 if s.startswith("/") and len(s) > 1: out.append((s, ph))
-    h = str(Path.home())
-    if h.startswith("/") and len(h) > 1: out.append((h, "<home>"))
-    return sorted(set(out), key=lambda x: -len(x[0]))
+        h = str(Path.home())
+        if h.startswith("/") and len(h) > 1: out.append((h, "<home>"))
+        _SUBS_CACHE[key] = sorted(set(out), key=lambda x: -len(x[0]))
+    return _SUBS_CACHE[key]
 
 def scrub_str(s):
     """Replace this run's absolute paths by placeholders, then any remaining /Users/…, /home/…, /kaggle/… path by a generic placeholder."""
     s = str(s)
+    if "/" not in s and "\\" not in s: return s        # fast path: no path separator, nothing to scrub
     for a, ph in _local_path_subs(): s = s.replace(a, ph)
     for rx, ph in _ABS_PATH_RES: s = rx.sub(ph, s)
     return s
@@ -511,7 +517,7 @@ if RESUMED: log(f"resuming run {RUN_TS}: checkpointed stages {list(STAGE_STATE['
 # - [ ] 2.3.1 Run the cell.
 # - [ ] 2.3.2 Look for `network guard installed: all non-loopback sockets/DNS are refused`.
 # - [ ] 2.3.3 Read the printed JSON: `device_selected`, `smoke_test`, `ram` and `disk_work`.
-# - [ ] 2.3.4 Read the `GPU:` line (name, VRAM, compute capability, CUDA version, bf16 support).
+# - [ ] 2.3.4 Read the `GPU:` line (name, VRAM, compute capability, CUDA version, bf16 support). `amp_bf16` in `env_B.json` says whether D1 will train with bf16 autocast: only on compute capability 8.0 or newer (the Blackwell has 12.0; a T4 has 7.5 and trains in fp32).
 #
 # **Check before moving on**
 #
@@ -627,22 +633,22 @@ if "gpu" in ENV: print("GPU:", ENV["gpu"])
 
 # %% [markdown]
 # ## Phase 2 · Section 2.4 — Verify the bundle
-# **What this cell does:** Reads `sources.json`, checks for the synthetic-fixture markers, and checks the SHA-256 of every file marked `ok`. A file that is missing or does not match is skipped, and a manifest `error` is treated exactly like `missing`. If `RUN_QML` is on, it then installs PennyLane offline from Notebook A's wheelhouse, pinning torch, numpy, scipy, pandas and scikit-learn so they are never upgraded (with a `--no-deps` retry).
+# **What this cell does:** Reads `sources.json`, checks for the synthetic-fixture markers, and checks the SHA-256 of every file marked `ok`. A file that is missing or does not match is skipped, and a manifest `error` is treated exactly like `missing`. It then installs offline from Notebook A's wheelhouse, one package at a time: `pennylane` and `pennylane-lightning` when `RUN_QML` is on, and `onnxruntime` and `onnxscript` when `RUN_DL` is on (needed for the ONNX export and its parity check, also when `RUN_QML` is off). torch, numpy, scipy, pandas and scikit-learn are pinned so they are never upgraded; if the resolver fails, the package is retried with `--no-deps`.
 #
 # **Steps**
 #
 # - [ ] 2.4.1 Run the cell.
 # - [ ] 2.4.2 Read `sources: N entries; checksum ok=..., mismatches=..., missing files=..., unhashed=...`.
 # - [ ] 2.4.3 Read `SYNTHETIC=... [...]`.
-# - [ ] 2.4.4 Read `offline pip: {...}` and its `import_check` entry.
+# - [ ] 2.4.4 Read `offline pip: {...}` with one entry per package (`installed`, `already_installed`, `installed --no-deps ...` or `failed ...`) and the two import checks: `import_check` (PennyLane) and `import_check_onnxruntime`.
 #
 # **Check before moving on**
 #
 # - [ ] `mismatches=0` and `missing files=0`.
 # - [ ] `SYNTHETIC=False []` on real data. `True` means the synthetic test fixture is attached: every number will be demo data.
-# - [ ] `import_check` says `pennylane importable` (or you accept the built-in simulator fallback).
+# - [ ] `import_check` says `pennylane importable` (or you accept the built-in simulator fallback), and `import_check_onnxruntime` says `onnxruntime importable` (otherwise the ONNX parity check in 2.14 is recorded as not checked, never as passed).
 #
-# **If it fails:** Mismatches or missing files mean Notebook A's output is incomplete or corrupted: commit Notebook A again (1.12) and attach the new version. Skipped files are never used, so the run can continue, but those years become unavailable. `pennylane NOT importable` only affects the Q1 cross-check.
+# **If it fails:** Mismatches or missing files mean Notebook A's output is incomplete or corrupted: commit Notebook A again (1.12) and attach the new version. Skipped files are never used, so the run can continue, but those years become unavailable. `pennylane NOT importable` only affects the Q1 cross-check; `onnxruntime NOT importable` only affects the ONNX parity check (the ONNX file is still written).
 #
 # **Time:** estimate: 1–3 min (hashing several GB)
 
@@ -699,9 +705,16 @@ with Timer("bundle_verify"):
     log(f"SYNTHETIC={SYNTHETIC} {SYNTHETIC_FLAGS}")
     jdump(CHECKSUM_REPORT, RUN_DIR / "checksum_report.json", indent=1)
 
-# Optional offline install of PennyLane from Notebook A's wheelhouse. Never upgrades torch/numpy (constraints file);
-# v1.1: if the resolver fails (typically a numpy pin conflict) retry with --no-deps, then verify the import.
-def try_offline_install(pkgs=("pennylane", "pennylane-lightning")):
+# Optional offline install from Notebook A's wheelhouse, ONE package at a time (review P2). Never upgrades torch/numpy (constraints file);
+# v1.1: if the resolver fails (typically a numpy pin conflict) retry with --no-deps, then verify the import of each family.
+OFFLINE_PKGS_QML = ("pennylane", "pennylane-lightning")
+OFFLINE_PKGS_ONNX = ("onnxruntime", "onnxscript")      # A's wheel list: pennylane, pennylane-lightning, onnxruntime, onnxscript
+
+def offline_pkgs(run_qml, run_dl):
+    """Packages to install: PennyLane pair for Q1 (RUN_QML); ONNX pair for the D1 export + parity check (RUN_DL), also when RUN_QML is off."""
+    return (OFFLINE_PKGS_QML if run_qml else ()) + (OFFLINE_PKGS_ONNX if run_dl else ())
+
+def try_offline_install(pkgs=OFFLINE_PKGS_QML + OFFLINE_PKGS_ONNX):
     res = {}
     wh = BUNDLE / "wheelhouse"
     for pkg in pkgs:
@@ -726,26 +739,35 @@ def try_offline_install(pkgs=("pennylane", "pennylane-lightning")):
                     else f"failed (with and without --no-deps): {out2.stderr[-300:]}"
         except Exception as e:
             res[pkg] = f"failed: {e!r}"
-    try:
-        import importlib; importlib.invalidate_caches(); import pennylane  # noqa: F401
-        res["import_check"] = "pennylane importable"
-    except Exception as e:
-        res["import_check"] = f"pennylane NOT importable ({e!r}); Q1 uses the built-in torch statevector simulator"
+    import importlib; importlib.invalidate_caches()
+    if "pennylane" in pkgs:
+        try:
+            import pennylane  # noqa: F401
+            res["import_check"] = "pennylane importable"
+        except Exception as e:
+            res["import_check"] = f"pennylane NOT importable ({e!r}); Q1 uses the built-in torch statevector simulator"
+    if "onnxruntime" in pkgs:
+        try:
+            import onnxruntime  # noqa: F401
+            res["import_check_onnxruntime"] = "onnxruntime importable"
+        except Exception as e:
+            res["import_check_onnxruntime"] = f"onnxruntime NOT importable ({e!r}); the D1 ONNX parity check will be recorded as not checked"
     return res
 
 PIP_RESULT = {}
-if RUN_QML:
+_pkgs_to_install = offline_pkgs(RUN_QML, RUN_DL)
+if _pkgs_to_install:
     try:
-        PIP_RESULT = try_offline_install()
+        PIP_RESULT = try_offline_install(_pkgs_to_install)
     except Exception as e:
-        PIP_RESULT = {"pennylane": f"failed: {e!r}"}
-    log(f"offline pip: {PIP_RESULT}")
+        PIP_RESULT = {p_: f"failed: {e!r}" for p_ in _pkgs_to_install}
+    log(f"offline pip: {scrub_str(PIP_RESULT)}")
 ENV["offline_pip"] = PIP_RESULT
 jdump(ENV, RUN_DIR / "env_B.json", indent=1)
 
 # %% [markdown]
 # ## Phase 2 · Section 2.5 — Ingest the fire records
-# **What this cell does:** Reads every usable FIRMS file, removes exact duplicate rows, quarantines rows with an invalid latitude, longitude or date, negative FRP or an unknown satellite (each with a reason), assigns every detection to a 5 km equal-area cell and UTC month, and aggregates counts per platform (type 0 vegetation fires as the main count, other types as static sources). Optional NRT files go to a separate recent layer that is never used for training. The result is checkpointed.
+# **What this cell does:** Reads every usable FIRMS file, removes exact duplicate rows, quarantines rows with an invalid latitude, longitude or date, negative FRP or an unknown satellite (each with a reason), assigns every detection to a 5 km equal-area cell and UTC month, and aggregates counts per platform (type 0 vegetation fires as the main count, other types as static sources). Type rule: standard rows with `type == 0` are the main count, other types are static sources, standard rows without a `type` are counted nowhere (a standard file with no `type` at all is treated as unavailable), and near-real-time rows (no `type`, version contains NRT) are never used for training: they are not counted, their month is flagged partial, and Notebook A's optional Area-API NRT files go to a separate recent layer. The result is checkpointed.
 #
 # **Steps**
 #
@@ -753,7 +775,7 @@ jdump(ENV, RUN_DIR / "env_B.json", indent=1)
 # - [ ] 2.5.2 Watch one line per file: `ingest [  i/N] <id> rows=... quarantined=... last=YYYY-MM-DD ...s · RSS ... GB`.
 # - [ ] 2.5.3 `skipped (...)` lines are files that were missing or failed 2.4; they stay unavailable, never zero.
 # - [ ] 2.5.4 If NRT data was fetched, look for `ingest NRT ...: N detections (recent observed layer only; not used for training)`.
-# - [ ] 2.5.5 Read the closing line `ingested X raw rows; duplicates removed Y; quarantined Z; aggregate rows W` and the quarantine reason counts printed below it.
+# - [ ] 2.5.5 Read the closing line `ingested X raw rows; duplicates removed Y; quarantined Z; aggregate rows W` and the quarantine reason counts printed below it. A per-file `type rule: ...` note appears only when a file has standard rows without `type` or NRT rows; both are excluded from the counts, never counted as zero or as fires.
 #
 # **Check before moving on**
 #
@@ -843,14 +865,28 @@ def ingest_file(src):
     ix, iy, key = lonlat_to_cell(lon, lat)
     assert grid_key_in_range(ix, iy).all(), f"{src['id']}: cell index outside the packable key range (IX_OFF/IY_OFF/KEY_MUL)"   # whole globe fits; guards the packing
     typ = pd.to_numeric(df["type"], errors="coerce").to_numpy(np.float64) if "type" in df.columns else np.full(len(df), np.nan)
-    stats["type_missing"] = int(np.isnan(typ).sum())
-    main = (typ == 0) | np.isnan(typ)    # NRT files may lack `type`: counted as main, logged
     nrt = df["version"].astype(str).str.upper().str.contains("NRT", na=False).to_numpy() if "version" in df.columns else np.zeros(len(df), bool)
+    # TYPE RULE (review: real FIRMS NRT rows carry NO `type`; `type` exists only in standard data):
+    #   standard row, type == 0        → main count (presumed vegetation fire)
+    #   standard row, type finite != 0 → static-source count
+    #   standard row, type missing     → counted NOWHERE (cannot be called a vegetation fire); logged; a standard file with no usable `type`
+    #                                    at all is unusable (→ INGEST ERROR → year unavailable, never zero)
+    #   NRT row (version contains NRT) → never used for training: in no count, tracked in `nrt`; its month is flagged partial (month_status)
+    type_nan = np.isnan(typ)
+    n_std = int((~nrt).sum())
+    stats["type_missing"] = int(type_nan.sum())
+    stats["standard_rows_without_type"] = int((type_nan & ~nrt).sum())
+    stats["nrt_rows_without_type"] = int((type_nan & nrt).sum())
+    if n_std > 0 and stats["standard_rows_without_type"] == n_std:
+        raise ValueError(f"{src['id']}: standard FIRMS file has no usable `type` values (column missing or empty) — type==0 cannot be applied; file treated as unavailable")
+    main = (typ == 0) & ~nrt
+    static_row = np.isfinite(typ) & (typ != 0) & ~nrt
     day = df["daynight"].astype(str).str.upper().str.startswith("D").to_numpy()
     conf = pd.to_numeric(df["confidence"], errors="coerce").to_numpy(np.float64) if family == "modis" else np.full(len(df), np.nan)
     scan = pd.to_numeric(df.get("scan"), errors="coerce").to_numpy(np.float64)
     stats["type_counts"] = {str(k): int(v) for k, v in pd.Series(typ).value_counts(dropna=False).items()}
     stats["nrt_rows"] = int(nrt.sum())
+    stats["platform_nrt_months"] = {PLATFORMS[int(p)]: sorted({str(int(m)) for m in np.unique(ym[nrt & (plat == p)])}) for p in np.unique(plat[nrt])} if nrt.any() else {}
     stats["rows_valid"] = int(len(df))
     stats["max_ym"] = int(ym.max()) if len(ym) else None
     stats["last_date"] = ts.max().strftime("%Y-%m-%d") if len(ts) else None
@@ -861,12 +897,12 @@ def ingest_file(src):
     fin = lambda a: np.isfinite(a) & main
     agg = pd.DataFrame({
         "platform": plat, "key": key, "ym": ym,
-        "count": main.astype(np.int32), "static": (~main).astype(np.int32),
+        "count": main.astype(np.int32), "static": static_row.astype(np.int32),
         "day": (main & day).astype(np.int32), "night": (main & ~day).astype(np.int32),
         "frp_sum": np.where(fin(frp), frp, 0.0), "frp_n": fin(frp).astype(np.int32),
         "conf_sum": np.where(fin(conf), conf, 0.0), "conf_n": fin(conf).astype(np.int32),
         "scan_sum": np.where(fin(scan), scan, 0.0), "scan_n": fin(scan).astype(np.int32),
-        "nrt": (main & nrt).astype(np.int32)})
+        "nrt": nrt.astype(np.int32)})
     agg = agg.groupby(["platform", "key", "ym"], sort=False).sum().reset_index()
     if WRITE_DETECTIONS_PARQUET:
         try:
@@ -927,9 +963,11 @@ else:
                 a["country"] = s["country"]; _aggs.append(a); INGEST_STATS.append(st)
                 if q is not None: _quar.append(q)
                 s["_max_ym"], s["_last_date"], s["_rows"] = st["max_ym"], st["last_date"], st["rows_valid"]
-                s["_platform_month_rows"] = st["platform_month_rows"]
+                s["_platform_month_rows"] = st["platform_month_rows"]; s["_platform_nrt_months"] = st.get("platform_nrt_months") or {}
                 log(f"ingest [{i:>3}/{len(_fire)}] {s['id']:<34} rows={st['rows_raw']:>9,} quarantined={st['quarantined']:>5} "
-                    f"last={st['last_date']} {time.time() - t0:5.1f}s · RSS {rss_gb():.2f} GB")
+                    f"last={st['last_date']} {time.time() - t0:5.1f}s · RSS {rss_gb():.2f} GB"
+                    + (f" · type rule: {st['standard_rows_without_type']} standard rows without type (not counted), {st['nrt_rows']} NRT rows (not counted)"
+                       if (st["standard_rows_without_type"] or st["nrt_rows"]) else ""))
             except Exception as e:
                 s["_usable"] = False; s["_verify"] = f"ingest_error: {e!r}"
                 INGEST_STATS.append({"id": s.get("id"), "error": repr(e), "traceback": traceback.format_exc()[-1500:]})
@@ -951,7 +989,7 @@ else:
         QUAR.to_parquet(INGEST_DIR / "quarantine.parquet", index=False)
         AGG.to_parquet(INGEST_DIR / "cell_month_platform_agg.parquet", index=False)
         jdump(INGEST_STATS, INGEST_DIR / "ingest_log.json", indent=1)
-        jdump({str(s.get("id")): {k: s.get(k) for k in ["_max_ym", "_last_date", "_rows", "_platform_month_rows", "_usable", "_verify"]}
+        jdump({str(s.get("id")): {k: s.get(k) for k in ["_max_ym", "_last_date", "_rows", "_platform_month_rows", "_platform_nrt_months", "_usable", "_verify"]}
                for s in SOURCES}, INGEST_DIR / "source_meta.json")
         _files = [INGEST_DIR / f for f in ["quarantine.parquet", "cell_month_platform_agg.parquet", "ingest_log.json", "source_meta.json"]]
         if NRT_DET is not None:
@@ -971,14 +1009,17 @@ stop_hook("ingest")
 # - [ ] 2.6.1 Run the cell.
 # - [ ] 2.6.2 Read `panel <country>: N cells` for each country, then `panel: 3 countries, N cells × M months = ... cell-months (2001–2025)`.
 # - [ ] 2.6.2a Before the panel is built, read `panel plan: ... panel arrays ≈ X GB, peak while building the largest country ≈ Y GB (free RAM Z GB)`. A `WARNING: estimated panel memory exceeds 60% of free RAM` line means the kernel may run out of memory; write down the numbers (they are also in `metrics.json` under `panel_memory`).
-# - [ ] 2.6.3 Read the `availability <country> <platform>: complete=... partial=[...] missing=...` lines.
+# - [ ] 2.6.3 Read the `availability <country> <platform>: complete=... partial=[...] missing=...` lines. A year that Notebook A marked `missing` (for example 2025: FIRMS has no yearly country files for it yet) is listed as missing months with the manifest reason; it is unavailable, never zero, and stays on the calendar.
+# - [ ] 2.6.3a Read the `MEMORY panel: ...` line (cells per country, estimated panel GB, RSS, free RAM). If the estimate exceeds 90% of free RAM, a `MEMORY GUARD:` line says that the United States was dropped from the panel (fail-soft, so the kernel is not killed); real United States memory is unmeasured until this first real run.
 # - [ ] 2.6.4 A `NOTE: BD-H (Mymensingh) is absent from this Natural Earth file ...` line is expected: Natural Earth's Dhaka polygon still contains Mymensingh.
 # - [ ] 2.6.5 Read `Bangladesh: k cells assigned to the nearest division (≤0.1°), u cells unassigned ...`.
 # - [ ] 2.6.6 Read one `AOI <id> <kind> <name> cells=...` line per area.
 #
 # **Check before moving on**
 #
-# - [ ] Aqua availability lists `2002-07` as partial and S-NPP lists `2012-01` as partial (the satellites' first months).
+# - [ ] Aqua availability lists `2002-07` as partial (Aqua started on 3 July 2002) and S-NPP lists `2012-01` as partial (S-NPP started on 20 Jan 2012).
+# - [ ] The line `gate regions (non-overlapping evaluation units): ['BGD', 'AUS-NSW', 'USA-CA']` is present (a unit missing from the bundle is named).
+# - [ ] The `MEMORY panel:` line shows `guard dropped nothing`.
 # - [ ] The AOI lines include `BGD`, the Bangladesh divisions (`BGD-A` ...), `AUS`, `AUS-NSW`, `USA` and `USA-CA`, each with cells > 0.
 # - [ ] Unassigned Bangladesh cells are a small share of the `BGD` cells (offshore detections).
 #
@@ -993,11 +1034,35 @@ from shapely.geometry import shape, mapping
 from shapely.ops import unary_union
 
 COUNTRIES = sorted([str(c) for c in AGG["country"].unique()], key=lambda c: (c not in AOI_COUNTRIES, c))
-ISO = {c: COUNTRY_ISO3.get(c, re.sub(r"[^A-Z]", "", c.upper())[:3]) for c in COUNTRIES}
-fire_years = [int(s["year"]) for s in SOURCES if s.get("_usable") and s.get("sensor") in ("modis", "viirs-snpp")]
-YEAR_MIN, YEAR_MAX = min(2001, min(fire_years)), max(fire_years)
+# calendar span = every year A listed for MODIS / VIIRS-SNPP in sources.json, whatever its status: a year that A marked missing/error (e.g. the
+# FIRMS yearly country files for 2025, which answer 404) stays on the calendar as UNAVAILABLE (NaN, extract_status missing), never as zero,
+# and never silently disappears. Years with a usable file only would end the calendar at the last year that happens to exist.
+def _src_year(s):
+    try: return int(s["year"])
+    except Exception: return None
+listed_years = [y_ for y_ in (_src_year(s) for s in SOURCES if s.get("sensor") in ("modis", "viirs-snpp")) if y_ is not None]
+fire_years = [y_ for y_ in (_src_year(s) for s in SOURCES if s.get("_usable") and s.get("sensor") in ("modis", "viirs-snpp")) if y_ is not None]
+YEAR_MIN, YEAR_MAX = min(2001, min(listed_years or fire_years)), max(listed_years or fire_years)
 YM0 = YEAR_MIN * 12
 NM = (YEAR_MAX - YEAR_MIN + 1) * 12
+N_PANEL_BASE_COLS = 13      # len(PANEL_BASE_KEYS); asserted below
+# review L: fail-soft memory guard BEFORE any dense array exists. Real USA scale is UNMEASURED; this uses the real per-country cell counts.
+_cells_pc = AGG.groupby("country", observed=True)["key"].nunique().to_dict()
+_kept, _dropped, _plan0 = memory_guard(_cells_pc, NM, N_PANEL_BASE_COLS, free_ram_gb())
+MEMORY_GUARD = {"fraction_of_free_ram": MEMORY_GUARD_FRACTION, "optional_countries": MEMORY_OPTIONAL_COUNTRIES, "dropped": _dropped,
+                "estimate_if_all_kept_gb": panel_memory_plan(_cells_pc, NM, N_PANEL_BASE_COLS)["panel_gb"] if _cells_pc else 0.0,
+                "free_ram_gb": None if not np.isfinite(free_ram_gb()) else round(free_ram_gb(), 1),
+                "measured_on_real_data": False, "note": "estimate from real cell counts, not a measurement; unmeasured until the first real run"}
+try:        # a resumed run must keep the decision it was built with (free RAM can differ between sessions)
+    _pm_prev = json.load(open(CACHE / "panel" / "panel_memory.json")) if (CACHE / "panel" / "panel_memory.json").exists() else {}
+    if isinstance(_pm_prev.get("guard"), dict) and "dropped" in _pm_prev["guard"]:
+        MEMORY_GUARD = dict(_pm_prev["guard"]); _dropped = [c for c in MEMORY_GUARD["dropped"] if c in COUNTRIES]; MEMORY_GUARD["reused_from_checkpoint"] = True
+except Exception: pass
+if _dropped:
+    COUNTRIES = [c for c in COUNTRIES if c not in _dropped]
+    log(f"MEMORY GUARD: panel estimate exceeds {MEMORY_GUARD_FRACTION:.0%} of free RAM ({MEMORY_GUARD['free_ram_gb']} GB) → dropping {_dropped} from the panel "
+        f"(fail-soft; its AOIs will be absent from this bundle). Re-run on a larger machine or with RUN_QML/RUN_DL off to include it.")
+ISO = {c: COUNTRY_ISO3.get(c, re.sub(r"[^A-Z]", "", c.upper())[:3]) for c in COUNTRIES}
 ST_MISSING, ST_PARTIAL, ST_COMPLETE = 0, 1, 2
 ST_NAME = {0: "missing", 1: "partial", 2: "complete"}
 
@@ -1038,6 +1103,10 @@ def month_status(country, pname):
                     notes[lo + k] = (f"{PLATFORM_LABEL[pname]} absent from {s['id']}" +
                                      (" (no rows in the whole file)" if whole else f" this month while {PLATFORM_LABEL[other]} has {oth.get(ymk, 0)} rows") +
                                      ": platform outage, unavailable (not zero)")
+        for ymk in (s.get("_platform_nrt_months") or {}).get(pname, []):      # NRT rows (no `type`) are never counted → that month is incomplete
+            k = int(ymk) - YM0
+            if 0 <= k < NM and st[k] == ST_COMPLETE:
+                st[k] = ST_PARTIAL; notes[k] = f"{s['id']} contains near-real-time rows (no `type`; never used for training): excluded from the counts, month shown as partial"
     # years without a usable file: say why (manifest status), never zero-fill
     for y in range(YEAR_MIN, YEAR_MAX + 1):
         lo = (y - YEAR_MIN) * 12
@@ -1080,6 +1149,7 @@ FEATURE_DEFS = {
 for c in COUNTRIES: FEATURE_DEFS[f"country_{ISO[c]}"] = f"1 if the cell belongs to {c} (FIRMS country file) else 0 (identity)"
 PANEL_BASE_KEYS = ["aqua_count", "aqua_day", "aqua_night", "aqua_frp_sum", "aqua_frp_mean", "aqua_conf_mean", "aqua_scan_mean",
                    "terra_count", "aqua_count_3x3", "aqua_clim", "viirs_snpp_count", "static_aqua", "static_viirs"]
+assert len(PANEL_BASE_KEYS) == N_PANEL_BASE_COLS
 PARTIAL_FIELDS = {"aqua": ["count", "static"], "terra": ["count"], "snpp": ["count", "static"]}
 
 def build_country_panel(country, cidx):
@@ -1158,8 +1228,9 @@ with Timer("panel" + ("(resumed)" if _pan is not None else "")):
     else:
         _cells, _per, STATUS, STATUS_NOTES, PARTIAL_RAW = [], [], {}, {}, {}
         # sparse in space (cells with >=1 detection only), dense in time: estimate the panel before allocating (USA ≈ AUS in cell count)
-        PANEL_MEMORY = panel_memory_plan(AGG.groupby("country", observed=True)["key"].nunique().to_dict(), NM, len(PANEL_BASE_KEYS), len(COUNTRIES))
+        PANEL_MEMORY = panel_memory_plan({c: v for c, v in _cells_pc.items() if c in COUNTRIES}, NM, len(PANEL_BASE_KEYS), len(COUNTRIES))
         _free = free_ram_gb(); PANEL_MEMORY["free_ram_gb_at_start"] = None if not np.isfinite(_free) else round(_free, 1)
+        PANEL_MEMORY["guard"] = MEMORY_GUARD
         log(f"panel plan: {PANEL_MEMORY['n_cells']:,} cells {PANEL_MEMORY['cells_per_country']} × {NM} months = {PANEL_MEMORY['cell_months']:,} cell-months; "
             f"panel arrays ≈ {PANEL_MEMORY['panel_gb']} GB, peak while building the largest country ≈ {PANEL_MEMORY['peak_country_build_gb']} GB "
             f"(free RAM {PANEL_MEMORY['free_ram_gb_at_start']} GB)")
@@ -1205,6 +1276,10 @@ with Timer("panel" + ("(resumed)" if _pan is not None else "")):
         P[f"country_{ISO[c]}"] = (P["cidx"] == ci_).astype(np.float32)
     log(f"panel: {len(COUNTRIES)} countries, {NCELL:,} cells × {NM} months = {N:,} cell-months ({YEAR_MIN}–{YEAR_MAX}) · RSS {rss_gb():.2f} GB")
     PANEL_MEMORY["rss_gb_after_panel"] = round(rss_gb(), 2)
+    PANEL_MEMORY.setdefault("guard", MEMORY_GUARD)
+    _cpc = PANEL_MEMORY.get("cells_per_country") or {}
+    log(f"MEMORY panel: cells per country {_cpc} (United_States {_cpc.get('United_States', 'n/a')}), {N:,} cell-months, estimated panel {PANEL_MEMORY.get('panel_gb')} GB, "
+        f"RSS now {rss_gb():.2f} GB, free RAM {free_ram_gb():.1f} GB · guard dropped {MEMORY_GUARD['dropped'] or 'nothing'} · real-data memory is UNMEASURED until the first real run")
     for c in COUNTRIES:
         for p in ["aqua", "terra", "snpp"]:
             st = STATUS[c][p]
@@ -1247,6 +1322,8 @@ def dissolve_features(fs):
     return unary_union(geoms) if len(geoms) > 1 else geoms[0]
 
 AOI_NOTES = []
+for _c in MEMORY_GUARD["dropped"]:
+    AOI_NOTES.append(f"MEMORY GUARD dropped {_c} from the panel (estimated panel memory above {MEMORY_GUARD_FRACTION:.0%} of free RAM {MEMORY_GUARD['free_ram_gb']} GB); its AOIs are absent from this bundle")
 with Timer("aoi_assign"):
     ADM0 = load_geojson("ne_110m_admin_0_countries.geojson")
     ADM1 = load_geojson("ne_10m_admin_1_states_provinces.geojson")
@@ -1310,6 +1387,15 @@ with Timer("aoi_assign"):
                          "iso_3166_2": code, "ne_names": ne_names, "note": note})
     AOI_BY_ID = {a["aoi_id"]: a for a in AOIS}
     for a in AOIS: log(f"AOI {a['aoi_id']:<8} {a['kind']:<8} {a['name']:<18} cells={int(a['cellmask'].sum()):>7,}  NE={a['ne_names']}")
+    # review H1: non-overlapping evaluation regions for the gate (BGD, AUS-NSW, USA-CA). A gated region that is not in this bundle is simply
+    # not gated (listed in the release reason); if none of them exists, fall back to the country AOIs (disjoint by construction).
+    GATE_UNITS_PRESENT = [u for u in GATE_UNITS if u in AOI_BY_ID and int(AOI_BY_ID[u]["cellmask"].sum()) > 0] or [a["aoi_id"] for a in AOIS if a["kind"] == "country"]
+    GATE_UNITS_ABSENT = [u for u in GATE_UNITS if u not in GATE_UNITS_PRESENT]
+    for _i, _u in enumerate(GATE_UNITS_PRESENT):
+        for _v in GATE_UNITS_PRESENT[_i + 1:]:
+            assert not (AOI_BY_ID[_u]["cellmask"] & AOI_BY_ID[_v]["cellmask"]).any(), f"gate regions {_u} and {_v} overlap (would double-count)"
+    log(f"gate regions (non-overlapping evaluation units): {GATE_UNITS_PRESENT}" + (f"; not in this bundle: {GATE_UNITS_ABSENT}" if GATE_UNITS_ABSENT else "")
+        + "; whole-country AUS / USA and the BGD divisions are reported separately, never gated")
 
 # %% [markdown]
 # ## Phase 2 · Section 2.7 — Freeze the splits
@@ -1477,7 +1563,11 @@ def evaluate(pred, idx, with_subgroups=True):
         h = P["holdout"][idx]
         sg["spatial_holdout"] = point_metrics(y[h], p[h]); sg["spatial_in_sample"] = point_metrics(y[~h], p[~h])
     am = aoi_month_pairs(idx, pred)
+    # "all" pools EVERY AOI (nested AOIs counted twice, whole-country AUS/USA dominate absolute counts): descriptive only.
+    # GATE_UNITS_SG pools the non-overlapping gated regions only (BGD, AUS-NSW, USA-CA): this is what the gate and the interval use.
     res["aoi_month"] = {"all": point_metrics(am["y"], am["p"]) if len(am) else point_metrics([], [])}
+    _gu = am[am.aoi_id.isin(GATE_UNITS_PRESENT)] if len(am) else am
+    res["aoi_month"][GATE_UNITS_SG] = point_metrics(_gu["y"], _gu["p"]) if len(_gu) else point_metrics([], [])
     if with_subgroups and len(am):
         for k in ["country", "admin1"]:
             d = am[am.kind == k]; res["aoi_month"][f"kind:{k}"] = point_metrics(d["y"], d["p"])
@@ -1600,7 +1690,7 @@ stop_hook("B1_poisson")
 #
 # **If it fails:** `B2: wall-clock budget reached` keeps the best model so far; that is fine. If B2 crashes, it is recorded as failed and the run continues. To skip it, set `RUN_XGB = False` in 2.2 before a fresh Run All (this starts a new run folder).
 #
-# **Time:** estimate: 5–30 min on the GPU, capped by XGB_MAX_MINUTES (120) (fixture, 3 seeds on CPU: 32 s)
+# **Time:** estimate: 5–30 min on the GPU, capped by XGB_MAX_MINUTES (45 by default for the first real run) (fixture, 3 seeds on CPU: 32 s)
 
 # %%
 # ===================== B2 XGBoost =====================
@@ -1709,7 +1799,7 @@ stop_hook("B2_xgb")
 #
 # **If it fails:** `wall-clock budget reached` keeps the best epoch; that is fine. If D1 crashes, it is recorded as failed and the run continues. To skip it, set `RUN_DL = False` in 2.2 before a fresh Run All.
 #
-# **Time:** estimate: 5–30 min on the GPU, capped by DL_MAX_MINUTES (120) (fixture, 3 seeds on CPU: 98 s)
+# **Time:** estimate: 5–30 min on the GPU, capped by DL_MAX_MINUTES (45 by default for the first real run) (fixture, 3 seeds on CPU: 98 s)
 
 # %%
 # ===================== D1 PyTorch MLP → ONNX =====================
@@ -1859,13 +1949,13 @@ stop_hook("D1_mlp")
 
 # %% [markdown]
 # ## Phase 2 · Section 2.11 — Validation gate and selection
-# **What this cell does:** Scores every full-panel model on the validation years. The baseline is the better of B1 and B0_month_ratio by validation area-month MAE. Another model replaces it only if it is at least 10% better and not more than 10% worse on active cells (Aqua count > 0); the best passing model wins. It also builds 80% intervals from validation residuals and writes `selection_frozen.json` before the test years are touched.
+# **What this cell does:** Scores every full-panel model on the validation years. The area-month MAE used for the gate is pooled over the three non-overlapping evaluation regions (`BGD`, `AUS-NSW`, `USA-CA`); whole-country `AUS` and `USA` and the Bangladesh divisions overlap those regions, would be counted twice and are left out. The baseline is the better of B1 and B0_month_ratio by that validation MAE. Another model replaces it only if it is at least 10% better and not more than 10% worse on active cells (Aqua count > 0); the best passing model wins. It also builds 80% intervals from the validation residuals of the same regions and writes `selection_frozen.json` before the test years are touched.
 #
 # **Steps**
 #
 # - [ ] 2.11.1 Run the cell.
 # - [ ] 2.11.2 Read `SELECTED (validation only): <model>; gate baseline <model> val AOI-month MAE=...`.
-# - [ ] 2.11.3 Read the table of `val_cell_MAE`, `val_active_MAE`, `val_AOI_MAE` and `val_dev` per model.
+# - [ ] 2.11.3 Read the table of `val_cell_MAE`, `val_active_MAE`, `val_AOI_MAE` (pooled over the gated regions) and `val_dev` per model.
 #
 # **Check before moving on**
 #
@@ -1886,15 +1976,21 @@ with Timer("val_eval"):
         except Exception as e: register_failure(mid, e)
     FULL_MODELS = [m for m in FULL_MODELS if MODELS[m].get("status") == "ok"]
 
-def vm(mid, level="cell_month", sg="all", split="val", key="mae"):
+def vm(mid, level="cell_month", sg=None, split="val", key="mae"):
+    """Metric lookup. For level "aoi_month" the default subgroup is the POOL OF THE GATED NON-OVERLAPPING REGIONS (GATE_UNITS_SG), not the
+    all-AOI pool (which double-counts nested AOIs); ask for sg="all" explicitly for the descriptive all-AOI number."""
+    sg = sg or (GATE_UNITS_SG if level == "aoi_month" else "all")
     try: return MODELS[mid][split][level][sg][key]
     except Exception: return None
 
-# Gate MAE is measured at AOI-month level (the level the app displays). Cell-month MAE on zero-inflated counts is minimised by
+# Gate MAE is measured at AOI-month level (the level the app displays), pooled over the non-overlapping gated regions (BGD, AUS-NSW, USA-CA;
+# review H1: no nested AOI is counted twice and whole-country AUS / USA do not dominate). Cell-month MAE on zero-inflated counts is minimised by
 # predicting ~0 (the median), so it would reward the un-harmonised identity baseline; cell-month MAE is still reported.
 GATE = {"rule": f"candidate replaces baseline only if val AOI-month MAE ≤ (1−{GATE_MAE_IMPROVEMENT})×baseline and active-subgroup "
                 f"(aqua_count>0) cell-month MAE ≤ (1+{GATE_SUBGROUP_DEGRADATION})×baseline; among passing candidates the lowest val AOI-month MAE wins",
-        "gate_level": "aoi_month", "candidates": {}}
+        "gate_level": "aoi_month", "gate_regions": GATE_UNITS_PRESENT,
+        "gate_pool": "AOI-months of the non-overlapping gated regions " + ", ".join(GATE_UNITS_PRESENT) + " (whole-country AUS / USA and BGD divisions excluded: nested, would be double-counted)",
+        "candidates": {}}
 # v1.1: the gate baseline is the BETTER of B1_poisson and B0_month_ratio on validation AOI-month MAE (review H1)
 _bc = {m: vm(m, "aoi_month") for m in GATE_BASELINE_CANDIDATES if m in FULL_MODELS and vm(m, "aoi_month") is not None}
 BASELINE = min(_bc, key=_bc.get) if _bc else FULL_MODELS[0]
@@ -1921,10 +2017,12 @@ GATE["selection_reason"] = (f"{SELECTED} passed the gate (val AOI-month MAE {vm(
 # 80% multiplicative AOI-month interval from validation residual quantiles of log((y+1)/(ŷ+1)) — for every full model
 def interval_from_val(mid):
     am = aoi_month_pairs(va, MODELS[mid]["pred"])
+    am = am[am.aoi_id.isin(GATE_UNITS_PRESENT)]       # non-overlapping regions only (review H1): nested AOIs are not counted twice
     r = np.log((am["y"].to_numpy() + 1) / (am["p"].to_numpy() + 1))
     a = (1 - INTERVAL_LEVEL) / 2
     return {"q_low": float(np.quantile(r, a)), "q_high": float(np.quantile(r, 1 - a)), "n_val_aoi_months": int(len(r)),
-            "formula": "low=(ŷ+1)·exp(q_low)−1, high=(ŷ+1)·exp(q_high)−1, clipped ≥0", "nominal": INTERVAL_LEVEL}
+            "formula": "low=(ŷ+1)·exp(q_low)−1, high=(ŷ+1)·exp(q_high)−1, clipped ≥0", "nominal": INTERVAL_LEVEL,
+            "fitted_on": "validation AOI-months of the gated non-overlapping regions " + ", ".join(GATE_UNITS_PRESENT) + " (one pooled interval, applied to every AOI)"}
 for mid in FULL_MODELS:
     try: MODELS[mid]["interval"] = interval_from_val(mid)
     except Exception as e: MODELS[mid]["interval"] = {"error": repr(e)}
@@ -1941,18 +2039,18 @@ print(pd.DataFrame({m: {"val_cell_MAE": vm(m), "val_active_MAE": vm(m, sg="activ
 
 # %% [markdown]
 # ## Phase 2 · Section 2.12 — Open the test set once
-# **What this cell does:** Opens the sealed test years (2023–2024) exactly once, scores every full-panel model, measures how often the true area-month value falls inside the 80% interval, and sets the release stage: synthetic data gives `ui_prototype`; beating both B0_identity and B0_month_ratio on test with coverage within ±10 points gives `validated_calibration`; otherwise `observed_comparison`.
+# **What this cell does:** Opens the sealed test years (2023–2024) exactly once, scores every full-panel model, measures how often the true area-month value falls inside the 80% interval in each AOI, and sets the release stage region by region on the non-overlapping evaluation regions `BGD`, `AUS-NSW` and `USA-CA`. A region is `validated_calibration` only if the selected model beats both B0_identity and B0_month_ratio on that region's test area-month MAE and its interval coverage is within ±10 points of 0.80; otherwise it is `observed_comparison`. The overall stage is the weakest region (synthetic data: `ui_prototype`). Whole-country `AUS` and `USA` and the Bangladesh divisions are reported separately and never gated.
 #
 # **Steps**
 #
 # - [ ] 2.12.1 Run the cell once. Do not run it a second time on its own.
 # - [ ] 2.12.2 Read `TEST SPLIT OPENED at <time> (selection frozen at .../selection_frozen.json)`.
-# - [ ] 2.12.3 Read `RELEASE STAGE: <stage> — <reason>`.
+# - [ ] 2.12.3 Read one `RELEASE REGION <id>: <stage> — ...` line per gated region (test MAE of the selected model and of both baselines, interval coverage and its n), then `RELEASE STAGE: <stage> — <reason>` (the weakest region's stage).
 #
 # **Check before moving on**
 #
-# - [ ] On real data the stage is `observed_comparison` or `validated_calibration`, never `ui_prototype`.
-# - [ ] The reason lists the test area-month MAE of the selected model and both B0 baselines, and the interval coverage (aim: near 0.80).
+# - [ ] On real data every stage is `observed_comparison` or `validated_calibration`, never `ui_prototype`.
+# - [ ] Each region line lists the test area-month MAE of the selected model and both B0 baselines, and the interval coverage (aim: 0.70 to 0.90). Each region has at most 24 test area-months (n is printed per region), so coverage is coarse (standard error about 0.08): read it as a warning light, not a precise number.
 #
 # **If it fails:** `Test split already opened once — refusing a second look` means this cell was run again by itself. Restart the session and Run All: the run resumes from checkpoints and the test set is opened once in the new session.
 #
@@ -1969,34 +2067,72 @@ with Timer("test_eval"):
             iv = MODELS[mid].get("interval", {})
             if "q_low" in iv:
                 am = aoi_month_pairs(te, MODELS[mid]["pred"])
-                lo = np.clip((am["p"] + 1) * np.exp(iv["q_low"]) - 1, 0, None); hi = (am["p"] + 1) * np.exp(iv["q_high"]) - 1
-                inside = (am["y"] >= lo) & (am["y"] <= hi)
-                iv["test_coverage"] = float(inside.mean()) if len(am) else None; iv["n_test_aoi_months"] = int(len(am))
+                am["lo"] = np.clip((am["p"] + 1) * np.exp(iv["q_low"]) - 1, 0, None); am["hi"] = (am["p"] + 1) * np.exp(iv["q_high"]) - 1
+                am["inside"] = (am["y"] >= am["lo"]) & (am["y"] <= am["hi"])
+                gp = am[am.aoi_id.isin(GATE_UNITS_PRESENT)]
+                # pooled over the gated NON-OVERLAPPING regions only (review H1); per-AOI numbers (gated or descriptive) below
+                iv["test_coverage"] = float(gp["inside"].mean()) if len(gp) else None; iv["n_test_aoi_months"] = int(len(gp))
+                iv["test_coverage_by_aoi"] = {aid: {"coverage": float(d["inside"].mean()), "n": int(len(d)), "kind": str(d["kind"].iloc[0]),
+                                                    "gated": aid in GATE_UNITS_PRESENT} for aid, d in am.groupby("aoi_id")}
         except Exception as e:
             MODELS[mid]["test_error"] = repr(e); log(f"test eval failed for {mid}: {e!r}")
 
 sel_test = MODELS[SELECTED].get("test", {})
 SEL_INTERVAL = MODELS[SELECTED].get("interval", {})
-def tm_(mid): return vm(mid, "aoi_month", "all", "test")
-_beat = {b: (tm_(SELECTED) is not None and tm_(b) is not None and b != SELECTED and tm_(SELECTED) < tm_(b)) for b in ["B0_identity", "B0_month_ratio"]}
-beats = all(_beat.values())
-cov = SEL_INTERVAL.get("test_coverage")
-cov_ok = cov is not None and abs(cov - INTERVAL_LEVEL) <= 0.10
+def tmae(mid, aoi): return vm(mid, "aoi_month", f"aoi:{aoi}", "test")
+def _f2(v, nd=2): return "n/a" if v is None else f"{v:.{nd}f}"
+
+# ---- review H1: the release decision is PER REGION on non-overlapping evaluation units; the overall stage is the weakest region ----
+REGION_RELEASE = {}
+for u in GATE_UNITS_PRESENT:
+    s_m, i_m, r_m = tmae(SELECTED, u), tmae("B0_identity", u), tmae("B0_month_ratio", u)
+    beat_i = bool(SELECTED != "B0_identity" and s_m is not None and i_m is not None and s_m < i_m)
+    beat_r = bool(SELECTED != "B0_month_ratio" and s_m is not None and r_m is not None and s_m < r_m)
+    ci = (SEL_INTERVAL.get("test_coverage_by_aoi") or {}).get(u) or {}
+    cov_u, n_u = ci.get("coverage"), ci.get("n")
+    cov_ok_u = bool(cov_u is not None and abs(cov_u - INTERVAL_LEVEL) <= COVERAGE_TOLERANCE + 1e-9)
+    stage_u = "validated_calibration" if (beat_i and beat_r and cov_ok_u) else "observed_comparison"
+    why_not = [w for w, bad in [("does not beat B0_identity" if SELECTED != "B0_identity" else "is B0_identity itself (cannot beat itself)", not beat_i),
+                                ("does not beat B0_month_ratio" if SELECTED != "B0_month_ratio" else "is B0_month_ratio itself (cannot beat itself)", not beat_r),
+                                (f"interval coverage outside {INTERVAL_LEVEL:.2f}±{COVERAGE_TOLERANCE:.2f}" if cov_u is not None else "no interval coverage measured", not cov_ok_u)] if bad]
+    REGION_RELEASE[u] = {"aoi_id": u, "name": AOI_BY_ID[u]["name"], "stage": "ui_prototype" if SYNTHETIC else stage_u, "stage_if_real": stage_u,
+                         "selected_model_id": SELECTED, "test_aoi_month_mae": {"selected": s_m, "B0_identity": i_m, "B0_month_ratio": r_m},
+                         "n_test_aoi_months": vm(SELECTED, "aoi_month", f"aoi:{u}", "test", "n"),
+                         "beats_B0_identity": beat_i, "beats_B0_month_ratio": beat_r,
+                         "interval_test_coverage": cov_u, "interval_n_test_aoi_months": n_u, "interval_nominal": INTERVAL_LEVEL, "coverage_ok": cov_ok_u,
+                         "coverage_standard_error_approx": None if not n_u else round(math.sqrt(INTERVAL_LEVEL * (1 - INTERVAL_LEVEL) / n_u), 3),
+                         "reasons_not_validated": why_not}
+    log(f"RELEASE REGION {u}: {REGION_RELEASE[u]['stage']}" + (f" (would be {stage_u} on real data)" if SYNTHETIC else "") +
+        f" — test AOI-month MAE selected={_f2(s_m)}, B0_identity={_f2(i_m)}, B0_month_ratio={_f2(r_m)} (beats both: {beat_i and beat_r}); "
+        f"80% interval coverage {_f2(cov_u)} on n={n_u} AOI-months (ok={cov_ok_u})" + (f"; not validated because it {' and '.join(why_not)}" if why_not else ""))
+# reported separately, never gated: whole-country AUS / USA and the BGD divisions (nested inside gated or ungated regions)
+REPORTED_SEPARATELY = {}
+for a_ in AOIS:
+    if a_["aoi_id"] in GATE_UNITS_PRESENT: continue
+    ci = (SEL_INTERVAL.get("test_coverage_by_aoi") or {}).get(a_["aoi_id"]) or {}
+    REPORTED_SEPARATELY[a_["aoi_id"]] = {"kind": a_["kind"], "country": country_display(a_["country"]),
+        "test_aoi_month_mae": {"selected": tmae(SELECTED, a_["aoi_id"]), "B0_identity": tmae("B0_identity", a_["aoi_id"]), "B0_month_ratio": tmae("B0_month_ratio", a_["aoi_id"])},
+        "interval_test_coverage": ci.get("coverage"), "interval_n_test_aoi_months": ci.get("n"),
+        "note": "descriptive only: nested inside / overlapping a gated region (or a whole country dominated by large absolute counts); not part of the release decision"}
+_order = lambda s_: RELEASE_ORDER[s_]
+if SYNTHETIC: RELEASE_STAGE = "ui_prototype"
+elif REGION_RELEASE: RELEASE_STAGE = min((r_["stage"] for r_ in REGION_RELEASE.values()), key=_order)
+else: RELEASE_STAGE = "observed_comparison"
 _why = [GATE.get("selection_reason", "")]
 if SELECTED in ("B0_identity", "B0_month_ratio"):
-    _why.append(f"the selected model is {SELECTED} itself, so the release rule 'beats B0_identity and B0_month_ratio on test AOI-month MAE' "
-                "cannot hold by construction → at most observed_comparison")
-_why.append(f"test AOI-month MAE: selected={tm_(SELECTED)}, B0_identity={tm_('B0_identity')}, B0_month_ratio={tm_('B0_month_ratio')}; "
-            f"beats={_beat}; interval test coverage={cov} (nominal {INTERVAL_LEVEL}, ok={cov_ok})")
-if SYNTHETIC:
-    RELEASE_STAGE = "ui_prototype"
-    RELEASE_REASON = "bundle is a SYNTHETIC fixture → forced ui_prototype, value_status demo. " + " | ".join(_why)
-elif beats and cov_ok:
-    RELEASE_STAGE = "validated_calibration"
-    RELEASE_REASON = "selected beats B0_identity & B0_month_ratio on test AOI-month MAE and coverage within ±0.10 of nominal. " + " | ".join(_why)
-else:
-    RELEASE_STAGE = "observed_comparison"
-    RELEASE_REASON = "release check not met. " + " | ".join(_why)
+    _why.append(f"the selected model is {SELECTED} itself, so 'beats B0_identity and B0_month_ratio on test AOI-month MAE' cannot hold by construction in any region → at most observed_comparison")
+if GATE_UNITS_ABSENT: _why.append(f"gated regions not in this bundle: {GATE_UNITS_ABSENT}")
+if not REGION_RELEASE: _why.append("no gated region could be evaluated")
+if any((r_["interval_n_test_aoi_months"] or 0) < 30 for r_ in REGION_RELEASE.values()):
+    _why.append("each region has at most 12 months × 2 test years = 24 AOI-months (n is given per region), so its interval coverage has a standard error of about 0.08: coarse evidence")
+_per = " | ".join(f"{u}: {r_['stage_if_real'] if not SYNTHETIC else 'ui_prototype (synthetic; would be ' + r_['stage_if_real'] + ')'} "
+                  f"(test AOI-month MAE selected={_f2(r_['test_aoi_month_mae']['selected'])} vs B0_identity={_f2(r_['test_aoi_month_mae']['B0_identity'])} / "
+                  f"B0_month_ratio={_f2(r_['test_aoi_month_mae']['B0_month_ratio'])}; coverage {_f2(r_['interval_test_coverage'])} on n={r_['interval_n_test_aoi_months']}"
+                  + (f"; {' and '.join(r_['reasons_not_validated'])}" if r_["reasons_not_validated"] else "") + ")" for u, r_ in REGION_RELEASE.items())
+RELEASE_REASON = (("bundle is a SYNTHETIC fixture → forced ui_prototype, value_status demo. " if SYNTHETIC else "") +
+                  f"Per-region release check on non-overlapping evaluation regions {GATE_UNITS_PRESENT} (whole-country AUS / USA and the BGD divisions are reported separately, not gated); "
+                  f"validated_calibration needs the selected model to beat B0_identity AND B0_month_ratio on test AOI-month MAE and 80% interval coverage within ±{COVERAGE_TOLERANCE:.2f} of {INTERVAL_LEVEL:.2f} in EVERY region; "
+                  f"the overall stage is the weakest region. Regions: {_per}. " + " | ".join(w for w in _why if w))
 log(f"RELEASE STAGE: {RELEASE_STAGE} — {RELEASE_REASON}")
 
 # %% [markdown]
@@ -2087,7 +2223,7 @@ with Timer("backcast_series"):
 
 # %% [markdown]
 # ## Phase 2 · Section 2.14 — Export the app bundle
-# **What this cell does:** Writes the app bundle before the research stages: monthly activity records per area and year (validated against `activity.schema.json`), cell grids (15 MB per file budget), B1 input features for BGD, AUS-NSW and USA-CA, the optional recent NRT layer, scrubbed sources, regions and boundaries, model weights (B1 JSON, B2 JSON, D1 ONNX with an onnxruntime parity check), model cards, metrics, `comparison.csv`, figures, manifest and checksums. It copies the bundle to `/kaggle/working/lumos_app_bundle/` and zips it to `/kaggle/working/lumos_app_bundle.zip`.
+# **What this cell does:** Writes the app bundle before the research stages: monthly activity records per area and year (validated against `activity.schema.json`), cell grids (15 MB per file budget), B1 input features for BGD, AUS-NSW and USA-CA, the optional recent NRT layer, scrubbed sources, regions (whose `cells_exported` / `features_exported` flags reflect the files actually written) and boundaries, model weights (B1 JSON, B2 JSON, D1 ONNX with an onnxruntime parity check), model cards, metrics, `comparison.csv`, figures, manifest and checksums. It copies the bundle to `/kaggle/working/lumos_app_bundle/` and zips it to `/kaggle/working/lumos_app_bundle.zip`.
 #
 # **Steps**
 #
@@ -2096,11 +2232,12 @@ with Timer("backcast_series"):
 # - [ ] 2.14.3 Read `ONNX parity: {...}`.
 # - [ ] 2.14.4 Lines `cells <aoi> <year>: est cutoff raised to ...` mean a cell file was over budget and its cutoff was raised and recorded; that is expected for large areas.
 # - [ ] 2.14.4a Cell grids (`cells/<aoi>/<year>.json`) are written for `BGD` and its divisions, `AUS-NSW` and `USA-CA` only; whole-country `AUS` and `USA` have none. B1 feature files (`features/<aoi>/<year>.json`) exist for `BGD`, `AUS-NSW` and `USA-CA`.
-# - [ ] 2.14.5 Read `app bundle [core (before research stages Q1/Q2)]: ... zip ... MB`.
+# - [ ] 2.14.5 Read `app bundle [core (before research stages Q1/Q2)]: ... zip ... MB` and the line `path scan of the exported bundle: 0 file(s) needed scrubbing` (absolute local paths are replaced by placeholders such as `<input>` in every exported file).
 #
 # **Check before moving on**
 #
 # - [ ] `schema errors: 0`.
+# - [ ] No `STILL_PRESENT` or `binary_not_scrubbed` in the path-scan line.
 # - [ ] ONNX parity shows `passed` true (unless D1 was skipped).
 # - [ ] `/kaggle/working/lumos_app_bundle.zip` exists, and its size is well under 100 MB.
 #
@@ -2195,9 +2332,27 @@ def split_of_year(y):
     if y in BACKCAST_YEARS: return "backcast"      # 2003–2012 (contract §3); 2012 VIIRS is shown too where observed
     return "none"
 
+def region_interval_coverage(a):
+    """Value of `interval_empirical_holdout_coverage` for AOI `a` and the sentence that documents it (review M2). It is the 2023–2024 test coverage of
+    the selected model's 80% interval measured IN THAT AOI'S OWN gated evaluation region (BGD, AUS-NSW, USA-CA), identical for every month of the
+    AOI because it describes the interval method for the region, not the month. Null where it was not measured: whole-country AUS / USA and
+    admin-1 divisions without their own evaluation. (Field name and schema_version "1.0" unchanged; before v1.2 this was one pooled number.)"""
+    aid = a["aoi_id"]
+    if aid in GATE_UNITS_PRESENT:
+        ci = (SEL_INTERVAL.get("test_coverage_by_aoi") or {}).get(aid) or {}
+        if ci.get("coverage") is not None:
+            return float(ci["coverage"]), (f"interval_empirical_holdout_coverage = this region's own coverage on the 2023–2024 test AOI-months (n={ci['n']}); "
+                                           f"it describes the 80% interval method for {aid}, not this month")
+        return None, "interval_empirical_holdout_coverage is null: no test AOI-months were available for this region"
+    if a["kind"] == "country":
+        return None, (f"interval_empirical_holdout_coverage is null: whole-country {aid} is not a gated evaluation region "
+                      "(its descriptive coverage is in metrics.json under release.reported_separately)")
+    return None, (f"interval_empirical_holdout_coverage is null: {aid} is an admin-1 area without its own test evaluation "
+                  "(the gated evaluation regions are " + ", ".join(GATE_UNITS_PRESENT) + ")")
+
 def activity_records(a):
     s = SERIES[a["aoi_id"]]; an = ANOM[a["aoi_id"]]; recs = {}; c = a["country"]
-    cov_val = SEL_INTERVAL.get("test_coverage")
+    cov_val, cov_note = region_interval_coverage(a)
     for mi in range(NM):
         y, mo = int(YEAR_OF_M[mi]), int(MONTH_OF_M[mi])
         ny, nmo = (y + 1, 1) if mo == 12 else (y, mo + 1)
@@ -2228,6 +2383,7 @@ def activity_records(a):
         has_est = np.isfinite(est)
         if notes: reason += ". " + " | ".join(notes)
         reason += f". Anomaly is retrospective vs same-month {ANOMALY_MIN_BASELINE}+ baseline years (complete months only)."
+        if has_est: reason += " " + cov_note + "."
         prov = [p for p in [SRC_ID.get(("modis", c, y)), SRC_ID.get(("viirs-snpp", c, y))] if p]
         recs.setdefault(y, []).append({
             "schema_version": "1.0", "snapshot_id": SNAPSHOT_ID, "aoi_id": a["aoi_id"],
@@ -2279,7 +2435,7 @@ def model_card(mid):
         card["app_recompute"] = {"weights": "models/B1_poisson/weights.json",
                                  "how": "x = features in feature_order; z_j = (transform_j(x_j) - mean_j)/scale_j with transform log1p(max(x,0)) or identity; "
                                         "rate = exp(clip(intercept + Σ coef_j z_j, -30, 30))",
-                                 "per_cell_inputs": {aid: f"features/{aid}/<year>.json" for aid in FEATURE_EXPORT_AOIS}}
+                                 "per_cell_inputs": {aid: f"features/{aid}/<year>.json" for aid in FEATURES_WRITTEN}}
     if mid == "D1_mlp":
         card["onnx_io"] = {"file": "models/D1_mlp/model.onnx", "input": {"name": "x", "dtype": "float32", "shape": ["N", len(FEATURES)], "features": FEATURES,
                                                                          "values": "RAW feature values (preprocessing is embedded)"},
@@ -2289,7 +2445,7 @@ def model_card(mid):
     if mid == "B2_xgb":
         card["app_recompute"] = {"model": "models/B2_xgb/model.json (XGBoost JSON)", "input": "float32 matrix of FEATURES in feature_order (raw values)",
                                  "iteration_range": [0, int((m.get("info") or {}).get("best_iteration", 0)) + 1]}
-    return clean_json(card)
+    return scrub_obj(clean_json(card))
 
 def write_figures(fig_dir):
     fig_dir.mkdir(parents=True, exist_ok=True); made = []
@@ -2368,13 +2524,14 @@ def scrub_sources():
         d = {k: v for k, v in s.items() if not k.startswith("_")}
         if d.get("url"): d["url"] = re.sub(r"(/api/area/csv/)[^/]+/", r"\1***/", str(d["url"]))
         d["verification_B"] = s.get("_verify")
-        out.append(clean_json(d))
+        out.append(scrub_obj(clean_json(d)))
     return out
 
 
 def _json_size_mb(text): return len(text.encode("utf-8")) / 1e6
 
 CELL_EXPORT_LOG, FEATURE_EXPORT_LOG = {}, {}
+FEATURES_WRITTEN = []        # AOIs whose features/<aoi>/<year>.json files were actually written (set by export_core)
 def write_cells(a, out_dir):
     """cells/<aoi>/<year>.json — rows with aqua>0 or viirs>0 or est≥cutoff (contract: cutoff 1). Each AOI-year must stay ≤ CELL_FILE_BUDGET_MB:
     if not, the est cutoff is raised along CELL_EST_LADDER and the cutoff used is recorded (file key `est_min` + metrics notes). Vectorised."""
@@ -2482,15 +2639,23 @@ def export_core(out):
         else:
             c = CELLS[a["cellmask"]]; bbox = [float(c.lon.min()), float(c.lat.min()), float(c.lon.max()), float(c.lat.max())]
         has_obs = bool(np.nansum(SERIES[a["aoi_id"]]["viirs_model"][np.isin(YEAR_OF_M, TRAIN_YEARS)]) > 0)
+        par = next((x["aoi_id"] for x in AOIS if x["kind"] == "country" and x["country"] == a["country"]), None) if a["kind"] == "admin1" else None
+        gated = a["aoi_id"] in GATE_UNITS_PRESENT
+        ev_region = a["aoi_id"] if gated else (par if (par in GATE_UNITS_PRESENT) else None)
         regions.append({"aoi_id": a["aoi_id"], "name": a["name"], "country": country_display(a["country"]), "kind": a["kind"],
-                         "parent": next((x["aoi_id"] for x in AOIS if x["kind"] == "country" and x["country"] == a["country"]), None) if a["kind"] == "admin1" else None,
+                         "parent": par,
                          "display_kind": "Country" if a["kind"] == "country" else ADMIN1_DISPLAY_KIND.get(a["country"], "State"),
                          "bbox": bbox,
                          "geometry_path": f"geo/{a['aoi_id']}.geojson" if g is not None else None,
-                         "supported_calibration": bool(RELEASE_STAGE == "validated_calibration" and has_obs),
-                         "iso_3166_2": a.get("iso_3166_2"), "natural_earth_names": a.get("ne_names"), "note": a.get("note"),
-                         "cells_exported": a["aoi_id"] not in CELLS_EXPORT_SKIP_AOIS, "features_exported": a["aoi_id"] in FEATURE_EXPORT_AOIS})
-    jdump(regions, out / "regions.json", indent=1)
+                         # v1.2 (review H1): per-region evidence. True only for a gated region whose OWN release stage is validated_calibration
+                         "supported_calibration": bool(gated and REGION_RELEASE.get(a["aoi_id"], {}).get("stage") == "validated_calibration" and has_obs),
+                         "evaluation_unit": gated, "evaluation_region": ev_region,
+                         "release_stage": REGION_RELEASE[a["aoi_id"]]["stage"] if gated else None,
+                         "release_note": ("gated evaluation region: own test MAE vs both baselines and own interval coverage (metrics.json release.regions)" if gated else
+                                          (f"no own test evaluation; nested inside the gated region {ev_region}" if ev_region else
+                                           "whole-country area, reported separately and not gated (overlaps a gated region or is dominated by large counts)")),
+                         "iso_3166_2": a.get("iso_3166_2"), "natural_earth_names": a.get("ne_names"), "note": a.get("note")})
+    regions = scrub_obj(regions)
     # activity + validation (built-in validator + jsonschema; the schema covers exactly the contract §6 field list)
     jdump(ACTIVITY_SCHEMA, out / "activity.schema.json", indent=1)
     try:
@@ -2505,7 +2670,7 @@ def export_core(out):
                 if _jsv is not None: e += [f"jsonschema: {x.message}" for x in _jsv.iter_errors(r)]
                 if e: schema_errors.append({"aoi": a["aoi_id"], "period": r["period_start_utc"], "errors": e[:5]})
                 n_rec += 1
-            jdump(recs, out / "activity" / a["aoi_id"] / f"{y}.json")
+            jdump(scrub_obj(recs), out / "activity" / a["aoi_id"] / f"{y}.json")
     log(f"activity records: {n_rec}; schema errors: {len(schema_errors)} (validator: tiny{' + jsonschema' if _jsv else ''}; contract field list)")
     if schema_errors: print(schema_errors[:3]); raise RuntimeError("activity records failed schema validation")
     for a in AOIS:
@@ -2513,6 +2678,18 @@ def export_core(out):
     for aid in FEATURE_EXPORT_AOIS:
         if aid in AOI_BY_ID: write_features(AOI_BY_ID[aid], out)
     write_recent(out)
+    # review L: regions.json flags reflect the files actually written (not membership in the config lists)
+    n_years_ = YEAR_MAX - YEAR_MIN + 1
+    global FEATURES_WRITTEN
+    FEATURES_WRITTEN = []
+    for r_ in regions:
+        aid = r_["aoi_id"]
+        r_["cells_exported"] = bool(len(list((out / "cells" / aid).glob("*.json"))) == n_years_) if (out / "cells" / aid).is_dir() else False
+        r_["features_exported"] = bool(len(list((out / "features" / aid).glob("*.json"))) == n_years_) if (out / "features" / aid).is_dir() else False
+        if r_["features_exported"]: FEATURES_WRITTEN.append(aid)
+        if (aid in FEATURE_EXPORT_AOIS and not r_["features_exported"]) or (aid not in CELLS_EXPORT_SKIP_AOIS and not r_["cells_exported"]):
+            r_["export_note"] = "configured cells/features files were not (fully) written: " + scrub_str(str(FEATURE_EXPORT_LOG.get(aid, "")) or "see metrics.json cells_export / features_export")
+    jdump(regions, out / "regions.json", indent=1)
     for mid in ["B0_identity", "B0_ratio", "B0_month_ratio", "B1_poisson"]:
         if MODELS.get(mid, {}).get("status") == "ok": jdump(MODELS[mid]["weights"], out / "models" / mid / "weights.json", indent=1)
     if MODELS.get("B2_xgb", {}).get("status") == "ok":
@@ -2533,9 +2710,15 @@ def export_finalize(out, phase):
     global METRICS, MANIFEST, FIGS, COMPARISON
     for mid in list(MODELS.keys()):
         jdump(model_card(mid), out / "models" / mid / "model_card.json", indent=1)
-    METRICS = clean_json({
+    METRICS = scrub_obj(clean_json({
         "schema_version": "1.0", "snapshot_id": SNAPSHOT_ID, "synthetic": SYNTHETIC, "synthetic_flags": SYNTHETIC_FLAGS, "export_phase": phase,
         "selected_model_id": SELECTED, "release_stage": RELEASE_STAGE, "release_reason": RELEASE_REASON, "gate": GATE,
+        "release": {"rule": f"per region on non-overlapping evaluation regions {GATE_UNITS_PRESENT}: validated_calibration needs the selected model to beat B0_identity AND "
+                            f"B0_month_ratio on test AOI-month MAE and 80% interval coverage within ±{COVERAGE_TOLERANCE} of {INTERVAL_LEVEL} in that region; the overall "
+                            "release_stage is the weakest gated region; observed_comparison otherwise; ui_prototype for synthetic data",
+                    "stage": RELEASE_STAGE, "gate_regions": GATE_UNITS_PRESENT, "gate_regions_not_in_bundle": GATE_UNITS_ABSENT,
+                    "regions": REGION_RELEASE, "reported_separately": REPORTED_SEPARATELY,
+                    "interval_coverage_field": "activity records' interval_empirical_holdout_coverage = the AOI's own region test coverage (2023–2024) for gated regions; null for whole-country AUS / USA and admin-1 areas without own evaluation (v1.2; schema_version stays 1.0)"},
         "selection_record_sha256": SELECTION_RECORD["sha256"], "test_opened_utc": TEST_VAULT.opened_utc, "resumed_run": RESUMED,
         "models": {mid: {k: v for k, v in m.items() if k in ("status", "error", "val", "test", "interval", "info", "seed_runs", "onnx", "subset_only", "export_error")}
                    for mid, m in MODELS.items()},
@@ -2546,7 +2729,11 @@ def export_finalize(out, phase):
                              "seeds": [r["seed"] for r in MODELS[mid]["seed_runs"]]}
                        for mid in MODELS if MODELS[mid].get("seed_runs")},
         "qml_subset_comparison": QML, "qllm": QLLM, "backcast_summary": BACKCAST_SUMMARY, "split_manifest": SPLIT_MANIFEST,
-        "checksum_report": CHECKSUM_REPORT, "panel_memory": PANEL_MEMORY, "timings_s": TIMINGS, "device": DEVICE, "quick_test": QUICK_TEST,
+        "checksum_report": CHECKSUM_REPORT, "panel_memory": PANEL_MEMORY, "timings_s": TIMINGS, "device": DEVICE, "quick_test": QUICK_TEST, "amp_bf16": AMP_BF16,
+        "ingest_type_rule": {"main": "standard rows with type == 0", "static": "standard rows with finite type != 0", "standard_rows_without_type": "counted nowhere (a standard file with no usable type is unavailable)",
+                             "nrt_rows": "never used for training: counted nowhere, their month is flagged partial",
+                             "totals": {"standard_rows_without_type": int(sum(x.get("standard_rows_without_type", 0) for x in INGEST_STATS)),
+                                        "nrt_rows": int(sum(x.get("nrt_rows", 0) for x in INGEST_STATS))}},
         "availability": {c: {p: {"partial_months": [f"{YEAR_OF_M[m]}-{MONTH_OF_M[m]:02d}" for m in np.where(STATUS[c][p] == ST_PARTIAL)[0]],
                                  "missing_months": int((STATUS[c][p] == ST_MISSING).sum()),
                                  "notes_sample": sorted({v for v in STATUS_NOTES[c][p].values() if "before the" not in v})[:12]}
@@ -2556,23 +2743,33 @@ def export_finalize(out, phase):
                   f"cells/<aoi>/<year>.json rows kept if aqua>0 or viirs>0 or est≥est_min (default {CELL_EST_MIN}; raised per AOI-year if > "
                   f"{CELL_FILE_BUDGET_MB} MB, see cells_export); cell grids skipped for {CELLS_EXPORT_SKIP_AOIS}; cell rows use complete months only.",
                   "static_source_detections_modis = Aqua MODIS type≠0 detections; static_source_detections_viirs = S-NPP VIIRS type≠0 detections (null before 2012 / when missing).",
-                  "Partial months (S-NPP from 2012-01-20, Aqua from 2002-07-04, last month of a current-year file) are extract_status=partial: "
+                  "Partial months (S-NPP from 2012-01-20, Aqua from 2002-07-03, last month of a current-year file, months with NRT rows) are extract_status=partial: "
                   "observed counts shown but excluded from training, baselines and anomalies.",
-                  "Anomaly flags: |z(log1p)|≥1 vs same calendar month in other years (2003+), retrospective."]})
+                  "Years that Notebook A marked missing (e.g. FIRMS 2025 yearly country files: 404) stay on the calendar as unavailable (null, extract_status missing), never zero.",
+                  "Release stage is decided per region on non-overlapping evaluation regions (see release); the all-AOI pooled AOI-month metric ('all') double-counts nested AOIs and is descriptive only; the gate uses the 'gate_units' subgroup.",
+                  "Absolute local paths are replaced by placeholders (<input>, <work>, <run>, <home>, <local-path>, <kaggle-path>) in every exported file.",
+                  "Anomaly flags: |z(log1p)|≥1 vs same calendar month in other years (2003+), retrospective."]}))
     jdump(METRICS, out / "metrics.json", indent=1)
     COMPARISON = flat_metrics(); COMPARISON.to_csv(out / "comparison.csv", index=False)
     if (out / "figures").exists(): shutil.rmtree(out / "figures")
     FIGS = write_figures(out / "figures")
     for p in [out / "manifest.json", out / "checksums.sha256"]:
         if p.exists(): p.unlink()
+    PATH_SCAN = scrub_bundle_files(out)       # safety net over every exported file BEFORE hashing (review M-path)
+    log(f"path scan of the exported bundle: {len(PATH_SCAN)} file(s) needed scrubbing" + (f" {PATH_SCAN[:5]}" if PATH_SCAN else "")
+        + ("; WARNING: a local path marker is still present" if any(h[2] != "scrubbed" for h in PATH_SCAN) else ""))
     files = sorted(p for p in out.rglob("*") if p.is_file())
     file_hashes = {str(p.relative_to(out)).replace("\\", "/"): sha256_file(p) for p in files}
-    MANIFEST = {"schema_version": "1.0", "snapshot_id": SNAPSHOT_ID, "created_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
+    MANIFEST = scrub_obj({"schema_version": "1.0", "snapshot_id": SNAPSHOT_ID, "created_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
                 "release_stage": RELEASE_STAGE, "selected_model_id": SELECTED, "aois": [a["aoi_id"] for a in AOIS],
                 "years": list(range(YEAR_MIN, YEAR_MAX + 1)), "files": file_hashes, "synthetic": SYNTHETIC,
                 "value_status_default": "demo" if SYNTHETIC else None, "release_reason": RELEASE_REASON, "export_phase": phase,
+                "release_regions": {u: {k: r_[k] for k in ["stage", "stage_if_real", "test_aoi_month_mae", "n_test_aoi_months", "beats_B0_identity", "beats_B0_month_ratio",
+                                                           "interval_test_coverage", "interval_n_test_aoi_months", "coverage_ok", "reasons_not_validated"]}
+                                    for u, r_ in REGION_RELEASE.items()},
+                "release_regions_reported_separately": sorted(REPORTED_SEPARATELY),
                 "layers": {"activity": "harmonised monthly records", "cells": "cell grids (AOIs except " + ",".join(CELLS_EXPORT_SKIP_AOIS) + ")",
-                           "features": f"B1 per-cell inputs for {FEATURE_EXPORT_AOIS}", "recent": "optional NRT recent observed layer (not training)"}}
+                           "features": f"B1 per-cell inputs for {FEATURES_WRITTEN}", "recent": "optional NRT recent observed layer (not training)"}})
     jdump(MANIFEST, out / "manifest.json", indent=1)
     with open(out / "checksums.sha256", "w") as f:
         for p in sorted(q for q in out.rglob("*") if q.is_file() and q.name != "checksums.sha256"):
@@ -2590,6 +2787,21 @@ def export_finalize(out, phase):
     log(f"app bundle [{phase}]: {APP_FINAL} ({len(files) + 2} files); zip {APP_ZIP} {APP_ZIP.stat().st_size / 1e6:.2f} MB")
     jdump(clean_json({"log": LOG, "timings": TIMINGS, "blocked_connections": BLOCKED_CONNECTIONS, "stages": STAGE_STATE}), RUN_DIR / "run_log.json", indent=1)
     shutil.copy(out / "metrics.json", RUN_DIR / "metrics.json")
+
+def verify_final_zip():
+    """Re-open lumos_app_bundle.zip and prove it is complete before the duplicate stage copy is deleted: CRC test passes, the file set equals
+    lumos_app_bundle/, and every file inside the zip matches checksums.sha256. Returns (ok, detail)."""
+    with zipfile.ZipFile(APP_ZIP) as z:
+        bad = z.testzip()
+        names = {n for n in z.namelist() if not n.endswith("/")}
+        want = {"lumos_app_bundle/" + str(p.relative_to(APP_FINAL)).replace(os.sep, "/") for p in APP_FINAL.rglob("*") if p.is_file()}
+        if bad is not None: return False, f"zip CRC error in {bad}"
+        if names != want: return False, f"zip file set differs from {APP_FINAL.name}: {len(names ^ want)} differing entries"
+        n_bad = 0
+        for line in z.read("lumos_app_bundle/checksums.sha256").decode("utf-8").splitlines():
+            h, rel = line.split("  ", 1)
+            if hashlib.sha256(z.read("lumos_app_bundle/" + rel)).hexdigest() != h: n_bad += 1
+        return n_bad == 0, f"{len(names)} files, {n_bad} checksum mismatches inside the zip"
 
 QML = {"status": "not_run_yet", "note": "research stage runs after the app export"}
 QLLM = {"status": "not_run_yet", "note": "research stage runs after the app export"}
@@ -2855,7 +3067,7 @@ stop_hook("Q1_vqc")
 #
 # **If it fails:** A model listed under `too_large` must be swapped for a smaller one (a 7B model in bf16 is about 15 GB). `transformers not importable` or any crash marks Q2 failed; the app bundle is unaffected. To skip it, set `RUN_QLLM = False` in 2.2 before a fresh Run All.
 #
-# **Time:** estimate: under 1 min when skipped; 20–90 min with a model, capped by QLLM_MAX_MINUTES (90)
+# **Time:** estimate: under 1 min when skipped; 20–45 min with a model, capped by QLLM_MAX_MINUTES (45 by default)
 
 # %%
 # ===================== RESEARCH STAGE Q2 QLLM: LLM-assisted search over Q1 architectures vs random search =====================
@@ -2934,7 +3146,7 @@ def find_local_llm(root=INPUT_ROOT):
         if not (list(d.glob("tokenizer.json")) or list(d.glob("tokenizer.model")) or list(d.glob("tokenizer_config.json"))): continue
         size = _weights_size(d)
         if size == 0: continue
-        if size > cap: report["too_large"].append({"dir": str(d), "gb": round(size / 1e9, 1)}); continue
+        if size > cap: report["too_large"].append({"dir": scrub_str(d), "gb": round(size / 1e9, 1)}); continue
         p = str(d).lower()
         score = (3 if "qwen" in p or "qwen" in mt else 2 if "gemma" in p or "gemma" in mt else 1) + \
                 (2 if any(t in p for t in ["instruct", "-it", "_it", "chat"]) else 0)
@@ -2942,19 +3154,26 @@ def find_local_llm(root=INPUT_ROOT):
     cands.sort(reverse=True)
     return (cands[0][2] if cands else None), report
 
+def from_pretrained_dtype(loader, model_dir, dtype, **kw):
+    """transformers renamed `torch_dtype` to `dtype` (review P8): try `dtype=` first, fall back to `torch_dtype=` on TypeError (older releases)."""
+    try:
+        return loader.from_pretrained(model_dir, dtype=dtype, **kw)
+    except TypeError:
+        return loader.from_pretrained(model_dir, torch_dtype=dtype, **kw)
+
 def make_llm_generate(model_dir):
     from transformers import AutoTokenizer, AutoModelForCausalLM
     tok = AutoTokenizer.from_pretrained(model_dir, local_files_only=True)
     dtype = torch.bfloat16 if DEVICE == "cuda" else torch.float32
-    kw = {"local_files_only": True, "torch_dtype": dtype, "low_cpu_mem_usage": True}
+    kw = {"local_files_only": True, "low_cpu_mem_usage": True}
     if DEVICE == "cuda":
         try:
             import accelerate  # noqa: F401  (device_map needs accelerate)
-            lm = AutoModelForCausalLM.from_pretrained(model_dir, device_map="cuda", **kw).eval()   # weights stream straight to the GPU
+            lm = from_pretrained_dtype(AutoModelForCausalLM, model_dir, dtype, device_map="cuda", **kw).eval()   # weights stream straight to the GPU
         except ImportError:
-            lm = AutoModelForCausalLM.from_pretrained(model_dir, **kw).to(TORCH_DEVICE).eval()
+            lm = from_pretrained_dtype(AutoModelForCausalLM, model_dir, dtype, **kw).to(TORCH_DEVICE).eval()
     else:
-        lm = AutoModelForCausalLM.from_pretrained(model_dir, **kw).eval()
+        lm = from_pretrained_dtype(AutoModelForCausalLM, model_dir, dtype, **kw).eval()
     dev = next(lm.parameters()).device
     def gen(prompt):
         msgs = [{"role": "user", "content": prompt}]
@@ -3006,12 +3225,12 @@ if RUN_QLLM and QML.get("status") == "ok":
             llm_dir, LLM_SEARCH = (None, {"stub": True}) if LUMOS_QLLM_STUB else find_local_llm()
             log(f"Q2 LLM search: {LLM_SEARCH}")
             if llm_dir is None and not LUMOS_QLLM_STUB:
-                QLLM = {"status": "skipped", "reason": "skipped: no local LLM within the size cap under " + str(INPUT_ROOT), "llm_search": LLM_SEARCH}
+                QLLM = {"status": "skipped", "reason": "skipped: no local LLM within the size cap under <input>", "llm_search": scrub_obj(LLM_SEARCH)}   # no absolute local path in the public snapshot
                 register_failure("Q2_qllm", QLLM["reason"], kind="skipped")
             else:
                 if LUMOS_QLLM_STUB: gen, llm_name = stub_llm_generate, "TEST_STUB (not an LLM)"
                 else:
-                    try: gen, llm_name = make_llm_generate(llm_dir), llm_dir
+                    try: gen, llm_name = make_llm_generate(llm_dir), scrub_str(llm_dir)
                     except ImportError as e: raise RuntimeError(f"transformers not importable: {e!r}")
                 rng_r = np.random.default_rng(777); rng_f = np.random.default_rng(778)
                 def prop_random(h): return random_config(rng_r), {"proposer": "random"}
@@ -3050,7 +3269,7 @@ stage_save("Q2_qllm", [], {"status": QLLM.get("status")})
 
 # %% [markdown]
 # ## Phase 2 · Section 2.17 — Research results and bundle refresh
-# **What this cell does:** Scores Q1, the subset-trained classical models, the full-data models and the best Q2 designs on a bounded subset (up to 20,000 rows) of the test rows already opened in 2.12, then rewrites the app bundle's metrics, model cards, manifest, checksums and zip, and marks the run complete.
+# **What this cell does:** Scores Q1, the subset-trained classical models, the full-data models and the best Q2 designs on a bounded subset (up to 20,000 rows) of the test rows already opened in 2.12, then rewrites the app bundle's metrics, model cards, manifest, checksums and zip, marks the run complete, and, once the final zip is verified file by file, deletes the duplicate stage copy `runs/<ts>/lumos_app_bundle` (the bundle stays in `lumos_app_bundle/` and the zip).
 #
 # **Steps**
 #
@@ -3059,7 +3278,7 @@ stage_save("Q2_qllm", [], {"status": QLLM.get("status")})
 #
 # **Check before moving on**
 #
-# - [ ] That line appears and the zip size is close to the one from 2.14.
+# - [ ] That line appears and the zip size is close to the one from 2.14, followed by `stage copy lumos_app_bundle removed after zip verification`.
 # - [ ] `runs/<ts>/stages.json` now has `"complete": true`.
 #
 # **If it fails:** `research test-subset evaluation failed (app bundle unaffected)` is not fatal: the core bundle from 2.14 stands, refreshed without research test numbers.
@@ -3093,6 +3312,21 @@ with Timer("export_refresh"):
     export_finalize(APP_STAGE, "final (research stages appended)")
 STAGE_STATE["complete"] = True
 stage_save("final", [APP_STAGE / "manifest.json"], {"selected": SELECTED})
+# review P6: runs/<ts>/lumos_app_bundle is a duplicate of lumos_app_bundle/ (and of the zip). Delete it only after the final zip is verified.
+# Resume is unaffected: no stage ever re-loads `export_core` or `final` (the export is rebuilt every session) and a complete run is never resumed.
+try:
+    _zip_ok, _zip_detail = verify_final_zip()
+    if _zip_ok and APP_STAGE.exists():
+        shutil.rmtree(APP_STAGE)
+        for _s in ("export_core", "final"):
+            if _s in STAGE_STATE["stages"]:
+                STAGE_STATE["stages"][_s]["files"] = {}; STAGE_STATE["stages"][_s].setdefault("meta", {})["stage_copy_removed"] = True
+        _save_stages()
+        log(f"stage copy {APP_STAGE.name} removed after zip verification ({_zip_detail}); the bundle remains in {APP_FINAL.name}/ and {APP_ZIP.name}")
+    elif not _zip_ok:
+        log(f"WARNING: final zip not verified ({_zip_detail}); the stage copy {APP_STAGE} is kept")
+except Exception as e:
+    log(f"stage copy cleanup skipped: {e!r}")
 
 # %% [markdown]
 # ## Phase 2 · Section 2.18 — Final summary and download
@@ -3101,7 +3335,7 @@ stage_save("final", [APP_STAGE / "manifest.json"], {"selected": SELECTED})
 # **Steps**
 #
 # - [ ] 2.18.1 Run the cell and read the summary table.
-# - [ ] 2.18.2 Read `Selected model (validation only): ... | release stage: ...`.
+# - [ ] 2.18.2 Read `Selected model (validation only): ... | release stage: ...` and the `region <id>: <stage> ...` lines below it (one per gated region, then the regions reported separately).
 # - [ ] 2.18.3 Read `Device: cuda ... blocked network attempts: 0`.
 # - [ ] 2.18.4 Look at the figures below (time series for BGD, AUS-NSW and USA-CA, plus AUS and USA, model comparison, test scatter, QML subset comparison).
 # - [ ] 2.18.5 Download `/kaggle/working/lumos_app_bundle.zip`: right-hand **Output** panel (or the committed version's **Output** tab) → `lumos_app_bundle.zip` → **Download**. Files in an interactive session disappear when it stops, so download now or commit with **Save Version → Save & Run All**.
@@ -3142,6 +3376,11 @@ if QML.get("status") == "ok":
     print("\nMatched-budget (bounded subset) comparison, test cell-month:")
     print(pd.DataFrame({k: v for k, v in QML["test_subset"].items() if isinstance(v, dict) and "mae" in v}).T[["n", "mae", "rmse", "poisson_deviance"]].round(4).to_string())
 print(f"\nSelected model (validation only): {SELECTED}   |   release stage: {RELEASE_STAGE}  ({RELEASE_REASON})")
+for u_, r_ in REGION_RELEASE.items():
+    print(f"  region {u_} ({r_['name']}): {r_['stage']}  test AOI-month MAE selected={_f2(r_['test_aoi_month_mae']['selected'])} · B0_identity={_f2(r_['test_aoi_month_mae']['B0_identity'])} · "
+          f"B0_month_ratio={_f2(r_['test_aoi_month_mae']['B0_month_ratio'])} · coverage80={_f2(r_['interval_test_coverage'])} (n={r_['interval_n_test_aoi_months']})")
+for u_, r_ in REPORTED_SEPARATELY.items():
+    print(f"  reported separately (not gated) {u_}: test AOI-month MAE selected={_f2(r_['test_aoi_month_mae']['selected'])} · coverage80={_f2(r_['interval_test_coverage'])}")
 print(f"Q2 QLLM: {QLLM.get('status')}  {QLLM.get('reason', '')}")
 print(f"Run folder: {RUN_DIR}\nApp bundle: {APP_FINAL}\nZip: {APP_ZIP}")
 print(f"Device: {DEVICE}   quick_test={QUICK_TEST}   total timed stages: {sum(TIMINGS.values()):.1f} s   blocked network attempts: {len(BLOCKED_CONNECTIONS)}")
@@ -3161,9 +3400,9 @@ except Exception:
 #
 # **Check before you continue**
 #
-# - [ ] Open `manifest.json` in the bundle: `release_stage` is `observed_comparison` or `validated_calibration`, `synthetic` is false, and `release_reason` makes sense.
+# - [ ] Open `manifest.json` in the bundle: `release_stage` is `observed_comparison` or `validated_calibration`, `synthetic` is false, `release_regions` has one entry per gated region (BGD, AUS-NSW, USA-CA), and `release_reason` makes sense.
 # - [ ] Open `figures/timeseries_BGD.png`: the estimate continues smoothly into the VIIRS series with no jump at 2012, and Aqua sits below VIIRS.
-# - [ ] Open `metrics.json` or `comparison.csv`: note the selected model and its test interval coverage (aim: near 0.80).
+# - [ ] Open `metrics.json` or `comparison.csv`: note the selected model and its test interval coverage per region (`release.regions`; aim: near 0.80).
 # - [ ] Open `runs/<ts>/run_log.json` (in `/kaggle/working`): note the timings and the RSS memory for Australia and the United States (ingest and panel lines).
 # - [ ] Run `python notebooks/tests/check_bundle.py <unzipped lumos_app_bundle>` locally (without `--fixture`); it must pass on the real bundle (DATA-03).
 # - [ ] Q2 shows `ok` if you attached a model, or `skipped` if you did not; never anything in between.

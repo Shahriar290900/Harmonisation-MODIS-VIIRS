@@ -1,0 +1,221 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Lumos monthly activity record v1.0 (contract \u00a76)",
+ "type": "object",
+ "required": [
+  "schema_version",
+  "snapshot_id",
+  "aoi_id",
+  "period_start_utc",
+  "period_end_utc_exclusive",
+  "source_platform",
+  "reference_platform",
+  "source_product",
+  "reference_product",
+  "raw_modis_detections",
+  "raw_modis_terra_detections",
+  "raw_viirs_reference_detections",
+  "static_source_detections_modis",
+  "static_source_detections_viirs",
+  "estimated_viirs_reference_detections",
+  "estimate_interval_low",
+  "estimate_interval_high",
+  "interval_nominal_level",
+  "interval_empirical_holdout_coverage",
+  "extract_status",
+  "coverage_status",
+  "coverage_fraction",
+  "value_status",
+  "split",
+  "anomaly",
+  "model_id",
+  "provenance_ids",
+  "reason"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "schema_version": {
+   "const": "1.0"
+  },
+  "snapshot_id": {
+   "type": "string"
+  },
+  "aoi_id": {
+   "type": "string"
+  },
+  "period_start_utc": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d{2}-01T00:00:00Z$"
+  },
+  "period_end_utc_exclusive": {
+   "type": "string",
+   "pattern": "^\\d{4}-\\d{2}-01T00:00:00Z$"
+  },
+  "source_platform": {
+   "const": "Aqua"
+  },
+  "reference_platform": {
+   "const": "S-NPP"
+  },
+  "source_product": {
+   "type": "string"
+  },
+  "reference_product": {
+   "type": "string"
+  },
+  "raw_modis_detections": {
+   "type": [
+    "integer",
+    "null"
+   ],
+   "minimum": 0
+  },
+  "raw_modis_terra_detections": {
+   "type": [
+    "integer",
+    "null"
+   ],
+   "minimum": 0
+  },
+  "raw_viirs_reference_detections": {
+   "type": [
+    "integer",
+    "null"
+   ],
+   "minimum": 0
+  },
+  "static_source_detections_modis": {
+   "type": [
+    "integer",
+    "null"
+   ],
+   "minimum": 0
+  },
+  "static_source_detections_viirs": {
+   "type": [
+    "integer",
+    "null"
+   ],
+   "minimum": 0
+  },
+  "estimated_viirs_reference_detections": {
+   "type": [
+    "number",
+    "null"
+   ],
+   "minimum": 0
+  },
+  "estimate_interval_low": {
+   "type": [
+    "number",
+    "null"
+   ],
+   "minimum": 0
+  },
+  "estimate_interval_high": {
+   "type": [
+    "number",
+    "null"
+   ],
+   "minimum": 0
+  },
+  "interval_nominal_level": {
+   "type": [
+    "number",
+    "null"
+   ],
+   "minimum": 0,
+   "maximum": 1
+  },
+  "interval_empirical_holdout_coverage": {
+   "type": [
+    "number",
+    "null"
+   ],
+   "minimum": 0,
+   "maximum": 1
+  },
+  "extract_status": {
+   "enum": [
+    "complete",
+    "partial",
+    "missing"
+   ]
+  },
+  "coverage_status": {
+   "const": "unknown"
+  },
+  "coverage_fraction": {
+   "type": "null"
+  },
+  "value_status": {
+   "enum": [
+    "observed",
+    "estimated",
+    "unsupported",
+    "demo"
+   ]
+  },
+  "split": {
+   "enum": [
+    "train",
+    "val",
+    "test",
+    "backcast",
+    "none"
+   ]
+  },
+  "anomaly": {
+   "type": "object",
+   "required": [
+    "baseline_years",
+    "rank",
+    "zscore_log",
+    "flag"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "baseline_years": {
+     "type": "integer",
+     "minimum": 0
+    },
+    "rank": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "minimum": 1
+    },
+    "zscore_log": {
+     "type": [
+      "number",
+      "null"
+     ]
+    },
+    "flag": {
+     "enum": [
+      "high",
+      "normal",
+      "low",
+      "insufficient"
+     ]
+    }
+   }
+  },
+  "model_id": {
+   "type": [
+    "string",
+    "null"
+   ]
+  },
+  "provenance_ids": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "reason": {
+   "type": "string"
+  }
+ }
+}

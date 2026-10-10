@@ -1,0 +1,228 @@
+{
+ "model_id": "B1_poisson",
+ "description": "Poisson GLM (log link) on log1p+standardised Aqua features plus raw aqua_count (v1.1).",
+ "status": "ok",
+ "error": null,
+ "target": "viirs_snpp_count (type 0, cell-month)",
+ "prediction": "estimated_viirs_reference_detections",
+ "unit": "expected S-NPP VIIRS type-0 detections per 5 km cell per UTC calendar month; AOI value = sum over the AOI's cells",
+ "features": [
+  "aqua_count",
+  "aqua_day",
+  "aqua_night",
+  "aqua_frp_sum",
+  "aqua_frp_mean",
+  "aqua_conf_mean",
+  "aqua_scan_mean",
+  "terra_count",
+  "aqua_count_3x3",
+  "month_sin",
+  "month_cos",
+  "lat",
+  "aqua_clim",
+  "country_AUS",
+  "country_BGD",
+  "country_USA",
+  "aqua_count_raw"
+ ],
+ "feature_order": [
+  "aqua_count",
+  "aqua_day",
+  "aqua_night",
+  "aqua_frp_sum",
+  "aqua_frp_mean",
+  "aqua_conf_mean",
+  "aqua_scan_mean",
+  "terra_count",
+  "aqua_count_3x3",
+  "month_sin",
+  "month_cos",
+  "lat",
+  "aqua_clim",
+  "country_AUS",
+  "country_BGD",
+  "country_USA",
+  "aqua_count_raw"
+ ],
+ "feature_definitions": {
+  "aqua_count": "Aqua MODIS type-0 detections in the 5 km cell and UTC calendar month (transform log1p)",
+  "aqua_day": "Aqua type-0 detections with daynight=D (log1p)",
+  "aqua_night": "Aqua type-0 detections with daynight=N (log1p)",
+  "aqua_frp_sum": "sum of FRP (MW) of Aqua type-0 detections with finite frp (log1p)",
+  "aqua_frp_mean": "aqua_frp_sum / number of those detections; 0 if none (log1p)",
+  "aqua_conf_mean": "mean MODIS confidence (0-100) of Aqua type-0 detections; 0 if none (identity)",
+  "aqua_scan_mean": "mean scan (km) of Aqua type-0 detections; 0 if none (log1p)",
+  "terra_count": "Terra MODIS type-0 detections in the cell-month (log1p); separate series, never pooled into the target",
+  "aqua_count_3x3": "sum of aqua_count over the 3x3 block of cells (ix-1..ix+1, iy-1..iy+1) incl. itself; cells outside the universe add 0 (log1p)",
+  "month_sin": "sin(2*pi*(month-1)/12), month 1..12 (identity)",
+  "month_cos": "cos(2*pi*(month-1)/12) (identity)",
+  "lat": "latitude (deg) of the cell centre = degrees(asin((iy+0.5)*5000/6371007.181)) (identity)",
+  "aqua_clim": "mean aqua_count of this cell for this calendar month over the TRAIN years 2013-2020 (available months only) (log1p)",
+  "country_AUS": "1 if the cell belongs to Australia (FIRMS country file) else 0 (identity)",
+  "country_BGD": "1 if the cell belongs to Bangladesh (FIRMS country file) else 0 (identity)",
+  "country_USA": "1 if the cell belongs to United_States (FIRMS country file) else 0 (identity)",
+  "aqua_count_raw": "same value as aqua_count, identity transform (B1 only; v1.1)"
+ },
+ "train_years": [
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2020
+ ],
+ "val_years": [
+  2021,
+  2022
+ ],
+ "test_years": [
+  2023,
+  2024
+ ],
+ "spatial_holdout": "20% of 100 km blocks excluded from train",
+ "info": {
+  "n_train": 342984,
+  "alpha": 0.0001,
+  "n_iter": 7,
+  "solver": "newton-cholesky"
+ },
+ "val_summary": {
+  "cell_month": {
+   "n": 109344,
+   "mae": 0.1630190879103864,
+   "rmse": 0.7992128147779228,
+   "bias": 0.006030142776043102,
+   "poisson_deviance": 0.43370959456201613,
+   "sum_obs": 12469.0,
+   "sum_pred": 13128.359931703657
+  },
+  "aoi_month": {
+   "n": 288,
+   "mae": 21.252210949405303,
+   "rmse": 34.94476904011964,
+   "bias": 2.3948440119080865,
+   "poisson_deviance": 14.932135289610759,
+   "sum_obs": 19347.0,
+   "sum_pred": 20036.71507542953
+  }
+ },
+ "test_summary": {
+  "cell_month": {
+   "n": 100232,
+   "mae": 0.15621303541642892,
+   "rmse": 0.7025031457889713,
+   "bias": 0.004562391936878629,
+   "poisson_deviance": 0.4270300709561565,
+   "sum_obs": 10493.0,
+   "sum_pred": 10950.297668617219
+  },
+  "aoi_month": {
+   "n": 264,
+   "mae": 19.207696410770893,
+   "rmse": 30.45095070733504,
+   "bias": 3.061390372049628,
+   "poisson_deviance": 13.548899149620018,
+   "sum_obs": 15706.0,
+   "sum_pred": 16514.2070582211
+  }
+ },
+ "interval": {
+  "q_low": -2.4629660845541084,
+  "q_high": 0.3696358238483773,
+  "n_val_aoi_months": 72,
+  "formula": "low=(\u0177+1)\u00b7exp(q_low)\u22121, high=(\u0177+1)\u00b7exp(q_high)\u22121, clipped \u22650",
+  "nominal": 0.8,
+  "fitted_on": "validation AOI-months of the gated non-overlapping regions BGD, AUS-NSW, USA-CA (one pooled interval, applied to every AOI)",
+  "test_coverage": 0.8636363636363636,
+  "n_test_aoi_months": 66,
+  "test_coverage_by_aoi": {
+   "AUS": {
+    "coverage": 1.0,
+    "n": 22,
+    "kind": "country",
+    "gated": false
+   },
+   "AUS-NSW": {
+    "coverage": 0.9545454545454546,
+    "n": 22,
+    "kind": "admin1",
+    "gated": true
+   },
+   "BGD": {
+    "coverage": 0.7727272727272727,
+    "n": 22,
+    "kind": "country",
+    "gated": true
+   },
+   "BGD-A": {
+    "coverage": 0.7727272727272727,
+    "n": 22,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-B": {
+    "coverage": 0.9090909090909091,
+    "n": 22,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-C": {
+    "coverage": 0.8636363636363636,
+    "n": 22,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-D": {
+    "coverage": 0.7727272727272727,
+    "n": 22,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-E": {
+    "coverage": 0.9090909090909091,
+    "n": 22,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-F": {
+    "coverage": 0.9090909090909091,
+    "n": 22,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-G": {
+    "coverage": 0.8636363636363636,
+    "n": 22,
+    "kind": "admin1",
+    "gated": false
+   },
+   "USA": {
+    "coverage": 0.9090909090909091,
+    "n": 22,
+    "kind": "country",
+    "gated": false
+   },
+   "USA-CA": {
+    "coverage": 0.8636363636363636,
+    "n": 22,
+    "kind": "admin1",
+    "gated": true
+   }
+  }
+ },
+ "selected": false,
+ "synthetic_training_data": true,
+ "intended_use": "Retrospective harmonised fire-activity calendar (VIIRS S-NPP scale) for 2003\u20132012; comparison for 2012+.",
+ "limitations": "FIRMS detections are not burned area; no cloud-cover denominator (coverage_fraction null); relationship may drift with land use; Terra kept separate.",
+ "app_recompute": {
+  "weights": "models/B1_poisson/weights.json",
+  "how": "x = features in feature_order; z_j = (transform_j(x_j) - mean_j)/scale_j with transform log1p(max(x,0)) or identity; rate = exp(clip(intercept + \u03a3 coef_j z_j, -30, 30))",
+  "per_cell_inputs": {
+   "BGD": "features/BGD/<year>.json",
+   "AUS-NSW": "features/AUS-NSW/<year>.json",
+   "USA-CA": "features/USA-CA/<year>.json"
+  }
+ }
+}

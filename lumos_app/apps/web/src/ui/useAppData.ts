@@ -5,7 +5,7 @@ import { createDataApi, friendlyError, isOfflineError, type SourceEntry } from '
 export const api = createDataApi();
 export type { SourceEntry };
 
-export interface Core { index: SnapshotIndex; snapshotId: string; snapshotPath: string; manifest: Manifest; regions: Region[]; sources: Map<string, SourceEntry> }
+export interface Core { index: SnapshotIndex; snapshotId: string; snapshotPath: string; manifest: Manifest; regions: Region[]; sources: Map<string, SourceEntry>; metrics: Record<string, unknown> | null; }
 
 export function useCore() {
   const [core, setCore] = useState<Core | null>(null);
@@ -17,11 +17,11 @@ export function useCore() {
         const index = await api.loadIndex();
         const snapshotId = index.default;
         const snapshotPath = api.fileUrl(snapshotId, '');
-        const [manifest, regions, srcList] = await Promise.all([
-          api.loadManifest(snapshotId), api.loadRegions(snapshotId), api.loadSources(snapshotId).catch(() => [] as SourceEntry[])
+        const [manifest, regions, srcList, metrics] = await Promise.all([
+          api.loadManifest(snapshotId), api.loadRegions(snapshotId), api.loadSources(snapshotId).catch(() => [] as SourceEntry[]), api.loadMetrics(snapshotId).catch(() => null)
         ]);
         const sources = new Map<string, SourceEntry>(srcList.map((s) => [s.id, s]));
-        if (alive) setCore({ index, snapshotId, snapshotPath, manifest, regions, sources });
+        if (alive) setCore({ index, snapshotId, snapshotPath, manifest, regions, sources, metrics });
       } catch (e) {
         if (alive) setError(friendlyError(e));
       }

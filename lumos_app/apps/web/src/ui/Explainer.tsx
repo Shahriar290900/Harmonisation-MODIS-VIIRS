@@ -72,7 +72,11 @@ export function Explainer() {
         <li><b>Learn the translation.</b> Both cameras flew together from 2012 to 2024. In every 5 km square and month we learn “when Aqua-MODIS saw <i>X</i>, VIIRS saw <i>Y</i>” — then test it on years and places it never saw.</li>
         <li><b>Back-translate the past.</b> We turn 2003–2011 MODIS counts into <b>VIIRS-scale estimates</b>, each with an 80% error band, so 20+ years sit on one fair scale.</li>
       </ol>
-      <p className="explainer__cant"><b>What it can’t do:</b> recover individual small fires MODIS missed, see through clouds, or count wildfires. A hotspot is a hot pixel, not a fire incident.</p>
+      <p className="explainer__cant">
+        <b>What it can’t do:</b> recover individual small fires MODIS missed, see through clouds, or count wildfires. A hotspot is a hot pixel, not a fire incident.
+        <br/><br/>
+        <b>United States caveats:</b> USA regions include Alaska and Hawaii. FIRMS types 1, 2, and 3 (prescribed, agricultural, and other non-wildfire) are excluded from the main count. The 5 km grid is unmeasured at the USA national scale. California inherits national B0_month_ratio coefficients.
+      </p>
     </div>
   );
 }

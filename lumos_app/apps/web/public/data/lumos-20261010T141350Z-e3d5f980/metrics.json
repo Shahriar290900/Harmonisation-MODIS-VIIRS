@@ -1,0 +1,5043 @@
+{
+ "schema_version": "1.0",
+ "snapshot_id": "lumos-20261010T141350Z-e3d5f980",
+ "synthetic": true,
+ "synthetic_flags": [
+  "config_A.json",
+  "env_A.json",
+  "sources[].synthetic",
+  "FIXTURE marker file"
+ ],
+ "export_phase": "final (research stages appended)",
+ "selected_model_id": "B0_month_ratio",
+ "release_stage": "ui_prototype",
+ "release_reason": "bundle is a SYNTHETIC fixture \u2192 forced ui_prototype, value_status demo. Per-region release check on non-overlapping evaluation regions ['BGD', 'AUS-NSW', 'USA-CA'] (whole-country AUS / USA and the BGD divisions are reported separately, not gated); validated_calibration needs the selected model to beat B0_identity AND B0_month_ratio on test AOI-month MAE and 80% interval coverage within \u00b10.10 of 0.80 in EVERY region; the overall stage is the weakest region. Regions: BGD: ui_prototype (synthetic; would be observed_comparison) (test AOI-month MAE selected=13.89 vs B0_identity=68.32 / B0_month_ratio=13.89; coverage 0.73 on n=22; is B0_month_ratio itself (cannot beat itself)) | AUS-NSW: ui_prototype (synthetic; would be observed_comparison) (test AOI-month MAE selected=13.39 vs B0_identity=53.50 / B0_month_ratio=13.39; coverage 0.91 on n=22; is B0_month_ratio itself (cannot beat itself) and interval coverage outside 0.80\u00b10.10) | USA-CA: ui_prototype (synthetic; would be observed_comparison) (test AOI-month MAE selected=13.72 vs B0_identity=60.86 / B0_month_ratio=13.72; coverage 0.77 on n=22; is B0_month_ratio itself (cannot beat itself)). no candidate beat the baseline B0_month_ratio (val AOI-month MAE 13.195) by \u226510% without >10% active-subgroup degradation \u2192 the baseline itself is the app estimate | the selected model is B0_month_ratio itself, so 'beats B0_identity and B0_month_ratio on test AOI-month MAE' cannot hold by construction in any region \u2192 at most observed_comparison | each region has at most 12 months \u00d7 2 test years = 24 AOI-months (n is given per region), so its interval coverage has a standard error of about 0.08: coarse evidence",
+ "gate": {
+  "rule": "candidate replaces baseline only if val AOI-month MAE \u2264 (1\u22120.1)\u00d7baseline and active-subgroup (aqua_count>0) cell-month MAE \u2264 (1+0.1)\u00d7baseline; among passing candidates the lowest val AOI-month MAE wins",
+  "gate_level": "aoi_month",
+  "gate_regions": [
+   "BGD",
+   "AUS-NSW",
+   "USA-CA"
+  ],
+  "gate_pool": "AOI-months of the non-overlapping gated regions BGD, AUS-NSW, USA-CA (whole-country AUS / USA and BGD divisions excluded: nested, would be double-counted)",
+  "candidates": {
+   "B0_identity": {
+    "val_aoi_month_mae": 73.29166666666667,
+    "val_cell_month_mae": 0.10272168568920105,
+    "val_active_mae": 1.8455315870570108,
+    "passes_mae": false,
+    "passes_subgroup": true,
+    "passes": false
+   },
+   "B0_ratio": {
+    "val_aoi_month_mae": 12.520752436584896,
+    "val_cell_month_mae": 0.13551721005175313,
+    "val_active_mae": 3.226885137095106,
+    "passes_mae": false,
+    "passes_subgroup": true,
+    "passes": false
+   },
+   "B1_poisson": {
+    "val_aoi_month_mae": 39.781731262285675,
+    "val_cell_month_mae": 0.1630190879103864,
+    "val_active_mae": 1.9615456982815669,
+    "passes_mae": false,
+    "passes_subgroup": true,
+    "passes": false
+   },
+   "B2_xgb": {
+    "val_aoi_month_mae": 115.48315343177981,
+    "val_cell_month_mae": 0.29557592956333445,
+    "val_active_mae": 1.819697567329201,
+    "passes_mae": false,
+    "passes_subgroup": true,
+    "passes": false
+   },
+   "D1_mlp": {
+    "val_aoi_month_mae": 15.818125792901911,
+    "val_cell_month_mae": 0.12846890897334556,
+    "val_active_mae": 1.6107377263994311,
+    "passes_mae": false,
+    "passes_subgroup": true,
+    "passes": false
+   }
+  },
+  "baseline": "B0_month_ratio",
+  "baseline_rule": "better (lower val AOI-month MAE) of B1_poisson and B0_month_ratio (contract v1.1)",
+  "baseline_candidates_val_aoi_month_mae": {
+   "B1_poisson": 39.781731262285675,
+   "B0_month_ratio": 13.195008784532547
+  },
+  "baseline_val_aoi_month_mae": 13.195008784532547,
+  "baseline_val_active_mae": 3.232464878695037,
+  "selected": "B0_month_ratio",
+  "mae_bar": 11.875507906079292,
+  "selection_reason": "no candidate beat the baseline B0_month_ratio (val AOI-month MAE 13.195) by \u226510% without >10% active-subgroup degradation \u2192 the baseline itself is the app estimate"
+ },
+ "release": {
+  "rule": "per region on non-overlapping evaluation regions ['BGD', 'AUS-NSW', 'USA-CA']: validated_calibration needs the selected model to beat B0_identity AND B0_month_ratio on test AOI-month MAE and 80% interval coverage within \u00b10.1 of 0.8 in that region; the overall release_stage is the weakest gated region; observed_comparison otherwise; ui_prototype for synthetic data",
+  "stage": "ui_prototype",
+  "gate_regions": [
+   "BGD",
+   "AUS-NSW",
+   "USA-CA"
+  ],
+  "gate_regions_not_in_bundle": [],
+  "regions": {
+   "BGD": {
+    "aoi_id": "BGD",
+    "name": "Bangladesh",
+    "stage": "ui_prototype",
+    "stage_if_real": "observed_comparison",
+    "selected_model_id": "B0_month_ratio",
+    "test_aoi_month_mae": {
+     "selected": 13.893333445895802,
+     "B0_identity": 68.31818181818181,
+     "B0_month_ratio": 13.893333445895802
+    },
+    "n_test_aoi_months": 22,
+    "beats_B0_identity": true,
+    "beats_B0_month_ratio": false,
+    "interval_test_coverage": 0.7272727272727273,
+    "interval_n_test_aoi_months": 22,
+    "interval_nominal": 0.8,
+    "coverage_ok": true,
+    "coverage_standard_error_approx": 0.085,
+    "reasons_not_validated": [
+     "is B0_month_ratio itself (cannot beat itself)"
+    ]
+   },
+   "AUS-NSW": {
+    "aoi_id": "AUS-NSW",
+    "name": "New South Wales",
+    "stage": "ui_prototype",
+    "stage_if_real": "observed_comparison",
+    "selected_model_id": "B0_month_ratio",
+    "test_aoi_month_mae": {
+     "selected": 13.390041849829935,
+     "B0_identity": 53.5,
+     "B0_month_ratio": 13.390041849829935
+    },
+    "n_test_aoi_months": 22,
+    "beats_B0_identity": true,
+    "beats_B0_month_ratio": false,
+    "interval_test_coverage": 0.9090909090909091,
+    "interval_n_test_aoi_months": 22,
+    "interval_nominal": 0.8,
+    "coverage_ok": false,
+    "coverage_standard_error_approx": 0.085,
+    "reasons_not_validated": [
+     "is B0_month_ratio itself (cannot beat itself)",
+     "interval coverage outside 0.80\u00b10.10"
+    ]
+   },
+   "USA-CA": {
+    "aoi_id": "USA-CA",
+    "name": "California",
+    "stage": "ui_prototype",
+    "stage_if_real": "observed_comparison",
+    "selected_model_id": "B0_month_ratio",
+    "test_aoi_month_mae": {
+     "selected": 13.723920670422642,
+     "B0_identity": 60.86363636363637,
+     "B0_month_ratio": 13.723920670422642
+    },
+    "n_test_aoi_months": 22,
+    "beats_B0_identity": true,
+    "beats_B0_month_ratio": false,
+    "interval_test_coverage": 0.7727272727272727,
+    "interval_n_test_aoi_months": 22,
+    "interval_nominal": 0.8,
+    "coverage_ok": true,
+    "coverage_standard_error_approx": 0.085,
+    "reasons_not_validated": [
+     "is B0_month_ratio itself (cannot beat itself)"
+    ]
+   }
+  },
+  "reported_separately": {
+   "BGD-A": {
+    "kind": "admin1",
+    "country": "Bangladesh",
+    "test_aoi_month_mae": {
+     "selected": 1.4943271767009387,
+     "B0_identity": 2.8181818181818183,
+     "B0_month_ratio": 1.4943271767009387
+    },
+    "interval_test_coverage": 0.6363636363636364,
+    "interval_n_test_aoi_months": 22,
+    "note": "descriptive only: nested inside / overlapping a gated region (or a whole country dominated by large absolute counts); not part of the release decision"
+   },
+   "BGD-B": {
+    "kind": "admin1",
+    "country": "Bangladesh",
+    "test_aoi_month_mae": {
+     "selected": 7.2700701193376025,
+     "B0_identity": 37.22727272727273,
+     "B0_month_ratio": 7.2700701193376025
+    },
+    "interval_test_coverage": 0.6363636363636364,
+    "interval_n_test_aoi_months": 22,
+    "note": "descriptive only: nested inside / overlapping a gated region (or a whole country dominated by large absolute counts); not part of the release decision"
+   },
+   "BGD-C": {
+    "kind": "admin1",
+    "country": "Bangladesh",
+    "test_aoi_month_mae": {
+     "selected": 3.1569683768532495,
+     "B0_identity": 5.7727272727272725,
+     "B0_month_ratio": 3.1569683768532495
+    },
+    "interval_test_coverage": 0.5454545454545454,
+    "interval_n_test_aoi_months": 22,
+    "note": "descriptive only: nested inside / overlapping a gated region (or a whole country dominated by large absolute counts); not part of the release decision"
+   },
+   "BGD-D": {
+    "kind": "admin1",
+    "country": "Bangladesh",
+    "test_aoi_month_mae": {
+     "selected": 2.061953978105025,
+     "B0_identity": 2.727272727272727,
+     "B0_month_ratio": 2.061953978105025
+    },
+    "interval_test_coverage": 0.8181818181818182,
+    "interval_n_test_aoi_months": 22,
+    "note": "descriptive only: nested inside / overlapping a gated region (or a whole country dominated by large absolute counts); not part of the release decision"
+   },
+   "BGD-E": {
+    "kind": "admin1",
+    "country": "Bangladesh",
+    "test_aoi_month_mae": {
+     "selected": 2.9578335827047173,
+     "B0_identity": 3.8181818181818183,
+     "B0_month_ratio": 2.9578335827047173
+    },
+    "interval_test_coverage": 0.6818181818181818,
+    "interval_n_test_aoi_months": 22,
+    "note": "descriptive only: nested inside / overlapping a gated region (or a whole country dominated by large absolute counts); not part of the release decision"
+   },
+   "BGD-F": {
+    "kind": "admin1",
+    "country": "Bangladesh",
+    "test_aoi_month_mae": {
+     "selected": 1.6506617285988547,
+     "B0_identity": 1.7727272727272727,
+     "B0_month_ratio": 1.6506617285988547
+    },
+    "interval_test_coverage": 0.6818181818181818,
+    "interval_n_test_aoi_months": 22,
+    "note": "descriptive only: nested inside / overlapping a gated region (or a whole country dominated by large absolute counts); not part of the release decision"
+   },
+   "BGD-G": {
+    "kind": "admin1",
+    "country": "Bangladesh",
+    "test_aoi_month_mae": {
+     "selected": 2.4507823315533726,
+     "B0_identity": 5.181818181818182,
+     "B0_month_ratio": 2.4507823315533726
+    },
+    "interval_test_coverage": 0.7272727272727273,
+    "interval_n_test_aoi_months": 22,
+    "note": "descriptive only: nested inside / overlapping a gated region (or a whole country dominated by large absolute counts); not part of the release decision"
+   },
+   "AUS": {
+    "kind": "country",
+    "country": "Australia",
+    "test_aoi_month_mae": {
+     "selected": 22.840797034176912,
+     "B0_identity": 151.77272727272728,
+     "B0_month_ratio": 22.840797034176912
+    },
+    "interval_test_coverage": 1.0,
+    "interval_n_test_aoi_months": 22,
+    "note": "descriptive only: nested inside / overlapping a gated region (or a whole country dominated by large absolute counts); not part of the release decision"
+   },
+   "USA": {
+    "kind": "country",
+    "country": "United States",
+    "test_aoi_month_mae": {
+     "selected": 23.006402817639437,
+     "B0_identity": 125.31818181818181,
+     "B0_month_ratio": 23.006402817639437
+    },
+    "interval_test_coverage": 0.9090909090909091,
+    "interval_n_test_aoi_months": 22,
+    "note": "descriptive only: nested inside / overlapping a gated region (or a whole country dominated by large absolute counts); not part of the release decision"
+   }
+  },
+  "interval_coverage_field": "activity records' interval_empirical_holdout_coverage = the AOI's own region test coverage (2023\u20132024) for gated regions; null for whole-country AUS / USA and admin-1 areas without own evaluation (v1.2; schema_version stays 1.0)"
+ },
+ "selection_record_sha256": "eae5ed5fa519f88fe193fcf587738109e89701805e7330a79c080b74a5bbcdb9",
+ "test_opened_utc": "2026-10-10T14:22:07.744460+00:00",
+ "resumed_run": false,
+ "models": {
+  "B0_identity": {
+   "status": "ok",
+   "info": {
+    "formula": "est = aqua_count"
+   },
+   "val": {
+    "cell_month": {
+     "all": {
+      "n": 109344,
+      "mae": 0.10272168568920105,
+      "rmse": 0.6571515140203819,
+      "bias": -0.08229075212174422,
+      "poisson_deviance": 2.5200238901963106,
+      "sum_obs": 12469.0,
+      "sum_pred": 3471.0
+     },
+     "active": {
+      "n": 2596,
+      "mae": 1.8455315870570108,
+      "rmse": 3.11471728900824,
+      "bias": -0.9849768875192604,
+      "poisson_deviance": 3.4491896779641187,
+      "sum_obs": 6028.0,
+      "sum_pred": 3471.0
+     },
+     "inactive": {
+      "n": 106748,
+      "mae": 0.06033836699516618,
+      "rmse": 0.4543354808882854,
+      "bias": -0.06033836699516618,
+      "poisson_deviance": 2.497427547547782,
+      "sum_obs": 6441.0,
+      "sum_pred": 0.0
+     },
+     "country:AUS": {
+      "n": 52848,
+      "mae": 0.1015743263699667,
+      "rmse": 0.6291979814884767,
+      "bias": -0.07985165001513775,
+      "poisson_deviance": 2.5811920821592573,
+      "sum_obs": 5927.0,
+      "sum_pred": 1707.0
+     },
+     "country:BGD": {
+      "n": 24384,
+      "mae": 0.10580708661417323,
+      "rmse": 0.7400920351364694,
+      "bias": -0.08768044619422573,
+      "poisson_deviance": 2.3586565770209624,
+      "sum_obs": 2914.0,
+      "sum_pred": 776.0
+     },
+     "country:USA": {
+      "n": 32112,
+      "mae": 0.10226706527154958,
+      "rmse": 0.6348440011763492,
+      "bias": -0.08221225710014948,
+      "poisson_deviance": 2.541889982486106,
+      "sum_obs": 3628.0,
+      "sum_pred": 988.0
+     },
+     "season:DJF": {
+      "n": 27336,
+      "mae": 0.09233245537020779,
+      "rmse": 0.581265409385995,
+      "bias": -0.07243195785776997,
+      "poisson_deviance": 2.3606663975222033,
+      "sum_obs": 2758.0,
+      "sum_pred": 778.0
+     },
+     "season:MAM": {
+      "n": 27336,
+      "mae": 0.10583113842551946,
+      "rmse": 0.7431523314684864,
+      "bias": -0.08710125841381329,
+      "poisson_deviance": 2.3729324915501033,
+      "sum_obs": 3251.0,
+      "sum_pred": 870.0
+     },
+     "season:JJA": {
+      "n": 27336,
+      "mae": 0.09203980099502487,
+      "rmse": 0.6108472217815262,
+      "bias": -0.07396839332748024,
+      "poisson_deviance": 2.2701719864267926,
+      "sum_obs": 2795.0,
+      "sum_pred": 773.0
+     },
+     "season:SON": {
+      "n": 27336,
+      "mae": 0.1206833479660521,
+      "rmse": 0.6812585832436872,
+      "bias": -0.09566139888791338,
+      "poisson_deviance": 3.076324685286144,
+      "sum_obs": 3665.0,
+      "sum_pred": 1050.0
+     },
+     "spatial_holdout": {
+      "n": 17952,
+      "mae": 0.09129901960784313,
+      "rmse": 0.5744969899345429,
+      "bias": -0.07091131907308378,
+      "poisson_deviance": 2.2389353219837504,
+      "sum_obs": 1788.0,
+      "sum_pred": 515.0
+     },
+     "spatial_in_sample": {
+      "n": 91392,
+      "mae": 0.10496542366946779,
+      "rmse": 0.6721940199229446,
+      "bias": -0.08452599789915967,
+      "poisson_deviance": 2.5752377160952067,
+      "sum_obs": 10681.0,
+      "sum_pred": 2956.0
+     }
+    },
+    "aoi_month": {
+     "all": {
+      "n": 288,
+      "mae": 48.673611111111114,
+      "rmse": 97.05103182232416,
+      "bias": -48.611111111111114,
+      "poisson_deviance": 91.72313182885763,
+      "sum_obs": 19347.0,
+      "sum_pred": 5347.0
+     },
+     "gate_units": {
+      "n": 72,
+      "mae": 73.29166666666667,
+      "rmse": 117.35020001876624,
+      "bias": -73.20833333333333,
+      "poisson_deviance": 125.83397474853788,
+      "sum_obs": 7250.0,
+      "sum_pred": 1979.0
+     },
+     "kind:country": {
+      "n": 72,
+      "mae": 125.02777777777777,
+      "rmse": 168.13932714666527,
+      "bias": -124.97222222222223,
+      "poisson_deviance": 202.2031577240033,
+      "sum_obs": 12469.0,
+      "sum_pred": 3471.0
+     },
+     "kind:admin1": {
+      "n": 216,
+      "mae": 23.22222222222222,
+      "rmse": 55.990409231634715,
+      "bias": -23.15740740740741,
+      "poisson_deviance": 54.89645653047577,
+      "sum_obs": 6878.0,
+      "sum_pred": 1876.0
+     },
+     "aoi:AUS": {
+      "n": 24,
+      "mae": 175.83333333333334,
+      "rmse": 204.0739245142962,
+      "bias": -175.83333333333334,
+      "poisson_deviance": 266.250771984677,
+      "sum_obs": 5927.0,
+      "sum_pred": 1707.0
+     },
+     "aoi:AUS-NSW": {
+      "n": 24,
+      "mae": 68.83333333333333,
+      "rmse": 95.74096998324873,
+      "bias": -68.75,
+      "poisson_deviance": 105.37611288680357,
+      "sum_obs": 2323.0,
+      "sum_pred": 673.0
+     },
+     "aoi:BGD": {
+      "n": 24,
+      "mae": 89.25,
+      "rmse": 156.13482421719164,
+      "bias": -89.08333333333333,
+      "poisson_deviance": 163.7645334879693,
+      "sum_obs": 2914.0,
+      "sum_pred": 776.0
+     },
+     "aoi:BGD-A": {
+      "n": 24,
+      "mae": 1.875,
+      "rmse": 3.0482235263619804,
+      "bias": -1.875,
+      "poisson_deviance": 26.29750880722524,
+      "sum_obs": 65.0,
+      "sum_pred": 20.0
+     },
+     "aoi:BGD-B": {
+      "n": 24,
+      "mae": 55.333333333333336,
+      "rmse": 104.24370484590425,
+      "bias": -55.083333333333336,
+      "poisson_deviance": 108.46133330607547,
+      "sum_obs": 1819.0,
+      "sum_pred": 497.0
+     },
+     "aoi:BGD-C": {
+      "n": 24,
+      "mae": 6.0,
+      "rmse": 9.928914005737653,
+      "bias": -6.0,
+      "poisson_deviance": 19.961683993647068,
+      "sum_obs": 197.0,
+      "sum_pred": 53.0
+     },
+     "aoi:BGD-D": {
+      "n": 24,
+      "mae": 1.5416666666666667,
+      "rmse": 2.6848339489311686,
+      "bias": -1.5416666666666667,
+      "poisson_deviance": 23.952275478011092,
+      "sum_obs": 45.0,
+      "sum_pred": 8.0
+     },
+     "aoi:BGD-E": {
+      "n": 24,
+      "mae": 4.833333333333333,
+      "rmse": 7.076957915187382,
+      "bias": -4.833333333333333,
+      "poisson_deviance": 68.70524206923585,
+      "sum_obs": 138.0,
+      "sum_pred": 22.0
+     },
+     "aoi:BGD-F": {
+      "n": 24,
+      "mae": 1.5833333333333333,
+      "rmse": 3.8944404818493075,
+      "bias": -1.4166666666666667,
+      "poisson_deviance": 15.373961376647058,
+      "sum_obs": 45.0,
+      "sum_pred": 11.0
+     },
+     "aoi:BGD-G": {
+      "n": 24,
+      "mae": 7.208333333333333,
+      "rmse": 15.23564898519259,
+      "bias": -7.125,
+      "poisson_deviance": 17.578712985795732,
+      "sum_obs": 233.0,
+      "sum_pred": 62.0
+     },
+     "aoi:USA": {
+      "n": 24,
+      "mae": 110.0,
+      "rmse": 137.07023746970017,
+      "bias": -110.0,
+      "poisson_deviance": 176.5941676993635,
+      "sum_obs": 3628.0,
+      "sum_pred": 988.0
+     },
+     "aoi:USA-CA": {
+      "n": 24,
+      "mae": 61.791666666666664,
+      "rmse": 88.14074918371563,
+      "bias": -61.791666666666664,
+      "poisson_deviance": 108.36127787084082,
+      "sum_obs": 2013.0,
+      "sum_pred": 530.0
+     }
+    }
+   },
+   "interval": {
+    "q_low": 0.6931471805599453,
+    "q_high": 1.6447365542720533,
+    "n_val_aoi_months": 72,
+    "formula": "low=(\u0177+1)\u00b7exp(q_low)\u22121, high=(\u0177+1)\u00b7exp(q_high)\u22121, clipped \u22650",
+    "nominal": 0.8,
+    "fitted_on": "validation AOI-months of the gated non-overlapping regions BGD, AUS-NSW, USA-CA (one pooled interval, applied to every AOI)",
+    "test_coverage": 0.7575757575757576,
+    "n_test_aoi_months": 66,
+    "test_coverage_by_aoi": {
+     "AUS": {
+      "coverage": 0.9545454545454546,
+      "n": 22,
+      "kind": "country",
+      "gated": false
+     },
+     "AUS-NSW": {
+      "coverage": 0.8636363636363636,
+      "n": 22,
+      "kind": "admin1",
+      "gated": true
+     },
+     "BGD": {
+      "coverage": 0.6363636363636364,
+      "n": 22,
+      "kind": "country",
+      "gated": true
+     },
+     "BGD-A": {
+      "coverage": 0.5,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-B": {
+      "coverage": 0.6363636363636364,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-C": {
+      "coverage": 0.5909090909090909,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-D": {
+      "coverage": 0.3181818181818182,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-E": {
+      "coverage": 0.36363636363636365,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-F": {
+      "coverage": 0.3181818181818182,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-G": {
+      "coverage": 0.4090909090909091,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "USA": {
+      "coverage": 0.9545454545454546,
+      "n": 22,
+      "kind": "country",
+      "gated": false
+     },
+     "USA-CA": {
+      "coverage": 0.7727272727272727,
+      "n": 22,
+      "kind": "admin1",
+      "gated": true
+     }
+    }
+   },
+   "test": {
+    "cell_month": {
+     "all": {
+      "n": 100232,
+      "mae": 0.09562814270891531,
+      "rmse": 0.5901880151339555,
+      "bias": -0.07581411126187246,
+      "poisson_deviance": 2.480691876906651,
+      "sum_obs": 10493.0,
+      "sum_pred": 2894.0
+     },
+     "active": {
+      "n": 2197,
+      "mae": 1.702776513427401,
+      "rmse": 2.670580120373747,
+      "bias": -0.7988165680473372,
+      "poisson_deviance": 3.1558633665890774,
+      "sum_obs": 4649.0,
+      "sum_pred": 2894.0
+     },
+     "inactive": {
+      "n": 98035,
+      "mae": 0.05961136328862141,
+      "rmse": 0.44305444448888404,
+      "bias": -0.05961136328862141,
+      "poisson_deviance": 2.4655610382997017,
+      "sum_obs": 5844.0,
+      "sum_pred": 0.0
+     },
+     "country:AUS": {
+      "n": 48444,
+      "mae": 0.08808108331269095,
+      "rmse": 0.5648988633255293,
+      "bias": -0.06892494426554371,
+      "poisson_deviance": 2.2822385033815626,
+      "sum_obs": 4635.0,
+      "sum_pred": 1296.0
+     },
+     "country:BGD": {
+      "n": 22352,
+      "mae": 0.08415354330708662,
+      "rmse": 0.5576548065975967,
+      "bias": -0.06724230493915534,
+      "poisson_deviance": 2.096022470943742,
+      "sum_obs": 2055.0,
+      "sum_pred": 552.0
+     },
+     "country:USA": {
+      "n": 29436,
+      "mae": 0.11676178828645196,
+      "rmse": 0.651730008783098,
+      "bias": -0.09366082348145129,
+      "poisson_deviance": 3.0993902662643196,
+      "sum_obs": 3803.0,
+      "sum_pred": 1046.0
+     },
+     "season:DJF": {
+      "n": 22780,
+      "mae": 0.07594381035996488,
+      "rmse": 0.5202653473052693,
+      "bias": -0.059789288849868304,
+      "poisson_deviance": 1.9835759346161974,
+      "sum_obs": 1887.0,
+      "sum_pred": 525.0
+     },
+     "season:MAM": {
+      "n": 27336,
+      "mae": 0.0858940591161838,
+      "rmse": 0.5684747960954182,
+      "bias": -0.0692859233245537,
+      "poisson_deviance": 2.1423373388770437,
+      "sum_obs": 2594.0,
+      "sum_pred": 700.0
+     },
+     "season:JJA": {
+      "n": 27336,
+      "mae": 0.09957565115598478,
+      "rmse": 0.5955645243982265,
+      "bias": -0.07952882645595552,
+      "poisson_deviance": 2.6603116699904157,
+      "sum_obs": 3006.0,
+      "sum_pred": 832.0
+     },
+     "season:SON": {
+      "n": 22780,
+      "mae": 0.12225636523266023,
+      "rmse": 0.6697069976389429,
+      "bias": -0.09521510096575944,
+      "poisson_deviance": 3.1682895131321174,
+      "sum_obs": 3006.0,
+      "sum_pred": 837.0
+     },
+     "spatial_holdout": {
+      "n": 16456,
+      "mae": 0.09400826446280992,
+      "rmse": 0.6035766834746225,
+      "bias": -0.07626397666504618,
+      "poisson_deviance": 2.5367005796089694,
+      "sum_obs": 1681.0,
+      "sum_pred": 426.0
+     },
+     "spatial_in_sample": {
+      "n": 83776,
+      "mae": 0.09594633307868602,
+      "rmse": 0.5875222473560243,
+      "bias": -0.0757257448433919,
+      "poisson_deviance": 2.469690167447267,
+      "sum_obs": 8812.0,
+      "sum_pred": 2468.0
+     }
+    },
+    "aoi_month": {
+     "all": {
+      "n": 264,
+      "mae": 43.25757575757576,
+      "rmse": 83.63172335612337,
+      "bias": -43.15909090909091,
+      "poisson_deviance": 85.68747039949835,
+      "sum_obs": 15706.0,
+      "sum_pred": 4312.0
+     },
+     "gate_units": {
+      "n": 66,
+      "mae": 60.89393939393939,
+      "rmse": 92.30606204854094,
+      "bias": -60.74242424242424,
+      "poisson_deviance": 106.59488401790408,
+      "sum_obs": 5483.0,
+      "sum_pred": 1474.0
+     },
+     "kind:country": {
+      "n": 66,
+      "mae": 115.13636363636364,
+      "rmse": 149.5430919957066,
+      "bias": -115.13636363636364,
+      "poisson_deviance": 189.07242197356388,
+      "sum_obs": 10493.0,
+      "sum_pred": 2894.0
+     },
+     "kind:admin1": {
+      "n": 198,
+      "mae": 19.2979797979798,
+      "rmse": 43.258618572581355,
+      "bias": -19.166666666666668,
+      "poisson_deviance": 51.225819874809865,
+      "sum_obs": 5213.0,
+      "sum_pred": 1418.0
+     },
+     "aoi:AUS": {
+      "n": 22,
+      "mae": 151.77272727272728,
+      "rmse": 171.3525074756183,
+      "bias": -151.77272727272728,
+      "poisson_deviance": 237.45656521469343,
+      "sum_obs": 4635.0,
+      "sum_pred": 1296.0
+     },
+     "aoi:AUS-NSW": {
+      "n": 22,
+      "mae": 53.5,
+      "rmse": 71.39614198896948,
+      "bias": -53.13636363636363,
+      "poisson_deviance": 89.95505438239508,
+      "sum_obs": 1597.0,
+      "sum_pred": 428.0
+     },
+     "aoi:BGD": {
+      "n": 22,
+      "mae": 68.31818181818181,
+      "rmse": 115.11989797203135,
+      "bias": -68.31818181818181,
+      "poisson_deviance": 127.52809359373387,
+      "sum_obs": 2055.0,
+      "sum_pred": 552.0
+     },
+     "aoi:BGD-A": {
+      "n": 22,
+      "mae": 2.8181818181818183,
+      "rmse": 4.908249086070214,
+      "bias": -2.727272727272727,
+      "poisson_deviance": 28.954988231548818,
+      "sum_obs": 75.0,
+      "sum_pred": 15.0
+     },
+     "aoi:BGD-B": {
+      "n": 22,
+      "mae": 37.22727272727273,
+      "rmse": 64.99755240146985,
+      "bias": -37.22727272727273,
+      "poisson_deviance": 87.87954828767582,
+      "sum_obs": 1146.0,
+      "sum_pred": 327.0
+     },
+     "aoi:BGD-C": {
+      "n": 22,
+      "mae": 5.7727272727272725,
+      "rmse": 9.869604394761266,
+      "bias": -5.681818181818182,
+      "poisson_deviance": 37.27422818184153,
+      "sum_obs": 173.0,
+      "sum_pred": 48.0
+     },
+     "aoi:BGD-D": {
+      "n": 22,
+      "mae": 2.727272727272727,
+      "rmse": 5.009082659620331,
+      "bias": -2.727272727272727,
+      "poisson_deviance": 62.173079640610084,
+      "sum_obs": 78.0,
+      "sum_pred": 18.0
+     },
+     "aoi:BGD-E": {
+      "n": 22,
+      "mae": 3.8181818181818183,
+      "rmse": 5.9696200579570915,
+      "bias": -3.4545454545454546,
+      "poisson_deviance": 15.048590819976797,
+      "sum_obs": 108.0,
+      "sum_pred": 32.0
+     },
+     "aoi:BGD-F": {
+      "n": 22,
+      "mae": 1.7727272727272727,
+      "rmse": 3.5992423445143915,
+      "bias": -1.5909090909090908,
+      "poisson_deviance": 14.274585424385673,
+      "sum_obs": 48.0,
+      "sum_pred": 13.0
+     },
+     "aoi:BGD-G": {
+      "n": 22,
+      "mae": 5.181818181818182,
+      "rmse": 10.642966093750712,
+      "bias": -5.181818181818182,
+      "poisson_deviance": 23.170799827271647,
+      "sum_obs": 157.0,
+      "sum_pred": 43.0
+     },
+     "aoi:USA": {
+      "n": 22,
+      "mae": 125.31818181818181,
+      "rmse": 156.445314291085,
+      "bias": -125.31818181818181,
+      "poisson_deviance": 202.23260711226428,
+      "sum_obs": 3803.0,
+      "sum_pred": 1046.0
+     },
+     "aoi:USA-CA": {
+      "n": 22,
+      "mae": 60.86363636363637,
+      "rmse": 84.91894531096858,
+      "bias": -60.77272727272727,
+      "poisson_deviance": 102.30150407758327,
+      "sum_obs": 1831.0,
+      "sum_pred": 494.0
+     }
+    }
+   }
+  },
+  "B0_ratio": {
+   "status": "ok",
+   "info": {
+    "formula": "est = r * aqua_count",
+    "r": 3.540362650835646
+   },
+   "val": {
+    "cell_month": {
+     "all": {
+      "n": 109344,
+      "mae": 0.13551721005175313,
+      "rmse": 0.7573488592135231,
+      "bias": -0.0016498518881478224,
+      "poisson_deviance": 2.5419148995772165,
+      "sum_obs": 12469.0,
+      "sum_pred": 12288.598595142365
+     },
+     "active": {
+      "n": 2596,
+      "mae": 3.226885137095106,
+      "rmse": 3.958676944291716,
+      "bias": 2.4116327408098477,
+      "poisson_deviance": 4.371243040732146,
+      "sum_obs": 6028.0,
+      "sum_pred": 12288.598595142365
+     },
+     "inactive": {
+      "n": 106748,
+      "mae": 0.06033836699516618,
+      "rmse": 0.4543354808882854,
+      "bias": -0.06033836699516618,
+      "poisson_deviance": 2.497427547547782,
+      "sum_obs": 6441.0,
+      "sum_pred": 0.0
+     },
+     "country:AUS": {
+      "n": 52848,
+      "mae": 0.13918634842209407,
+      "rmse": 0.7604458715630955,
+      "bias": 0.0022025235198029885,
+      "poisson_deviance": 2.6148299138103988,
+      "sum_obs": 5927.0,
+      "sum_pred": 6043.398962974548
+     },
+     "country:BGD": {
+      "n": 24384,
+      "mae": 0.1294299480248624,
+      "rmse": 0.7704126292819492,
+      "bias": -0.006835573281985256,
+      "poisson_deviance": 2.35630346526169,
+      "sum_obs": 2914.0,
+      "sum_pred": 2747.3213810920715
+     },
+     "country:USA": {
+      "n": 32112,
+      "mae": 0.1341010781592496,
+      "rmse": 0.7420822605756198,
+      "bias": -0.004052122226091659,
+      "poisson_deviance": 2.5628583643926945,
+      "sum_obs": 3628.0,
+      "sum_pred": 3497.8782510757446
+     },
+     "season:DJF": {
+      "n": 27336,
+      "mae": 0.12530766423592135,
+      "rmse": 0.711694995279792,
+      "bias": -0.00013161742586052693,
+      "poisson_deviance": 2.3905725985981983,
+      "sum_obs": 2758.0,
+      "sum_pred": 2754.4021060466766
+     },
+     "season:MAM": {
+      "n": 27336,
+      "mae": 0.13080198487622854,
+      "rmse": 0.7902152303420423,
+      "bias": -0.006251263372515041,
+      "poisson_deviance": 2.3723952901851293,
+      "sum_obs": 3251.0,
+      "sum_pred": 3080.115464448929
+     },
+     "season:JJA": {
+      "n": 27336,
+      "mae": 0.12055817764510807,
+      "rmse": 0.6966669318096417,
+      "bias": -0.0021327080993858876,
+      "poisson_deviance": 2.2894368446535784,
+      "sum_obs": 2795.0,
+      "sum_pred": 2736.7002913951874
+     },
+     "season:SON": {
+      "n": 27336,
+      "mae": 0.16540101344975458,
+      "rmse": 0.8234163514044456,
+      "bias": 0.001916181345170166,
+      "poisson_deviance": 3.115254864871962,
+      "sum_obs": 3665.0,
+      "sum_pred": 3717.3807332515717
+     },
+     "spatial_holdout": {
+      "n": 17952,
+      "mae": 0.12044520668167481,
+      "rmse": 0.7088864041361316,
+      "bias": 0.001965616157348143,
+      "poisson_deviance": 2.2653930592064015,
+      "sum_obs": 1788.0,
+      "sum_pred": 1823.2867412567139
+     },
+     "spatial_in_sample": {
+      "n": 91392,
+      "mae": 0.13847778214230425,
+      "rmse": 0.7665083107056455,
+      "bias": -0.0023600331113702443,
+      "poisson_deviance": 2.596231689650056,
+      "sum_obs": 10681.0,
+      "sum_pred": 10465.31185388565
+     }
+    },
+    "aoi_month": {
+     "all": {
+      "n": 288,
+      "mae": 8.458916783332825,
+      "rmse": 15.169807113378116,
+      "bias": -1.4468095782730315,
+      "poisson_deviance": 17.075217578088274,
+      "sum_obs": 19347.0,
+      "sum_pred": 18930.318841457367
+     },
+     "gate_units": {
+      "n": 72,
+      "mae": 12.520752436584896,
+      "rmse": 18.90831833403141,
+      "bias": -3.383644527859158,
+      "poisson_deviance": 11.338175243309259,
+      "sum_obs": 7250.0,
+      "sum_pred": 7006.377593994141
+     },
+     "kind:country": {
+      "n": 72,
+      "mae": 17.818918320867752,
+      "rmse": 24.197063049044512,
+      "bias": -2.5055750674671597,
+      "poisson_deviance": 9.607812968975658,
+      "sum_obs": 12469.0,
+      "sum_pred": 12288.598595142365
+     },
+     "kind:admin1": {
+      "n": 216,
+      "mae": 5.338916270821183,
+      "rmse": 10.567155581154184,
+      "bias": -1.0938877485416554,
+      "poisson_deviance": 19.564352447792484,
+      "sum_obs": 6878.0,
+      "sum_pred": 6641.720246315002
+     },
+     "aoi:AUS": {
+      "n": 24,
+      "mae": 23.03061807155609,
+      "rmse": 29.08269246068615,
+      "bias": 4.849956790606181,
+      "poisson_deviance": 3.1935035294931815,
+      "sum_obs": 5927.0,
+      "sum_pred": 6043.398962974548
+     },
+     "aoi:AUS-NSW": {
+      "n": 24,
+      "mae": 13.11724317073822,
+      "rmse": 18.52771462116093,
+      "bias": 2.4860013723373413,
+      "poisson_deviance": 3.114422181646367,
+      "sum_obs": 2323.0,
+      "sum_pred": 2382.664032936096
+     },
+     "aoi:BGD": {
+      "n": 24,
+      "mae": 12.585527777671814,
+      "rmse": 20.380897027962796,
+      "bias": -6.94494245449702,
+      "poisson_deviance": 22.09786032534804,
+      "sum_obs": 2914.0,
+      "sum_pred": 2747.3213810920715
+     },
+     "aoi:BGD-A": {
+      "n": 24,
+      "mae": 1.9785146415233612,
+      "rmse": 3.9287039205352783,
+      "bias": 0.24196884036064148,
+      "poisson_deviance": 25.158472590220384,
+      "sum_obs": 65.0,
+      "sum_pred": 70.8072521686554
+     },
+     "aoi:BGD-B": {
+      "n": 24,
+      "mae": 8.689730316400528,
+      "rmse": 15.251373534224575,
+      "bias": -2.4766576985518136,
+      "poisson_deviance": 23.302844599162057,
+      "sum_obs": 1819.0,
+      "sum_pred": 1759.5602152347565
+     },
+     "aoi:BGD-C": {
+      "n": 24,
+      "mae": 3.979544371366501,
+      "rmse": 6.0556496937691815,
+      "bias": -0.3900325993696849,
+      "poisson_deviance": 10.84859996102172,
+      "sum_obs": 197.0,
+      "sum_pred": 187.63921761512756
+     },
+     "aoi:BGD-D": {
+      "n": 24,
+      "mae": 0.8299697836240133,
+      "rmse": 1.3313795331192622,
+      "bias": -0.6948791344960531,
+      "poisson_deviance": 22.274572808236503,
+      "sum_obs": 45.0,
+      "sum_pred": 28.322900772094727
+     },
+     "aoi:BGD-E": {
+      "n": 24,
+      "mae": 3.4233937760194144,
+      "rmse": 4.939989017973648,
+      "bias": -2.5046676099300385,
+      "poisson_deviance": 62.40592086707159,
+      "sum_obs": 138.0,
+      "sum_pred": 77.88797736167908
+     },
+     "aoi:BGD-F": {
+      "n": 24,
+      "mae": 1.5359693070252736,
+      "rmse": 3.471835506551625,
+      "bias": -0.25233380993207294,
+      "poisson_deviance": 13.699234780853722,
+      "sum_obs": 45.0,
+      "sum_pred": 38.94398856163025
+     },
+     "aoi:BGD-G": {
+      "n": 24,
+      "mae": 2.6363947093486786,
+      "rmse": 4.985052011292976,
+      "bias": -0.5623965958754221,
+      "poisson_deviance": 6.472861018986649,
+      "sum_obs": 233.0,
+      "sum_pred": 219.50248169898987
+     },
+     "aoi:USA": {
+      "n": 24,
+      "mae": 17.840609113375347,
+      "rmse": 22.255552479573094,
+      "bias": -5.42173953851064,
+      "poisson_deviance": 3.5320750520857493,
+      "sum_obs": 3628.0,
+      "sum_pred": 3497.8782510757446
+     },
+     "aoi:USA-CA": {
+      "n": 24,
+      "mae": 11.859486361344656,
+      "rmse": 17.717684214242055,
+      "bias": -5.691992501417796,
+      "poisson_deviance": 8.80224322293337,
+      "sum_obs": 2013.0,
+      "sum_pred": 1876.392179965973
+     }
+    }
+   },
+   "interval": {
+    "q_low": -0.3656474239067129,
+    "q_high": 0.6886864407485159,
+    "n_val_aoi_months": 72,
+    "formula": "low=(\u0177+1)\u00b7exp(q_low)\u22121, high=(\u0177+1)\u00b7exp(q_high)\u22121, clipped \u22650",
+    "nominal": 0.8,
+    "fitted_on": "validation AOI-months of the gated non-overlapping regions BGD, AUS-NSW, USA-CA (one pooled interval, applied to every AOI)",
+    "test_coverage": 0.7878787878787878,
+    "n_test_aoi_months": 66,
+    "test_coverage_by_aoi": {
+     "AUS": {
+      "coverage": 1.0,
+      "n": 22,
+      "kind": "country",
+      "gated": false
+     },
+     "AUS-NSW": {
+      "coverage": 0.9090909090909091,
+      "n": 22,
+      "kind": "admin1",
+      "gated": true
+     },
+     "BGD": {
+      "coverage": 0.6363636363636364,
+      "n": 22,
+      "kind": "country",
+      "gated": true
+     },
+     "BGD-A": {
+      "coverage": 0.6363636363636364,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-B": {
+      "coverage": 0.6363636363636364,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-C": {
+      "coverage": 0.45454545454545453,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-D": {
+      "coverage": 0.7727272727272727,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-E": {
+      "coverage": 0.5909090909090909,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-F": {
+      "coverage": 0.6818181818181818,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-G": {
+      "coverage": 0.7272727272727273,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "USA": {
+      "coverage": 0.9545454545454546,
+      "n": 22,
+      "kind": "country",
+      "gated": false
+     },
+     "USA-CA": {
+      "coverage": 0.8181818181818182,
+      "n": 22,
+      "kind": "admin1",
+      "gated": true
+     }
+    }
+   },
+   "test": {
+    "cell_month": {
+     "all": {
+      "n": 100232,
+      "mae": 0.12967068335132537,
+      "rmse": 0.7238123188621651,
+      "bias": -0.0024661846653367945,
+      "poisson_deviance": 2.51011178371841,
+      "sum_obs": 10493.0,
+      "sum_pred": 10245.809378623962
+     },
+     "active": {
+      "n": 2197,
+      "mae": 3.255872523290871,
+      "rmse": 3.8913307170749736,
+      "bias": 2.547478096779227,
+      "poisson_deviance": 4.498064595335643,
+      "sum_obs": 4649.0,
+      "sum_pred": 10245.809378623962
+     },
+     "inactive": {
+      "n": 98035,
+      "mae": 0.05961136328862141,
+      "rmse": 0.44305444448888404,
+      "bias": -0.05961136328862141,
+      "poisson_deviance": 2.4655610382997017,
+      "sum_obs": 5844.0,
+      "sum_pred": 0.0
+     },
+     "country:AUS": {
+      "n": 48444,
+      "mae": 0.1206322671774347,
+      "rmse": 0.6971269406838477,
+      "bias": -0.0009637945954898673,
+      "poisson_deviance": 2.3119993752674644,
+      "sum_obs": 4635.0,
+      "sum_pred": 4588.309934616089
+     },
+     "country:BGD": {
+      "n": 22352,
+      "mae": 0.10792713035791365,
+      "rmse": 0.6420362827167985,
+      "bias": -0.004506077449408786,
+      "poisson_deviance": 2.113239083197048,
+      "sum_obs": 2055.0,
+      "sum_pred": 1954.2801568508148
+     },
+     "country:USA": {
+      "n": 29436,
+      "mae": 0.1610563651571651,
+      "rmse": 0.8192201625006691,
+      "bias": -0.0033897510817686265,
+      "poisson_deviance": 3.137515511026845,
+      "sum_obs": 3803.0,
+      "sum_pred": 3703.2192871570587
+     },
+     "season:DJF": {
+      "n": 22780,
+      "mae": 0.10445317076004001,
+      "rmse": 0.6406338555243853,
+      "bias": -0.0012427406524544331,
+      "poisson_deviance": 2.0094314222915726,
+      "sum_obs": 1887.0,
+      "sum_pred": 1858.690367937088
+     },
+     "season:MAM": {
+      "n": 27336,
+      "mae": 0.11122710726782352,
+      "rmse": 0.6560164938918762,
+      "bias": -0.004234203163350155,
+      "poisson_deviance": 2.1592262283155534,
+      "sum_obs": 2594.0,
+      "sum_pred": 2478.25382232666
+     },
+     "season:JJA": {
+      "n": 27336,
+      "mae": 0.13737326947645656,
+      "rmse": 0.7409867590122137,
+      "bias": -0.0022102104386007852,
+      "poisson_deviance": 2.6953521582436526,
+      "sum_obs": 3006.0,
+      "sum_pred": 2945.581687450409
+     },
+     "season:SON": {
+      "n": 22780,
+      "mae": 0.16777738389265548,
+      "rmse": 0.8482123810282256,
+      "bias": -0.0018751755526863346,
+      "poisson_deviance": 3.2095663621983843,
+      "sum_obs": 3006.0,
+      "sum_pred": 2963.2835009098053
+     },
+     "spatial_holdout": {
+      "n": 16456,
+      "mae": 0.12341983218649724,
+      "rmse": 0.7126383644487941,
+      "bias": -0.01050106535620868,
+      "poisson_deviance": 2.560518011944119,
+      "sum_obs": 1681.0,
+      "sum_pred": 1508.19446849823
+     },
+     "spatial_in_sample": {
+      "n": 83776,
+      "mae": 0.13089852911584518,
+      "rmse": 0.725986993973267,
+      "bias": -0.0008879045296298173,
+      "poisson_deviance": 2.500210560316931,
+      "sum_obs": 8812.0,
+      "sum_pred": 8737.614910125732
+     }
+    },
+    "aoi_month": {
+     "all": {
+      "n": 264,
+      "mae": 8.931818180915082,
+      "rmse": 15.382782164158602,
+      "bias": -1.6665016981688412,
+      "poisson_deviance": 19.196706512363985,
+      "sum_obs": 15706.0,
+      "sum_pred": 15266.043551683426
+     },
+     "gate_units": {
+      "n": 66,
+      "mae": 12.914506641301243,
+      "rmse": 16.592850520004948,
+      "bias": -4.007659409985398,
+      "poisson_deviance": 10.278994304672073,
+      "sum_obs": 5483.0,
+      "sum_pred": 5218.494478940964
+     },
+     "kind:country": {
+      "n": 66,
+      "mae": 19.818257028406318,
+      "rmse": 26.249086360551,
+      "bias": -3.7453124450914785,
+      "poisson_deviance": 10.136133615209747,
+      "sum_obs": 10493.0,
+      "sum_pred": 10245.809378623962
+     },
+     "kind:admin1": {
+      "n": 198,
+      "mae": 5.303005231751336,
+      "rmse": 9.264725462314209,
+      "bias": -0.9735647825279621,
+      "poisson_deviance": 22.216897478082064,
+      "sum_obs": 5213.0,
+      "sum_pred": 5020.2341730594635
+     },
+     "aoi:AUS": {
+      "n": 22,
+      "mae": 22.652914805845782,
+      "rmse": 27.766762438987016,
+      "bias": -2.122275699268688,
+      "poisson_deviance": 4.057275534421915,
+      "sum_obs": 4635.0,
+      "sum_pred": 4588.309934616089
+     },
+     "aoi:AUS-NSW": {
+      "n": 22,
+      "mae": 13.9918372631073,
+      "rmse": 16.312363650524823,
+      "bias": -3.714763879776001,
+      "poisson_deviance": 5.255166931769716,
+      "sum_obs": 1597.0,
+      "sum_pred": 1515.275194644928
+     },
+     "aoi:BGD": {
+      "n": 22,
+      "mae": 11.638983303850347,
+      "rmse": 15.477778583948997,
+      "bias": -4.578174688599327,
+      "poisson_deviance": 19.631625727924504,
+      "sum_obs": 2055.0,
+      "sum_pred": 1954.2801568508148
+     },
+     "aoi:BGD-A": {
+      "n": 22,
+      "mae": 1.6118017001585527,
+      "rmse": 2.8807260171826914,
+      "bias": -0.9952073205601085,
+      "poisson_deviance": 25.29346383422927,
+      "sum_obs": 75.0,
+      "sum_pred": 53.10543894767761
+     },
+     "aoi:BGD-B": {
+      "n": 22,
+      "mae": 6.713718804446134,
+      "rmse": 9.123829946023854,
+      "bias": 0.5317532582716509,
+      "poisson_deviance": 33.526787323684765,
+      "sum_obs": 1146.0,
+      "sum_pred": 1157.6985716819763
+     },
+     "aoi:BGD-C": {
+      "n": 22,
+      "mae": 3.2148421460931953,
+      "rmse": 5.148036325101626,
+      "bias": -0.13920885866338556,
+      "poisson_deviance": 30.200519002887813,
+      "sum_obs": 173.0,
+      "sum_pred": 169.93740510940552
+     },
+     "aoi:BGD-D": {
+      "n": 22,
+      "mae": 2.1620489250529897,
+      "rmse": 4.537580027177349,
+      "bias": -0.6487942392175848,
+      "poisson_deviance": 60.81340032453086,
+      "sum_obs": 78.0,
+      "sum_pred": 63.726526737213135
+     },
+     "aoi:BGD-E": {
+      "n": 22,
+      "mae": 2.9655534354123203,
+      "rmse": 4.366766675333379,
+      "bias": 0.2405274131081321,
+      "poisson_deviance": 10.486024588873377,
+      "sum_obs": 108.0,
+      "sum_pred": 113.2916030883789
+     },
+     "aoi:BGD-F": {
+      "n": 22,
+      "mae": 1.573685808615251,
+      "rmse": 3.3828006781448896,
+      "bias": -0.08978573842482133,
+      "poisson_deviance": 12.449775373688391,
+      "sum_obs": 48.0,
+      "sum_pred": 46.02471375465393
+     },
+     "aoi:BGD-G": {
+      "n": 22,
+      "mae": 2.3808596459302036,
+      "rmse": 4.118622146063494,
+      "bias": -0.21656401590867477,
+      "poisson_deviance": 15.976749668752394,
+      "sum_obs": 157.0,
+      "sum_pred": 152.23559165000916
+     },
+     "aoi:USA": {
+      "n": 22,
+      "mae": 25.16287297552282,
+      "rmse": 32.50367483922553,
+      "bias": -4.535486947406422,
+      "poisson_deviance": 6.719499583282819,
+      "sum_obs": 3803.0,
+      "sum_pred": 3703.2192871570587
+     },
+     "aoi:USA-CA": {
+      "n": 22,
+      "mae": 13.112699356946079,
+      "rmse": 17.897296649968446,
+      "bias": -3.730039661580866,
+      "poisson_deviance": 5.950190254321999,
+      "sum_obs": 1831.0,
+      "sum_pred": 1748.939127445221
+     }
+    }
+   }
+  },
+  "B0_month_ratio": {
+   "status": "ok",
+   "info": {
+    "formula": "est = r[country, month] * aqua_count (global r fallback)",
+    "ratios": {
+     "AUS-01": 3.615863141524106,
+     "AUS-02": 3.7064846416382253,
+     "AUS-03": 3.784,
+     "AUS-04": 3.8947368421052633,
+     "AUS-05": 3.26,
+     "AUS-06": 3.375478927203065,
+     "AUS-07": 3.4613259668508287,
+     "AUS-08": 3.548856548856549,
+     "AUS-09": 3.5118549511854953,
+     "AUS-10": 3.657142857142857,
+     "AUS-11": 3.6671732522796354,
+     "AUS-12": 3.546434494195688,
+     "BGD-01": 3.4387096774193546,
+     "BGD-02": 3.641646489104116,
+     "BGD-03": 3.523699421965318,
+     "BGD-04": 3.1829787234042555,
+     "BGD-05": 4.040268456375839,
+     "BGD-06": 4.2,
+     "BGD-07": 2.5625,
+     "BGD-08": 3.75,
+     "BGD-09": 2.7777777777777777,
+     "BGD-10": 2.347826086956522,
+     "BGD-11": 2.9444444444444446,
+     "BGD-12": 2.953125,
+     "USA-01": 2.9367088607594938,
+     "USA-02": 3.721311475409836,
+     "USA-03": 3.7298850574712645,
+     "USA-04": 3.518987341772152,
+     "USA-05": 3.6551724137931036,
+     "USA-06": 4.080882352941177,
+     "USA-07": 3.477744807121662,
+     "USA-08": 3.298019801980198,
+     "USA-09": 3.556048834628191,
+     "USA-10": 3.6433566433566433,
+     "USA-11": 3.3045454545454547,
+     "USA-12": 3.7613636363636362
+    }
+   },
+   "val": {
+    "cell_month": {
+     "all": {
+      "n": 109344,
+      "mae": 0.1356496819678475,
+      "rmse": 0.7594175650957982,
+      "bias": -0.0017209754183447985,
+      "poisson_deviance": 2.54226735569728,
+      "sum_obs": 12469.0,
+      "sum_pred": 12280.821663856506
+     },
+     "active": {
+      "n": 2596,
+      "mae": 3.232464878695037,
+      "rmse": 3.9753346388547266,
+      "bias": 2.4086370045672214,
+      "poisson_deviance": 4.386088557678283,
+      "sum_obs": 6028.0,
+      "sum_pred": 12280.821663856506
+     },
+     "inactive": {
+      "n": 106748,
+      "mae": 0.06033836699516618,
+      "rmse": 0.4543354808882854,
+      "bias": -0.06033836699516618,
+      "poisson_deviance": 2.497427547547782,
+      "sum_obs": 6441.0,
+      "sum_pred": 0.0
+     },
+     "country:AUS": {
+      "n": 52848,
+      "mae": 0.14029940946099256,
+      "rmse": 0.7682481435046774,
+      "bias": 0.0035788828798615133,
+      "poisson_deviance": 2.616546209147562,
+      "sum_obs": 5927.0,
+      "sum_pred": 6116.136802434921
+     },
+     "country:BGD": {
+      "n": 24384,
+      "mae": 0.12759001806300144,
+      "rmse": 0.7618685136684321,
+      "bias": -0.01013932511053999,
+      "poisson_deviance": 2.354017831609573,
+      "sum_obs": 2914.0,
+      "sum_pred": 2666.762696504593
+     },
+     "country:USA": {
+      "n": 32112,
+      "mae": 0.13411748360268916,
+      "rmse": 0.7427532866996043,
+      "bias": -0.004050754704876925,
+      "poisson_deviance": 2.5629695090422646,
+      "sum_obs": 3628.0,
+      "sum_pred": 3497.922164916992
+     },
+     "season:DJF": {
+      "n": 27336,
+      "mae": 0.1258174031929276,
+      "rmse": 0.7172671231283078,
+      "bias": 0.0006317010932684572,
+      "poisson_deviance": 2.391409825882669,
+      "sum_obs": 2758.0,
+      "sum_pred": 2775.2681810855865
+     },
+     "season:MAM": {
+      "n": 27336,
+      "mae": 0.13069072299475276,
+      "rmse": 0.7896587323002525,
+      "bias": -0.0073614299367107,
+      "poisson_deviance": 2.372710438524292,
+      "sum_obs": 3251.0,
+      "sum_pred": 3049.7679512500763
+     },
+     "season:JJA": {
+      "n": 27336,
+      "mae": 0.11989842776949378,
+      "rmse": 0.6933533834344656,
+      "bias": -0.0033034314127529368,
+      "poisson_deviance": 2.288609475979786,
+      "sum_obs": 2795.0,
+      "sum_pred": 2704.6973989009857
+     },
+     "season:SON": {
+      "n": 27336,
+      "mae": 0.1661921739142158,
+      "rmse": 0.829510819076702,
+      "bias": 0.003149258582815986,
+      "poisson_deviance": 3.116339682402374,
+      "sum_obs": 3665.0,
+      "sum_pred": 3751.088132619858
+     },
+     "spatial_holdout": {
+      "n": 17952,
+      "mae": 0.12111144797102866,
+      "rmse": 0.7178930743465771,
+      "bias": 0.0027921194619035974,
+      "poisson_deviance": 2.266933880794263,
+      "sum_obs": 1788.0,
+      "sum_pred": 1838.1241285800934
+     },
+     "spatial_in_sample": {
+      "n": 91392,
+      "mae": 0.1385054065029369,
+      "rmse": 0.7673101490370142,
+      "bias": -0.0026074761983935907,
+      "poisson_deviance": 2.5963507168389444,
+      "sum_obs": 10681.0,
+      "sum_pred": 10442.697535276413
+     }
+    },
+    "aoi_month": {
+     "all": {
+      "n": 288,
+      "mae": 8.840684813757738,
+      "rmse": 15.73177450399775,
+      "bias": -1.5633469712403085,
+      "poisson_deviance": 17.1335195884035,
+      "sum_obs": 19347.0,
+      "sum_pred": 18896.75607228279
+     },
+     "gate_units": {
+      "n": 72,
+      "mae": 13.195008784532547,
+      "rmse": 19.92888926366472,
+      "bias": -3.8876399762100644,
+      "poisson_deviance": 11.457354483540193,
+      "sum_obs": 7250.0,
+      "sum_pred": 6970.089921712875
+     },
+     "kind:country": {
+      "n": 72,
+      "mae": 19.460406800111134,
+      "rmse": 25.547934692635284,
+      "bias": -2.6135880019929676,
+      "poisson_deviance": 10.08284286734825,
+      "sum_obs": 12469.0,
+      "sum_pred": 12280.821663856506
+     },
+     "kind:admin1": {
+      "n": 216,
+      "mae": 5.300777484973271,
+      "rmse": 10.602797572958076,
+      "bias": -1.2132666276560888,
+      "poisson_deviance": 19.483745162088585,
+      "sum_obs": 6878.0,
+      "sum_pred": 6615.934408426285
+     },
+     "aoi:AUS": {
+      "n": 24,
+      "mae": 24.485379646221798,
+      "rmse": 29.686918662650655,
+      "bias": 7.880700101455052,
+      "poisson_deviance": 3.6389083227756456,
+      "sum_obs": 5927.0,
+      "sum_pred": 6116.136802434921
+     },
+     "aoi:AUS-NSW": {
+      "n": 24,
+      "mae": 13.028245399395624,
+      "rmse": 18.831986862414517,
+      "bias": 4.483038475116094,
+      "poisson_deviance": 3.189535150291828,
+      "sum_obs": 2323.0,
+      "sum_pred": 2430.5929234027863
+     },
+     "aoi:BGD": {
+      "n": 24,
+      "mae": 15.667761673529943,
+      "rmse": 24.63000447379323,
+      "bias": -10.30155431230863,
+      "poisson_deviance": 23.171148782324277,
+      "sum_obs": 2914.0,
+      "sum_pred": 2666.762696504593
+     },
+     "aoi:BGD-A": {
+      "n": 24,
+      "mae": 1.9024458328882854,
+      "rmse": 3.76249456917104,
+      "bias": 0.10630528132120769,
+      "poisson_deviance": 25.094106959810016,
+      "sum_obs": 65.0,
+      "sum_pred": 67.55132675170898
+     },
+     "aoi:BGD-B": {
+      "n": 24,
+      "mae": 9.97615713874499,
+      "rmse": 17.762633812356828,
+      "bias": -4.361373692750931,
+      "poisson_deviance": 23.525991190003918,
+      "sum_obs": 1819.0,
+      "sum_pred": 1714.3270313739777
+     },
+     "aoi:BGD-C": {
+      "n": 24,
+      "mae": 3.8661156396071115,
+      "rmse": 5.979151261949475,
+      "bias": -0.8226773838202158,
+      "poisson_deviance": 10.68902656644675,
+      "sum_obs": 197.0,
+      "sum_pred": 177.25574278831482
+     },
+     "aoi:BGD-D": {
+      "n": 24,
+      "mae": 0.7809675335884094,
+      "rmse": 1.3174109852220213,
+      "bias": -0.7657193144162496,
+      "poisson_deviance": 22.269393232196695,
+      "sum_obs": 45.0,
+      "sum_pred": 26.62273645401001
+     },
+     "aoi:BGD-E": {
+      "n": 24,
+      "mae": 3.258374124765396,
+      "rmse": 4.872057884928897,
+      "bias": -2.6799979507923126,
+      "poisson_deviance": 62.409606908739924,
+      "sum_obs": 138.0,
+      "sum_pred": 73.6800491809845
+     },
+     "aoi:BGD-F": {
+      "n": 24,
+      "mae": 1.437457948923111,
+      "rmse": 3.3585524337963903,
+      "bias": -0.35223375757535297,
+      "poisson_deviance": 13.611662996097921,
+      "sum_obs": 45.0,
+      "sum_pred": 36.54638981819153
+     },
+     "aoi:BGD-G": {
+      "n": 24,
+      "mae": 2.5682144661744437,
+      "rmse": 4.975833251841957,
+      "bias": -0.6823372145493826,
+      "poisson_deviance": 6.553003937205755,
+      "sum_obs": 233.0,
+      "sum_pred": 216.62390685081482
+     },
+     "aoi:USA": {
+      "n": 24,
+      "mae": 18.228079080581665,
+      "rmse": 21.682726791516842,
+      "bias": -5.419909795125325,
+      "poisson_deviance": 3.438471496944826,
+      "sum_obs": 3628.0,
+      "sum_pred": 3497.922164916992
+     },
+     "aoi:USA-CA": {
+      "n": 24,
+      "mae": 10.889019280672073,
+      "rmse": 15.172377278627275,
+      "bias": -5.844404091437657,
+      "poisson_deviance": 8.011379518004475,
+      "sum_obs": 2013.0,
+      "sum_pred": 1872.7343018054962
+     }
+    }
+   },
+   "interval": {
+    "q_low": -0.3661301669795017,
+    "q_high": 0.6893087594513291,
+    "n_val_aoi_months": 72,
+    "formula": "low=(\u0177+1)\u00b7exp(q_low)\u22121, high=(\u0177+1)\u00b7exp(q_high)\u22121, clipped \u22650",
+    "nominal": 0.8,
+    "fitted_on": "validation AOI-months of the gated non-overlapping regions BGD, AUS-NSW, USA-CA (one pooled interval, applied to every AOI)",
+    "test_coverage": 0.803030303030303,
+    "n_test_aoi_months": 66,
+    "test_coverage_by_aoi": {
+     "AUS": {
+      "coverage": 1.0,
+      "n": 22,
+      "kind": "country",
+      "gated": false
+     },
+     "AUS-NSW": {
+      "coverage": 0.9090909090909091,
+      "n": 22,
+      "kind": "admin1",
+      "gated": true
+     },
+     "BGD": {
+      "coverage": 0.7272727272727273,
+      "n": 22,
+      "kind": "country",
+      "gated": true
+     },
+     "BGD-A": {
+      "coverage": 0.6363636363636364,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-B": {
+      "coverage": 0.6363636363636364,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-C": {
+      "coverage": 0.5454545454545454,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-D": {
+      "coverage": 0.8181818181818182,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-E": {
+      "coverage": 0.6818181818181818,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-F": {
+      "coverage": 0.6818181818181818,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-G": {
+      "coverage": 0.7272727272727273,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "USA": {
+      "coverage": 0.9090909090909091,
+      "n": 22,
+      "kind": "country",
+      "gated": false
+     },
+     "USA-CA": {
+      "coverage": 0.7727272727272727,
+      "n": 22,
+      "kind": "admin1",
+      "gated": true
+     }
+    }
+   },
+   "test": {
+    "cell_month": {
+     "all": {
+      "n": 100232,
+      "mae": 0.1294455983559982,
+      "rmse": 0.7237750011737036,
+      "bias": -0.0027310019770056017,
+      "poisson_deviance": 2.5099982240671945,
+      "sum_obs": 10493.0,
+      "sum_pred": 10219.266209840775
+     },
+     "active": {
+      "n": 2197,
+      "mae": 3.2456036478918575,
+      "rmse": 3.8910140336169,
+      "bias": 2.5353965452165563,
+      "poisson_deviance": 4.49288375284103,
+      "sum_obs": 4649.0,
+      "sum_pred": 10219.266209840775
+     },
+     "inactive": {
+      "n": 98035,
+      "mae": 0.05961136328862141,
+      "rmse": 0.44305444448888404,
+      "bias": -0.05961136328862141,
+      "poisson_deviance": 2.4655610382997017,
+      "sum_obs": 5844.0,
+      "sum_pred": 0.0
+     },
+     "country:AUS": {
+      "n": 48444,
+      "mae": 0.12131032658473731,
+      "rmse": 0.701844740270852,
+      "bias": 3.2699154386157375e-05,
+      "poisson_deviance": 2.3131216947138618,
+      "sum_obs": 4635.0,
+      "sum_pred": 4636.584077835083
+     },
+     "country:BGD": {
+      "n": 22352,
+      "mae": 0.10592267901750659,
+      "rmse": 0.633284226218035,
+      "bias": -0.007037491320966394,
+      "poisson_deviance": 2.1106751863623057,
+      "sum_obs": 2055.0,
+      "sum_pred": 1897.6979939937592
+     },
+     "country:USA": {
+      "n": 29436,
+      "mae": 0.1606960875101267,
+      "rmse": 0.817649844548805,
+      "bias": -0.004009235697379658,
+      "poisson_deviance": 3.137228660497841,
+      "sum_obs": 3803.0,
+      "sum_pred": 3684.9841380119324
+     },
+     "season:DJF": {
+      "n": 22780,
+      "mae": 0.10495666997070581,
+      "rmse": 0.644321584079196,
+      "bias": -0.00037663786739922073,
+      "poisson_deviance": 2.0101744477807895,
+      "sum_obs": 1887.0,
+      "sum_pred": 1878.4201893806458
+     },
+     "season:MAM": {
+      "n": 27336,
+      "mae": 0.11081200910479763,
+      "rmse": 0.6569506249010225,
+      "bias": -0.004604836121825122,
+      "poisson_deviance": 2.159152449362596,
+      "sum_obs": 2594.0,
+      "sum_pred": 2468.1221997737885
+     },
+     "season:JJA": {
+      "n": 27336,
+      "mae": 0.13594799576218727,
+      "rmse": 0.7326091831225519,
+      "bias": -0.004367066399549441,
+      "poisson_deviance": 2.693338984636482,
+      "sum_obs": 3006.0,
+      "sum_pred": 2886.6218729019165
+     },
+     "season:SON": {
+      "n": 22780,
+      "mae": 0.16849195695530436,
+      "rmse": 0.8531297673925394,
+      "bias": -0.0008734878057759513,
+      "poisson_deviance": 3.2108280173159724,
+      "sum_obs": 3006.0,
+      "sum_pred": 2986.101947784424
+     },
+     "spatial_holdout": {
+      "n": 16456,
+      "mae": 0.12321356967576917,
+      "rmse": 0.7131598636784019,
+      "bias": -0.010533816456852692,
+      "poisson_deviance": 2.560639999120211,
+      "sum_obs": 1681.0,
+      "sum_pred": 1507.655516386032
+     },
+     "spatial_in_sample": {
+      "n": 83776,
+      "mae": 0.13066974684675747,
+      "rmse": 0.7258418757716533,
+      "bias": -0.0011983062756070661,
+      "poisson_deviance": 2.500050732538923,
+      "sum_obs": 8812.0,
+      "sum_pred": 8711.610693454742
+     }
+    },
+    "aoi_month": {
+     "all": {
+      "n": 264,
+      "mae": 8.991424425984874,
+      "rmse": 15.827693676651673,
+      "bias": -1.877720040805412,
+      "poisson_deviance": 19.32041703932581,
+      "sum_obs": 15706.0,
+      "sum_pred": 15210.281909227371
+     },
+     "gate_units": {
+      "n": 66,
+      "mae": 13.669098655382792,
+      "rmse": 18.191192448577198,
+      "bias": -4.53700290665482,
+      "poisson_deviance": 10.609154460911709,
+      "sum_obs": 5483.0,
+      "sum_pred": 5183.557808160782
+     },
+     "kind:country": {
+      "n": 66,
+      "mae": 19.913511099237382,
+      "rmse": 27.143159867693026,
+      "bias": -4.147481669079173,
+      "poisson_deviance": 10.54774034150283,
+      "sum_obs": 10493.0,
+      "sum_pred": 10219.266209840775
+     },
+     "kind:admin1": {
+      "n": 198,
+      "mae": 5.350728868234037,
+      "rmse": 9.404120034760233,
+      "bias": -1.1211328313808249,
+      "poisson_deviance": 22.2446426052668,
+      "sum_obs": 5213.0,
+      "sum_pred": 4991.015699386597
+     },
+     "aoi:AUS": {
+      "n": 22,
+      "mae": 22.840797034176912,
+      "rmse": 28.136623289897763,
+      "bias": 0.07200353795831854,
+      "poisson_deviance": 4.175491060079159,
+      "sum_obs": 4635.0,
+      "sum_pred": 4636.584077835083
+     },
+     "aoi:AUS-NSW": {
+      "n": 22,
+      "mae": 13.390041849829935,
+      "rmse": 15.82818619072907,
+      "bias": -2.1993489265441895,
+      "poisson_deviance": 5.220216457554813,
+      "sum_obs": 1597.0,
+      "sum_pred": 1548.6143236160278
+     },
+     "aoi:BGD": {
+      "n": 22,
+      "mae": 13.893333445895802,
+      "rmse": 20.780542346610254,
+      "bias": -7.150091182101857,
+      "poisson_deviance": 20.99634849801507,
+      "sum_obs": 2055.0,
+      "sum_pred": 1897.6979939937592
+     },
+     "aoi:BGD-A": {
+      "n": 22,
+      "mae": 1.4943271767009387,
+      "rmse": 2.7853677689918874,
+      "bias": -1.0819106752222234,
+      "poisson_deviance": 25.235234820346932,
+      "sum_obs": 75.0,
+      "sum_pred": 51.197965145111084
+     },
+     "aoi:BGD-B": {
+      "n": 22,
+      "mae": 7.2700701193376025,
+      "rmse": 11.3558735914714,
+      "bias": -0.8634751493280585,
+      "poisson_deviance": 33.48059791018613,
+      "sum_obs": 1146.0,
+      "sum_pred": 1127.0035467147827
+     },
+     "aoi:BGD-C": {
+      "n": 22,
+      "mae": 3.1569683768532495,
+      "rmse": 5.271399189413574,
+      "bias": -0.4365247813138095,
+      "poisson_deviance": 30.395681400490876,
+      "sum_obs": 173.0,
+      "sum_pred": 163.3964548110962
+     },
+     "aoi:BGD-D": {
+      "n": 22,
+      "mae": 2.061953978105025,
+      "rmse": 4.50736815347571,
+      "bias": -0.8138680891557173,
+      "poisson_deviance": 60.758255573276415,
+      "sum_obs": 78.0,
+      "sum_pred": 60.09490203857422
+     },
+     "aoi:BGD-E": {
+      "n": 22,
+      "mae": 2.9578335827047173,
+      "rmse": 4.535435063599082,
+      "bias": -0.006233529611067338,
+      "poisson_deviance": 10.888294678756118,
+      "sum_obs": 108.0,
+      "sum_pred": 107.86286234855652
+     },
+     "aoi:BGD-F": {
+      "n": 22,
+      "mae": 1.6506617285988547,
+      "rmse": 3.493219978049877,
+      "bias": -0.10401812466708096,
+      "poisson_deviance": 12.571943881921387,
+      "sum_obs": 48.0,
+      "sum_pred": 45.71160125732422
+     },
+     "aoi:BGD-G": {
+      "n": 22,
+      "mae": 2.4507823315533726,
+      "rmse": 4.173588625996938,
+      "bias": -0.32324759526686236,
+      "poisson_deviance": 16.04066029770328,
+      "sum_obs": 157.0,
+      "sum_pred": 149.88855290412903
+     },
+     "aoi:USA": {
+      "n": 22,
+      "mae": 23.006402817639437,
+      "rmse": 31.41262282001526,
+      "bias": -5.364357363093983,
+      "poisson_deviance": 6.471381466414268,
+      "sum_obs": 3803.0,
+      "sum_pred": 3684.9841380119324
+     },
+     "aoi:USA-CA": {
+      "n": 22,
+      "mae": 13.723920670422642,
+      "rmse": 17.618059762524013,
+      "bias": -4.261568611318415,
+      "poisson_deviance": 5.610898427165244,
+      "sum_obs": 1831.0,
+      "sum_pred": 1737.2454905509949
+     }
+    }
+   }
+  },
+  "B1_poisson": {
+   "status": "ok",
+   "info": {
+    "n_train": 342984,
+    "alpha": 0.0001,
+    "n_iter": 7,
+    "solver": "newton-cholesky"
+   },
+   "val": {
+    "cell_month": {
+     "all": {
+      "n": 109344,
+      "mae": 0.1630190879103864,
+      "rmse": 0.7992128147779228,
+      "bias": 0.006030142776043102,
+      "poisson_deviance": 0.43370959456201613,
+      "sum_obs": 12469.0,
+      "sum_pred": 13128.359931703657
+     },
+     "active": {
+      "n": 2596,
+      "mae": 1.9615456982815669,
+      "rmse": 4.380606477878563,
+      "bias": -0.09870863946381446,
+      "poisson_deviance": 2.888311193714607,
+      "sum_obs": 6028.0,
+      "sum_pred": 5771.752371951938
+     },
+     "inactive": {
+      "n": 106748,
+      "mae": 0.11928079697731428,
+      "rmse": 0.4331291227212661,
+      "bias": 0.00857728069614156,
+      "poisson_deviance": 0.37401624432219777,
+      "sum_obs": 6441.0,
+      "sum_pred": 7356.607559751719
+     },
+     "country:AUS": {
+      "n": 52848,
+      "mae": 0.16790130420598107,
+      "rmse": 0.9514697462537005,
+      "bias": 0.012826498442569417,
+      "poisson_deviance": 0.4459761404135104,
+      "sum_obs": 5927.0,
+      "sum_pred": 6604.8547896929085
+     },
+     "country:BGD": {
+      "n": 24384,
+      "mae": 0.15405243808181168,
+      "rmse": 0.661428517131342,
+      "bias": -0.006049740938848652,
+      "poisson_deviance": 0.41259689003029754,
+      "sum_obs": 2914.0,
+      "sum_pred": 2766.4831169471145
+     },
+     "country:USA": {
+      "n": 32112,
+      "mae": 0.16179298622348992,
+      "rmse": 0.594040024304397,
+      "bias": 0.004017875718224774,
+      "poisson_deviance": 0.42955382015187826,
+      "sum_obs": 3628.0,
+      "sum_pred": 3757.022025063634
+     },
+     "season:DJF": {
+      "n": 27336,
+      "mae": 0.15395711410113655,
+      "rmse": 0.7310316799454406,
+      "bias": 0.012203803505363662,
+      "poisson_deviance": 0.4100400530442856,
+      "sum_obs": 2758.0,
+      "sum_pred": 3091.603172622621
+     },
+     "season:MAM": {
+      "n": 27336,
+      "mae": 0.15431582048098713,
+      "rmse": 0.66138056794605,
+      "bias": -0.0035667868786515167,
+      "poisson_deviance": 0.4161972618245599,
+      "sum_obs": 3251.0,
+      "sum_pred": 3153.498313885182
+     },
+     "season:JJA": {
+      "n": 27336,
+      "mae": 0.14974539095951794,
+      "rmse": 0.5923284762938166,
+      "bias": 0.003099057496080264,
+      "poisson_deviance": 0.4045982499149965,
+      "sum_obs": 2795.0,
+      "sum_pred": 2879.71583571285
+     },
+     "season:SON": {
+      "n": 27336,
+      "mae": 0.19405802609990408,
+      "rmse": 1.1100810315701977,
+      "bias": 0.012384496981379998,
+      "poisson_deviance": 0.5040028134642225,
+      "sum_obs": 3665.0,
+      "sum_pred": 4003.5426094830036
+     },
+     "spatial_holdout": {
+      "n": 17952,
+      "mae": 0.14740523769094405,
+      "rmse": 0.5758012215896491,
+      "bias": 0.0036140378743473194,
+      "poisson_deviance": 0.39948108187570863,
+      "sum_obs": 1788.0,
+      "sum_pred": 1852.879207920283
+     },
+     "spatial_in_sample": {
+      "n": 91392,
+      "mae": 0.16608609420349116,
+      "rmse": 0.8361117251346335,
+      "bias": 0.006504734810304773,
+      "poisson_deviance": 0.4404330524111121,
+      "sum_obs": 10681.0,
+      "sum_pred": 11275.480723783374
+     }
+    },
+    "aoi_month": {
+     "all": {
+      "n": 288,
+      "mae": 21.252210949405303,
+      "rmse": 34.94476904011964,
+      "bias": 2.3948440119080865,
+      "poisson_deviance": 14.932135289610759,
+      "sum_obs": 19347.0,
+      "sum_pred": 20036.71507542953
+     },
+     "gate_units": {
+      "n": 72,
+      "mae": 39.781731262285675,
+      "rmse": 51.979448549296485,
+      "bias": 0.3278627526015043,
+      "poisson_deviance": 29.429959304726886,
+      "sum_obs": 7250.0,
+      "sum_pred": 7273.606118187308
+     },
+     "kind:country": {
+      "n": 72,
+      "mae": 45.31745460272456,
+      "rmse": 57.197355688296874,
+      "bias": 9.157776829217458,
+      "poisson_deviance": 26.77565635121319,
+      "sum_obs": 12469.0,
+      "sum_pred": 13128.359931703657
+     },
+     "kind:admin1": {
+      "n": 216,
+      "mae": 13.23046306496555,
+      "rmse": 23.187712517162108,
+      "bias": 0.14053307280496316,
+      "poisson_deviance": 10.98429493574328,
+      "sum_obs": 6878.0,
+      "sum_pred": 6908.355143725872
+     },
+     "aoi:AUS": {
+      "n": 24,
+      "mae": 34.31794446039324,
+      "rmse": 45.7609397954299,
+      "bias": 28.243949570537854,
+      "poisson_deviance": 11.061366233154748,
+      "sum_obs": 5927.0,
+      "sum_pred": 6604.8547896929085
+     },
+     "aoi:AUS-NSW": {
+      "n": 24,
+      "mae": 29.34400208760053,
+      "rmse": 36.81615246540549,
+      "bias": 13.495349328344068,
+      "poisson_deviance": 16.001636324660655,
+      "sum_obs": 2323.0,
+      "sum_pred": 2646.8883838802576
+     },
+     "aoi:BGD": {
+      "n": 24,
+      "mae": 58.62964326205353,
+      "rmse": 73.04411356918939,
+      "bias": -6.14653679387023,
+      "poisson_deviance": 50.49963106966796,
+      "sum_obs": 2914.0,
+      "sum_pred": 2766.4831169471145
+     },
+     "aoi:BGD-A": {
+      "n": 24,
+      "mae": 2.854223560076207,
+      "rmse": 3.2539840734477874,
+      "bias": 1.4974035159684718,
+      "poisson_deviance": 4.292967140060125,
+      "sum_obs": 65.0,
+      "sum_pred": 100.93768438324332
+     },
+     "aoi:BGD-B": {
+      "n": 24,
+      "mae": 30.129404484915238,
+      "rmse": 42.569952985060006,
+      "bias": -12.131634609152874,
+      "poisson_deviance": 22.72611418851693,
+      "sum_obs": 1819.0,
+      "sum_pred": 1527.840769380331
+     },
+     "aoi:BGD-C": {
+      "n": 24,
+      "mae": 7.6254601025333,
+      "rmse": 8.542092956594097,
+      "bias": 2.1504261875525117,
+      "poisson_deviance": 9.513373255713702,
+      "sum_obs": 197.0,
+      "sum_pred": 248.61022850126028
+     },
+     "aoi:BGD-D": {
+      "n": 24,
+      "mae": 2.4364178135680654,
+      "rmse": 2.6501855414186877,
+      "bias": 1.3612050778853397,
+      "poisson_deviance": 3.585140915209537,
+      "sum_obs": 45.0,
+      "sum_pred": 77.66892186924815
+     },
+     "aoi:BGD-E": {
+      "n": 24,
+      "mae": 3.970620638690889,
+      "rmse": 5.168395780667561,
+      "bias": 0.22706942384441695,
+      "poisson_deviance": 5.145994894339991,
+      "sum_obs": 138.0,
+      "sum_pred": 143.449666172266
+     },
+     "aoi:BGD-F": {
+      "n": 24,
+      "mae": 3.2901412793435156,
+      "rmse": 4.028409674904208,
+      "bias": 1.5361043917946517,
+      "poisson_deviance": 5.38448932730476,
+      "sum_obs": 45.0,
+      "sum_pred": 81.86650540307164
+     },
+     "aoi:BGD-G": {
+      "n": 24,
+      "mae": 8.052349180759242,
+      "rmse": 11.097877013679982,
+      "bias": -0.5059013843225936,
+      "poisson_deviance": 10.42032785603177,
+      "sum_obs": 233.0,
+      "sum_pred": 220.85836677625775
+     },
+     "aoi:USA": {
+      "n": 24,
+      "mae": 43.00477608572692,
+      "rmse": 48.83755066678754,
+      "bias": 5.375917710984747,
+      "poisson_deviance": 18.765971750816856,
+      "sum_obs": 3628.0,
+      "sum_pred": 3757.022025063634
+     },
+     "aoi:USA-CA": {
+      "n": 24,
+      "mae": 31.37154843720297,
+      "rmse": 37.61273195345244,
+      "bias": -6.3652242766693234,
+      "poisson_deviance": 21.78861051985204,
+      "sum_obs": 2013.0,
+      "sum_pred": 1860.2346173599362
+     }
+    }
+   },
+   "interval": {
+    "q_low": -2.4629660845541084,
+    "q_high": 0.3696358238483773,
+    "n_val_aoi_months": 72,
+    "formula": "low=(\u0177+1)\u00b7exp(q_low)\u22121, high=(\u0177+1)\u00b7exp(q_high)\u22121, clipped \u22650",
+    "nominal": 0.8,
+    "fitted_on": "validation AOI-months of the gated non-overlapping regions BGD, AUS-NSW, USA-CA (one pooled interval, applied to every AOI)",
+    "test_coverage": 0.8636363636363636,
+    "n_test_aoi_months": 66,
+    "test_coverage_by_aoi": {
+     "AUS": {
+      "coverage": 1.0,
+      "n": 22,
+      "kind": "country",
+      "gated": false
+     },
+     "AUS-NSW": {
+      "coverage": 0.9545454545454546,
+      "n": 22,
+      "kind": "admin1",
+      "gated": true
+     },
+     "BGD": {
+      "coverage": 0.7727272727272727,
+      "n": 22,
+      "kind": "country",
+      "gated": true
+     },
+     "BGD-A": {
+      "coverage": 0.7727272727272727,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-B": {
+      "coverage": 0.9090909090909091,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-C": {
+      "coverage": 0.8636363636363636,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-D": {
+      "coverage": 0.7727272727272727,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-E": {
+      "coverage": 0.9090909090909091,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-F": {
+      "coverage": 0.9090909090909091,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-G": {
+      "coverage": 0.8636363636363636,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "USA": {
+      "coverage": 0.9090909090909091,
+      "n": 22,
+      "kind": "country",
+      "gated": false
+     },
+     "USA-CA": {
+      "coverage": 0.8636363636363636,
+      "n": 22,
+      "kind": "admin1",
+      "gated": true
+     }
+    }
+   },
+   "test": {
+    "cell_month": {
+     "all": {
+      "n": 100232,
+      "mae": 0.15621303541642892,
+      "rmse": 0.7025031457889713,
+      "bias": 0.004562391936878629,
+      "poisson_deviance": 0.4270300709561565,
+      "sum_obs": 10493.0,
+      "sum_pred": 10950.297668617219
+     },
+     "active": {
+      "n": 2197,
+      "mae": 1.8363705219859474,
+      "rmse": 3.7987121107332564,
+      "bias": -0.1614318916308755,
+      "poisson_deviance": 2.7651577615672416,
+      "sum_obs": 4649.0,
+      "sum_pred": 4294.3341340869665
+     },
+     "inactive": {
+      "n": 98035,
+      "mae": 0.11856009516046694,
+      "rmse": 0.4256572411120892,
+      "bias": 0.008282384194728947,
+      "poisson_deviance": 0.3746317791596292,
+      "sum_obs": 5844.0,
+      "sum_pred": 6655.963534530252
+     },
+     "country:AUS": {
+      "n": 48444,
+      "mae": 0.1498873544455955,
+      "rmse": 0.7279710933936604,
+      "bias": 0.010217699243875266,
+      "poisson_deviance": 0.410274247373226,
+      "sum_obs": 4635.0,
+      "sum_pred": 5129.986222170293
+     },
+     "country:BGD": {
+      "n": 22352,
+      "mae": 0.14076333064082597,
+      "rmse": 0.7614658444072558,
+      "bias": 0.006832683795087077,
+      "poisson_deviance": 0.3872821567006078,
+      "sum_obs": 2055.0,
+      "sum_pred": 2207.7241481877863
+     },
+     "country:USA": {
+      "n": 29436,
+      "mae": 0.1783550754386918,
+      "rmse": 0.6066368140148418,
+      "bias": -0.006468701649030471,
+      "poisson_deviance": 0.4847880712650132,
+      "sum_obs": 3803.0,
+      "sum_pred": 3612.587298259139
+     },
+     "season:DJF": {
+      "n": 22780,
+      "mae": 0.13475318429280234,
+      "rmse": 0.5977768385059671,
+      "bias": 0.015788975790882183,
+      "poisson_deviance": 0.365144907623438,
+      "sum_obs": 1887.0,
+      "sum_pred": 2246.672868516296
+     },
+     "season:MAM": {
+      "n": 27336,
+      "mae": 0.14293723886086881,
+      "rmse": 0.7263761720031398,
+      "bias": 0.003403927253099703,
+      "poisson_deviance": 0.39117367309438805,
+      "sum_obs": 2594.0,
+      "sum_pred": 2687.0497553907335
+     },
+     "season:JJA": {
+      "n": 27336,
+      "mae": 0.15831887335817688,
+      "rmse": 0.5617815192797456,
+      "bias": -0.003556408885188285,
+      "poisson_deviance": 0.43961225037054213,
+      "sum_obs": 3006.0,
+      "sum_pred": 2908.782006714493
+     },
+     "season:SON": {
+      "n": 22780,
+      "mae": 0.19107683687663005,
+      "rmse": 0.8956812023632856,
+      "bias": 0.004468526689890082,
+      "poisson_deviance": 0.5168442964257344,
+      "sum_obs": 3006.0,
+      "sum_pred": 3107.793037995696
+     },
+     "spatial_holdout": {
+      "n": 16456,
+      "mae": 0.14831228541797972,
+      "rmse": 0.5586090482990221,
+      "bias": -0.00716546149159237,
+      "poisson_deviance": 0.4314288450533647,
+      "sum_obs": 1681.0,
+      "sum_pred": 1563.085165694356
+     },
+     "spatial_in_sample": {
+      "n": 83776,
+      "mae": 0.15776496845183857,
+      "rmse": 0.7274310242491691,
+      "bias": 0.006866077431756861,
+      "poisson_deviance": 0.42616602604420495,
+      "sum_obs": 8812.0,
+      "sum_pred": 9387.212502922863
+     }
+    },
+    "aoi_month": {
+     "all": {
+      "n": 264,
+      "mae": 19.207696410770893,
+      "rmse": 30.45095070733504,
+      "bias": 3.061390372049628,
+      "poisson_deviance": 13.548899149620018,
+      "sum_obs": 15706.0,
+      "sum_pred": 16514.2070582211
+     },
+     "gate_units": {
+      "n": 66,
+      "mae": 33.66098715517331,
+      "rmse": 41.336312112468036,
+      "bias": 5.1568529097306905,
+      "poisson_deviance": 25.28287063579895,
+      "sum_obs": 5483.0,
+      "sum_pred": 5823.352292042226
+     },
+     "kind:country": {
+      "n": 66,
+      "mae": 43.83907705833289,
+      "rmse": 53.056586624517735,
+      "bias": 6.928752554806344,
+      "poisson_deviance": 24.436508364920098,
+      "sum_obs": 10493.0,
+      "sum_pred": 10950.297668617219
+     },
+     "kind:admin1": {
+      "n": 198,
+      "mae": 10.997236194916898,
+      "rmse": 17.263064730586308,
+      "bias": 1.7722696444640558,
+      "poisson_deviance": 9.919696077853327,
+      "sum_obs": 5213.0,
+      "sum_pred": 5563.909389603883
+     },
+     "aoi:AUS": {
+      "n": 22,
+      "mae": 37.62916164946827,
+      "rmse": 44.12343166212633,
+      "bias": 22.499373735013332,
+      "poisson_deviance": 11.807400852487046,
+      "sum_obs": 4635.0,
+      "sum_pred": 5129.986222170293
+     },
+     "aoi:AUS-NSW": {
+      "n": 22,
+      "mae": 23.524312851950526,
+      "rmse": 28.095066747672742,
+      "bias": 14.497332451865077,
+      "poisson_deviance": 15.414149959405341,
+      "sum_obs": 1597.0,
+      "sum_pred": 1915.9413139410317
+     },
+     "aoi:BGD": {
+      "n": 22,
+      "mae": 46.70559122531929,
+      "rmse": 55.19988132223098,
+      "bias": 6.94200673580847,
+      "poisson_deviance": 38.744169631993046,
+      "sum_obs": 2055.0,
+      "sum_pred": 2207.7241481877863
+     },
+     "aoi:BGD-A": {
+      "n": 22,
+      "mae": 3.566521215337244,
+      "rmse": 4.354757891612616,
+      "bias": 0.7611708690158345,
+      "poisson_deviance": 5.161022932981894,
+      "sum_obs": 75.0,
+      "sum_pred": 91.74575911834836
+     },
+     "aoi:BGD-B": {
+      "n": 22,
+      "mae": 16.151443774557926,
+      "rmse": 19.26682312318503,
+      "bias": 0.3142073525285179,
+      "poisson_deviance": 13.033486099232436,
+      "sum_obs": 1146.0,
+      "sum_pred": 1152.9125617556274
+     },
+     "aoi:BGD-C": {
+      "n": 22,
+      "mae": 7.647165961055593,
+      "rmse": 8.917463703467705,
+      "bias": 2.522977388887243,
+      "poisson_deviance": 9.242527666060788,
+      "sum_obs": 173.0,
+      "sum_pred": 228.50550255551934
+     },
+     "aoi:BGD-D": {
+      "n": 22,
+      "mae": 3.2570891464975746,
+      "rmse": 4.340554022846081,
+      "bias": 0.016044503247196026,
+      "poisson_deviance": 5.345389572898316,
+      "sum_obs": 78.0,
+      "sum_pred": 78.35297907143831
+     },
+     "aoi:BGD-E": {
+      "n": 22,
+      "mae": 4.138053763996471,
+      "rmse": 4.982501107321939,
+      "bias": 1.4570302878591148,
+      "poisson_deviance": 5.59521457298024,
+      "sum_obs": 108.0,
+      "sum_pred": 140.05466633290052
+     },
+     "aoi:BGD-F": {
+      "n": 22,
+      "mae": 2.9194318940016357,
+      "rmse": 3.4188896968110756,
+      "bias": 1.4259349886666646,
+      "poisson_deviance": 4.459197652697562,
+      "sum_obs": 48.0,
+      "sum_pred": 79.37056975066662
+     },
+     "aoi:BGD-G": {
+      "n": 22,
+      "mae": 7.018049758604982,
+      "rmse": 8.833196143864974,
+      "bias": 0.9245094165883281,
+      "poisson_deviance": 9.33598392842491,
+      "sum_obs": 157.0,
+      "sum_pred": 177.33920716494322
+     },
+     "aoi:USA": {
+      "n": 22,
+      "mae": 47.1824783002111,
+      "rmse": 58.74606397967567,
+      "bias": -8.65512280640277,
+      "poisson_deviance": 22.757954610280194,
+      "sum_obs": 3803.0,
+      "sum_pred": 3612.587298259139
+     },
+     "aoi:USA-CA": {
+      "n": 22,
+      "mae": 30.753057388250124,
+      "rmse": 35.91256637492709,
+      "bias": -5.968780458481475,
+      "poisson_deviance": 21.690292315998462,
+      "sum_obs": 1831.0,
+      "sum_pred": 1699.6868299134076
+     }
+    }
+   }
+  },
+  "B2_xgb": {
+   "status": "ok",
+   "info": {
+    "device": "cpu",
+    "selected_seed": 1,
+    "best_iteration": 39,
+    "n_train": 342984,
+    "n_train_eligible": 342984,
+    "rounds_cap": 40,
+    "wall_clock_budget_min": 45.0,
+    "params": "depth8 eta0.05 sub0.8 col0.8 mcw5 mds0.7"
+   },
+   "seed_runs": [
+    {
+     "seed": 0,
+     "best_iteration": 39,
+     "val": {
+      "n": 109344,
+      "mae": 0.2962831242459987,
+      "rmse": 0.6634856203420465,
+      "bias": 0.13710344695647753,
+      "poisson_deviance": 0.6137145764667603,
+      "sum_obs": 12469.0,
+      "sum_pred": 27460.43930400908
+     },
+     "seconds": 23.0
+    },
+    {
+     "seed": 1,
+     "best_iteration": 39,
+     "val": {
+      "n": 109344,
+      "mae": 0.29557592956333445,
+      "rmse": 0.662486426159667,
+      "bias": 0.13755271295895038,
+      "poisson_deviance": 0.6113973655101809,
+      "sum_obs": 12469.0,
+      "sum_pred": 27509.563845783472
+     },
+     "seconds": 33.6
+    },
+    {
+     "seed": 2,
+     "best_iteration": 39,
+     "val": {
+      "n": 109344,
+      "mae": 0.29647839389564806,
+      "rmse": 0.6636681776925815,
+      "bias": 0.13730712720395477,
+      "poisson_deviance": 0.6143591288024073,
+      "sum_obs": 12469.0,
+      "sum_pred": 27482.71051698923
+     },
+     "seconds": 14.7
+    }
+   ],
+   "val": {
+    "cell_month": {
+     "all": {
+      "n": 109344,
+      "mae": 0.29557592956333445,
+      "rmse": 0.662486426159667,
+      "bias": 0.13755271295895038,
+      "poisson_deviance": 0.6113973655101809,
+      "sum_obs": 12469.0,
+      "sum_pred": 27509.563845783472
+     },
+     "active": {
+      "n": 2596,
+      "mae": 1.819697567329201,
+      "rmse": 3.2078982038661095,
+      "bias": -1.076099984795544,
+      "poisson_deviance": 3.309199709708788,
+      "sum_obs": 6028.0,
+      "sum_pred": 3234.444439470768
+     },
+     "inactive": {
+      "n": 106748,
+      "mae": 0.2585108813035058,
+      "rmse": 0.4464354914792628,
+      "bias": 0.16706748048031536,
+      "poisson_deviance": 0.5457896268589688,
+      "sum_obs": 6441.0,
+      "sum_pred": 24275.119406312704
+     },
+     "country:AUS": {
+      "n": 52848,
+      "mae": 0.2962616895921269,
+      "rmse": 0.6324505998189327,
+      "bias": 0.14157772644600866,
+      "poisson_deviance": 0.6127824099539715,
+      "sum_obs": 5927.0,
+      "sum_pred": 13409.099687218666
+     },
+     "country:BGD": {
+      "n": 24384,
+      "mae": 0.2942556071686717,
+      "rmse": 0.7613862959277173,
+      "bias": 0.12475220713974648,
+      "poisson_deviance": 0.6155763429171661,
+      "sum_obs": 2914.0,
+      "sum_pred": 5955.957818895578
+     },
+     "country:USA": {
+      "n": 32112,
+      "mae": 0.29544992356152305,
+      "rmse": 0.6292593193586435,
+      "bias": 0.14064855317853847,
+      "poisson_deviance": 0.6059446682674877,
+      "sum_obs": 3628.0,
+      "sum_pred": 8144.506339669228
+     },
+     "season:DJF": {
+      "n": 27336,
+      "mae": 0.2859693621082206,
+      "rmse": 0.5822918078321984,
+      "bias": 0.14661850422274084,
+      "poisson_deviance": 0.5872772849374401,
+      "sum_obs": 2758.0,
+      "sum_pred": 6765.963431432843
+     },
+     "season:MAM": {
+      "n": 27336,
+      "mae": 0.29666652755998785,
+      "rmse": 0.7628770875062238,
+      "bias": 0.12727646776391882,
+      "poisson_deviance": 0.6213363390135379,
+      "sum_obs": 3251.0,
+      "sum_pred": 6730.229522794485
+     },
+     "season:JJA": {
+      "n": 27336,
+      "mae": 0.28495347826914164,
+      "rmse": 0.6090143967070482,
+      "bias": 0.14395427900860627,
+      "poisson_deviance": 0.5885418756668784,
+      "sum_obs": 2795.0,
+      "sum_pred": 6730.134170979261
+     },
+     "season:SON": {
+      "n": 27336,
+      "mae": 0.31471435031598777,
+      "rmse": 0.6808886281003035,
+      "bias": 0.13236160084053564,
+      "poisson_deviance": 0.6484339624228673,
+      "sum_obs": 3665.0,
+      "sum_pred": 7283.236720576882
+     },
+     "spatial_holdout": {
+      "n": 17952,
+      "mae": 0.2853210623070611,
+      "rmse": 0.5699565853081632,
+      "bias": 0.14723607106300307,
+      "poisson_deviance": 0.5818408880145642,
+      "sum_obs": 1788.0,
+      "sum_pred": 4431.181947723031
+     },
+     "spatial_in_sample": {
+      "n": 91392,
+      "mae": 0.29759027848867387,
+      "rmse": 0.6791822570479724,
+      "bias": 0.13565062475994005,
+      "poisson_deviance": 0.6172031021611055,
+      "sum_obs": 10681.0,
+      "sum_pred": 23078.38189806044
+     }
+    },
+    "aoi_month": {
+     "all": {
+      "n": 288,
+      "mae": 83.8993413554401,
+      "rmse": 128.22151240403792,
+      "bias": 76.8019720482019,
+      "poisson_deviance": 91.73515307389938,
+      "sum_obs": 19347.0,
+      "sum_pred": 41465.96794988215
+     },
+     "gate_units": {
+      "n": 72,
+      "mae": 115.48315343177981,
+      "rmse": 127.6286276778742,
+      "bias": 103.97003935939736,
+      "poisson_deviance": 141.92691748543473,
+      "sum_obs": 7250.0,
+      "sum_pred": 14735.84283387661
+     },
+     "kind:country": {
+      "n": 72,
+      "mae": 218.36279641340175,
+      "rmse": 236.13880786556408,
+      "bias": 208.896720080326,
+      "poisson_deviance": 220.79214345610828,
+      "sum_obs": 12469.0,
+      "sum_pred": 27509.563845783472
+     },
+     "kind:admin1": {
+      "n": 216,
+      "mae": 39.07818966945288,
+      "rmse": 57.739323378282414,
+      "bias": 32.77038937082721,
+      "poisson_deviance": 48.71615627982975,
+      "sum_obs": 6878.0,
+      "sum_pred": 13956.404104098678
+     },
+     "aoi:AUS": {
+      "n": 24,
+      "mae": 311.7541536341111,
+      "rmse": 318.9999644136973,
+      "bias": 311.7541536341111,
+      "poisson_deviance": 273.039726117545,
+      "sum_obs": 5927.0,
+      "sum_pred": 13409.099687218666
+     },
+     "aoi:AUS-NSW": {
+      "n": 24,
+      "mae": 113.35257521520059,
+      "rmse": 121.26454139148002,
+      "bias": 113.35257521520059,
+      "poisson_deviance": 124.89241207681238,
+      "sum_obs": 2323.0,
+      "sum_pred": 5043.461805164814
+     },
+     "aoi:BGD": {
+      "n": 24,
+      "mae": 155.14647145320973,
+      "rmse": 163.9582485097614,
+      "bias": 126.74824245398243,
+      "poisson_deviance": 209.3003369266189,
+      "sum_obs": 2914.0,
+      "sum_pred": 5955.957818895578
+     },
+     "aoi:BGD-A": {
+      "n": 24,
+      "mae": 11.673313142110905,
+      "rmse": 11.85040775890384,
+      "bias": 11.673313142110905,
+      "poisson_deviance": 18.3838378344032,
+      "sum_obs": 65.0,
+      "sum_pred": 345.1595154106617
+     },
+     "aoi:BGD-B": {
+      "n": 24,
+      "mae": 68.36495483232041,
+      "rmse": 79.56877780550634,
+      "bias": 20.682073334231973,
+      "poisson_deviance": 80.7291099119637,
+      "sum_obs": 1819.0,
+      "sum_pred": 2315.3697600215673
+     },
+     "aoi:BGD-C": {
+      "n": 24,
+      "mae": 26.75741866293053,
+      "rmse": 27.33881336544275,
+      "bias": 26.75741866293053,
+      "poisson_deviance": 39.13786876889364,
+      "sum_obs": 197.0,
+      "sum_pred": 839.1780479103327
+     },
+     "aoi:BGD-D": {
+      "n": 24,
+      "mae": 9.716819064070782,
+      "rmse": 9.86743350739827,
+      "bias": 9.716819064070782,
+      "poisson_deviance": 15.725389727002797,
+      "sum_obs": 45.0,
+      "sum_pred": 278.20365753769875
+     },
+     "aoi:BGD-E": {
+      "n": 24,
+      "mae": 14.950554092725119,
+      "rmse": 15.32839725787369,
+      "bias": 14.950554092725119,
+      "poisson_deviance": 20.65331598105566,
+      "sum_obs": 138.0,
+      "sum_pred": 496.81329822540283
+     },
+     "aoi:BGD-F": {
+      "n": 24,
+      "mae": 10.70071729645133,
+      "rmse": 10.954671006871497,
+      "bias": 10.554216112941504,
+      "poisson_deviance": 18.577958500258724,
+      "sum_obs": 45.0,
+      "sum_pred": 298.3011867105961
+     },
+     "aoi:BGD-G": {
+      "n": 24,
+      "mae": 18.236941092337172,
+      "rmse": 18.660346140450997,
+      "bias": 15.437234304224452,
+      "poisson_deviance": 28.757510265204626,
+      "sum_obs": 233.0,
+      "sum_pred": 603.4936233013868
+     },
+     "aoi:USA": {
+      "n": 24,
+      "mae": 188.18776415288448,
+      "rmse": 196.57396875013885,
+      "bias": 188.18776415288448,
+      "poisson_deviance": 180.03636732416098,
+      "sum_obs": 3628.0,
+      "sum_pred": 8144.506339669228
+     },
+     "aoi:USA-CA": {
+      "n": 24,
+      "mae": 77.95041362692912,
+      "rmse": 85.3217648407349,
+      "bias": 71.80930040900905,
+      "poisson_deviance": 91.588003452873,
+      "sum_obs": 2013.0,
+      "sum_pred": 3736.4232098162174
+     }
+    }
+   },
+   "interval": {
+    "q_low": -3.6945177738902992,
+    "q_high": -0.01656665157974045,
+    "n_val_aoi_months": 72,
+    "formula": "low=(\u0177+1)\u00b7exp(q_low)\u22121, high=(\u0177+1)\u00b7exp(q_high)\u22121, clipped \u22650",
+    "nominal": 0.8,
+    "fitted_on": "validation AOI-months of the gated non-overlapping regions BGD, AUS-NSW, USA-CA (one pooled interval, applied to every AOI)",
+    "test_coverage": 0.8787878787878788,
+    "n_test_aoi_months": 66,
+    "test_coverage_by_aoi": {
+     "AUS": {
+      "coverage": 1.0,
+      "n": 22,
+      "kind": "country",
+      "gated": false
+     },
+     "AUS-NSW": {
+      "coverage": 0.9545454545454546,
+      "n": 22,
+      "kind": "admin1",
+      "gated": true
+     },
+     "BGD": {
+      "coverage": 0.7727272727272727,
+      "n": 22,
+      "kind": "country",
+      "gated": true
+     },
+     "BGD-A": {
+      "coverage": 0.9545454545454546,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-B": {
+      "coverage": 0.8181818181818182,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-C": {
+      "coverage": 1.0,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-D": {
+      "coverage": 0.9545454545454546,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-E": {
+      "coverage": 1.0,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-F": {
+      "coverage": 1.0,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-G": {
+      "coverage": 0.9545454545454546,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "USA": {
+      "coverage": 1.0,
+      "n": 22,
+      "kind": "country",
+      "gated": false
+     },
+     "USA-CA": {
+      "coverage": 0.9090909090909091,
+      "n": 22,
+      "kind": "admin1",
+      "gated": true
+     }
+    }
+   },
+   "test": {
+    "cell_month": {
+     "all": {
+      "n": 100232,
+      "mae": 0.2888933241272788,
+      "rmse": 0.581860621821253,
+      "bias": 0.14350038971039814,
+      "poisson_deviance": 0.5937669653773459,
+      "sum_obs": 10493.0,
+      "sum_pred": 24876.331061452627
+     },
+     "active": {
+      "n": 2197,
+      "mae": 1.6635831257241067,
+      "rmse": 2.627039792627067,
+      "bias": -0.8931440006454913,
+      "poisson_deviance": 2.803104443478256,
+      "sum_obs": 4649.0,
+      "sum_pred": 2686.762630581856
+     },
+     "inactive": {
+      "n": 98035,
+      "mae": 0.25808602577354567,
+      "rmse": 0.43759293877849537,
+      "bias": 0.16673196746948304,
+      "poisson_deviance": 0.5442549090771703,
+      "sum_obs": 5844.0,
+      "sum_pred": 22189.56843087077
+     },
+     "country:AUS": {
+      "n": 48444,
+      "mae": 0.2836356901245112,
+      "rmse": 0.5648617702232256,
+      "bias": 0.14969411846359493,
+      "poisson_deviance": 0.585848913567077,
+      "sum_obs": 4635.0,
+      "sum_pred": 11886.781874850392
+     },
+     "country:BGD": {
+      "n": 22352,
+      "mae": 0.27517636054320127,
+      "rmse": 0.5550561729716543,
+      "bias": 0.1476629600235519,
+      "poisson_deviance": 0.5631060941989139,
+      "sum_obs": 2055.0,
+      "sum_pred": 5355.562482446432
+     },
+     "country:USA": {
+      "n": 29436,
+      "mae": 0.30796189294306137,
+      "rmse": 0.6275210387149186,
+      "bias": 0.13014630738401287,
+      "poisson_deviance": 0.6300801157536523,
+      "sum_obs": 3803.0,
+      "sum_pred": 7633.986704155803
+     },
+     "season:DJF": {
+      "n": 22780,
+      "mae": 0.27175755258829476,
+      "rmse": 0.520785817200773,
+      "bias": 0.15709369461705436,
+      "poisson_deviance": 0.5586815489741165,
+      "sum_obs": 1887.0,
+      "sum_pred": 5465.594363376498
+     },
+     "season:MAM": {
+      "n": 27336,
+      "mae": 0.27846205537882,
+      "rmse": 0.5655864962685362,
+      "bias": 0.14625035146595286,
+      "poisson_deviance": 0.5687875317621668,
+      "sum_obs": 2594.0,
+      "sum_pred": 6591.899607673287
+     },
+     "season:JJA": {
+      "n": 27336,
+      "mae": 0.2900406157465437,
+      "rmse": 0.5810307754391417,
+      "bias": 0.13858553199307383,
+      "poisson_deviance": 0.5951293667590369,
+      "sum_obs": 3006.0,
+      "sum_pred": 6794.374102562666
+     },
+     "season:SON": {
+      "n": 22780,
+      "mae": 0.3171698682212955,
+      "rmse": 0.6553412566559464,
+      "bias": 0.1325049599578655,
+      "poisson_deviance": 0.65719282046076,
+      "sum_obs": 3006.0,
+      "sum_pred": 6024.462987840176
+     },
+     "spatial_holdout": {
+      "n": 16456,
+      "mae": 0.28616158051102064,
+      "rmse": 0.5895102999712541,
+      "bias": 0.14083622117365194,
+      "poisson_deviance": 0.595848038884962,
+      "sum_obs": 1681.0,
+      "sum_pred": 3998.6008556336164
+     },
+     "spatial_in_sample": {
+      "n": 83776,
+      "mae": 0.2894299166233295,
+      "rmse": 0.5803461581655728,
+      "bias": 0.14402370853011615,
+      "poisson_deviance": 0.5933581830812068,
+      "sum_obs": 8812.0,
+      "sum_pred": 20877.73020581901
+     }
+    },
+    "aoi_month": {
+     "all": {
+      "n": 264,
+      "mae": 83.9886147658143,
+      "rmse": 129.60941617142873,
+      "bias": 81.9317484084291,
+      "poisson_deviance": 93.12712379260962,
+      "sum_obs": 15706.0,
+      "sum_pred": 37335.98157982528
+     },
+     "gate_units": {
+      "n": 66,
+      "mae": 119.25752086621343,
+      "rmse": 129.78234238485925,
+      "bias": 116.04462509850661,
+      "poisson_deviance": 146.65122566014279,
+      "sum_obs": 5483.0,
+      "sum_pred": 13141.945256501436
+     },
+     "kind:country": {
+      "n": 66,
+      "mae": 220.44781075734082,
+      "rmse": 240.26927249237607,
+      "bias": 217.929258506858,
+      "poisson_deviance": 226.2352073517955,
+      "sum_obs": 10493.0,
+      "sum_pred": 24876.331061452627
+     },
+     "kind:admin1": {
+      "n": 198,
+      "mae": 38.502216101972145,
+      "rmse": 56.16962327681752,
+      "bias": 36.599245042286135,
+      "poisson_deviance": 48.75776260621429,
+      "sum_obs": 5213.0,
+      "sum_pred": 12459.650518372655
+     },
+     "aoi:AUS": {
+      "n": 22,
+      "mae": 329.626448856836,
+      "rmse": 333.4381809139611,
+      "bias": 329.626448856836,
+      "poisson_deviance": 302.66533610266293,
+      "sum_obs": 4635.0,
+      "sum_pred": 11886.781874850392
+     },
+     "aoi:AUS-NSW": {
+      "n": 22,
+      "mae": 125.04835688593712,
+      "rmse": 127.94224190213005,
+      "bias": 125.04835688593712,
+      "poisson_deviance": 137.62687379962523,
+      "sum_obs": 1597.0,
+      "sum_pred": 4348.063851490617
+     },
+     "aoi:BGD": {
+      "n": 22,
+      "mae": 157.5812241353772,
+      "rmse": 164.89520247380722,
+      "bias": 150.02556738392875,
+      "poisson_deviance": 211.379886923649,
+      "sum_obs": 2055.0,
+      "sum_pred": 5355.562482446432
+     },
+     "aoi:BGD-A": {
+      "n": 22,
+      "mae": 11.327504675496709,
+      "rmse": 11.677557417764751,
+      "bias": 11.192519294944676,
+      "poisson_deviance": 17.81105598887493,
+      "sum_obs": 75.0,
+      "sum_pred": 321.2354244887829
+     },
+     "aoi:BGD-B": {
+      "n": 22,
+      "mae": 54.45673028989272,
+      "rmse": 57.49557084052025,
+      "bias": 40.219650225205854,
+      "poisson_deviance": 66.95454745217548,
+      "sum_obs": 1146.0,
+      "sum_pred": 2030.8323049545288
+     },
+     "aoi:BGD-C": {
+      "n": 22,
+      "mae": 27.493679543110456,
+      "rmse": 28.1432136607246,
+      "bias": 27.493679543110456,
+      "poisson_deviance": 41.24396137470176,
+      "sum_obs": 173.0,
+      "sum_pred": 777.8609499484301
+     },
+     "aoi:BGD-D": {
+      "n": 22,
+      "mae": 9.14299583502791,
+      "rmse": 9.367739877554607,
+      "bias": 8.605557159266688,
+      "poisson_deviance": 13.739718721414311,
+      "sum_obs": 78.0,
+      "sum_pred": 267.32225750386715
+     },
+     "aoi:BGD-E": {
+      "n": 22,
+      "mae": 16.13263213499026,
+      "rmse": 16.6053310870801,
+      "bias": 16.13263213499026,
+      "poisson_deviance": 23.906615628747474,
+      "sum_obs": 108.0,
+      "sum_pred": 462.9179069697857
+     },
+     "aoi:BGD-F": {
+      "n": 22,
+      "mae": 10.338382713496685,
+      "rmse": 10.691230964451982,
+      "bias": 10.338382713496685,
+      "poisson_deviance": 17.36341820094353,
+      "sum_obs": 48.0,
+      "sum_pred": 275.44441969692707
+     },
+     "aoi:BGD-G": {
+      "n": 22,
+      "mae": 17.43668126247146,
+      "rmse": 18.529904116745566,
+      "bias": 17.302476397969507,
+      "poisson_deviance": 29.22675603229176,
+      "sum_obs": 157.0,
+      "sum_pred": 537.6544807553291
+     },
+     "aoi:USA": {
+      "n": 22,
+      "mae": 174.1357592798092,
+      "rmse": 186.59185840212237,
+      "bias": 174.1357592798092,
+      "poisson_deviance": 164.6603990290747,
+      "sum_obs": 3803.0,
+      "sum_pred": 7633.986704155803
+     },
+     "aoi:USA-CA": {
+      "n": 22,
+      "mae": 75.14298157732595,
+      "rmse": 83.49086251130392,
+      "bias": 73.05995102565397,
+      "poisson_deviance": 90.94691625715423,
+      "sum_obs": 1831.0,
+      "sum_pred": 3438.3189225643873
+     }
+    }
+   }
+  },
+  "D1_mlp": {
+   "status": "ok",
+   "info": {
+    "selected_seed": 2,
+    "hidden": [
+     128,
+     128,
+     64
+    ],
+    "amp_bf16": false,
+    "n_train": 342984,
+    "n_train_eligible": 342984,
+    "device": "cpu"
+   },
+   "seed_runs": [
+    {
+     "seed": 0,
+     "epochs": 3,
+     "val": {
+      "n": 109344,
+      "mae": 0.12950083433220877,
+      "rmse": 0.5458698326780009,
+      "bias": -0.004271167394317696,
+      "poisson_deviance": 0.3269583528516708,
+      "sum_obs": 12469.0,
+      "sum_pred": 12001.973472435726
+     },
+     "history": [
+      {
+       "epoch": 0,
+       "train_loss": 0.1434924730628015,
+       "val_deviance": 0.3318435313348187
+      },
+      {
+       "epoch": 1,
+       "train_loss": 0.10556825448134391,
+       "val_deviance": 0.32922637727124043
+      },
+      {
+       "epoch": 2,
+       "train_loss": 0.09521457756791575,
+       "val_deviance": 0.3269583528516708
+      }
+     ],
+     "seconds": 92.9
+    },
+    {
+     "seed": 1,
+     "epochs": 3,
+     "val": {
+      "n": 109344,
+      "mae": 0.13034366318505414,
+      "rmse": 0.5429226404267758,
+      "bias": 0.006002258417656986,
+      "poisson_deviance": 0.32721674902420256,
+      "sum_obs": 12469.0,
+      "sum_pred": 13125.310944420286
+     },
+     "history": [
+      {
+       "epoch": 0,
+       "train_loss": 0.14225772504526604,
+       "val_deviance": 0.32721674902420256
+      },
+      {
+       "epoch": 1,
+       "train_loss": 0.09768392214416843,
+       "val_deviance": 0.33349245382093007
+      },
+      {
+       "epoch": 2,
+       "train_loss": 0.09633528074665879,
+       "val_deviance": 0.3289048011385278
+      }
+     ],
+     "seconds": 128.6
+    },
+    {
+     "seed": 2,
+     "epochs": 3,
+     "val": {
+      "n": 109344,
+      "mae": 0.12846890897334556,
+      "rmse": 0.5453724543676834,
+      "bias": 0.0018788748204604255,
+      "poisson_deviance": 0.3260645336008532,
+      "sum_obs": 12469.0,
+      "sum_pred": 12674.443688368425
+     },
+     "history": [
+      {
+       "epoch": 0,
+       "train_loss": 0.14015698040225866,
+       "val_deviance": 0.33076515508842746
+      },
+      {
+       "epoch": 1,
+       "train_loss": 0.09908076023830537,
+       "val_deviance": 0.3260645336008532
+      },
+      {
+       "epoch": 2,
+       "train_loss": 0.09901927912701762,
+       "val_deviance": 0.3275153146156959
+      }
+     ],
+     "seconds": 111.2
+    }
+   ],
+   "val": {
+    "cell_month": {
+     "all": {
+      "n": 109344,
+      "mae": 0.12846890897334556,
+      "rmse": 0.5453724543676834,
+      "bias": 0.0018788748204604255,
+      "poisson_deviance": 0.3260645336008532,
+      "sum_obs": 12469.0,
+      "sum_pred": 12674.443688368425
+     },
+     "active": {
+      "n": 2596,
+      "mae": 1.6107377263994311,
+      "rmse": 2.4273838368163907,
+      "bias": -0.036062977401588474,
+      "poisson_deviance": 2.0502276817154588,
+      "sum_obs": 6028.0,
+      "sum_pred": 5934.380510665476
+     },
+     "inactive": {
+      "n": 106748,
+      "mae": 0.0924216776431275,
+      "rmse": 0.4017117855285752,
+      "bias": 0.002801581085387534,
+      "poisson_deviance": 0.28413468449355833,
+      "sum_obs": 6441.0,
+      "sum_pred": 6740.063177702948
+     },
+     "country:AUS": {
+      "n": 52848,
+      "mae": 0.13250740092180266,
+      "rmse": 0.541137711267049,
+      "bias": 0.009889365790228977,
+      "poisson_deviance": 0.3428972690774327,
+      "sum_obs": 5927.0,
+      "sum_pred": 6449.633203282021
+     },
+     "country:BGD": {
+      "n": 24384,
+      "mae": 0.1210597909416469,
+      "rmse": 0.5780513190283916,
+      "bias": -0.014198172639860934,
+      "poisson_deviance": 0.30082237819318286,
+      "sum_obs": 2914.0,
+      "sum_pred": 2567.791758349631
+     },
+     "country:USA": {
+      "n": 32112,
+      "mae": 0.12744865833784733,
+      "rmse": 0.5264277510807931,
+      "bias": 0.0009036723572736923,
+      "poisson_deviance": 0.31752966542055805,
+      "sum_obs": 3628.0,
+      "sum_pred": 3657.018726736773
+     },
+     "season:DJF": {
+      "n": 27336,
+      "mae": 0.12362637136106723,
+      "rmse": 0.49577477256998814,
+      "bias": 0.010488367794123269,
+      "poisson_deviance": 0.3134426509380082,
+      "sum_obs": 2758.0,
+      "sum_pred": 3044.7100220201537
+     },
+     "season:MAM": {
+      "n": 27336,
+      "mae": 0.12116899591239162,
+      "rmse": 0.5811295413857203,
+      "bias": -0.01237567604194336,
+      "poisson_deviance": 0.30340706137706375,
+      "sum_obs": 3251.0,
+      "sum_pred": 2912.6985197174363
+     },
+     "season:JJA": {
+      "n": 27336,
+      "mae": 0.11415560456917258,
+      "rmse": 0.508070788784017,
+      "bias": -0.003973699735417196,
+      "poisson_deviance": 0.30384117219454654,
+      "sum_obs": 2795.0,
+      "sum_pred": 2686.3749440326355
+     },
+     "season:SON": {
+      "n": 27336,
+      "mae": 0.15492466405075084,
+      "rmse": 0.589986746061731,
+      "bias": 0.01337650726507899,
+      "poisson_deviance": 0.3835672498937944,
+      "sum_obs": 3665.0,
+      "sum_pred": 4030.6602025981992
+     },
+     "spatial_holdout": {
+      "n": 17952,
+      "mae": 0.11899129993428245,
+      "rmse": 0.49213306133917883,
+      "bias": 0.0048422721672835125,
+      "poisson_deviance": 0.301051656352973,
+      "sum_obs": 1788.0,
+      "sum_pred": 1874.9284699470736
+     },
+     "spatial_in_sample": {
+      "n": 91392,
+      "mae": 0.13033058217744725,
+      "rmse": 0.5552306500482685,
+      "bias": 0.0012967789130487479,
+      "poisson_deviance": 0.3309777773459725,
+      "sum_obs": 10681.0,
+      "sum_pred": 10799.515218421351
+     }
+    },
+    "aoi_month": {
+     "all": {
+      "n": 288,
+      "mae": 10.170849773284216,
+      "rmse": 21.864616391213307,
+      "bias": 0.5783486150709601,
+      "poisson_deviance": 2.876205096491701,
+      "sum_obs": 19347.0,
+      "sum_pred": 19513.564401140437
+     },
+     "gate_units": {
+      "n": 72,
+      "mae": 15.818125792901911,
+      "rmse": 26.10211053664372,
+      "bias": -1.262979453733553,
+      "poisson_deviance": 4.132131190719873,
+      "sum_obs": 7250.0,
+      "sum_pred": 7159.065479331184
+     },
+     "kind:country": {
+      "n": 72,
+      "mae": 23.115998114478618,
+      "rmse": 36.55092903371349,
+      "bias": 2.8533845606725663,
+      "poisson_deviance": 4.707260447950819,
+      "sum_obs": 12469.0,
+      "sum_pred": 12674.443688368425
+     },
+     "kind:admin1": {
+      "n": 216,
+      "mae": 5.855800326219415,
+      "rmse": 13.859718449666703,
+      "bias": -0.1799967001295752,
+      "poisson_deviance": 2.2658533126719953,
+      "sum_obs": 6878.0,
+      "sum_pred": 6839.120712772012
+     },
+     "aoi:AUS": {
+      "n": 24,
+      "mae": 32.47324804104088,
+      "rmse": 48.44366588694822,
+      "bias": 21.77638347008421,
+      "poisson_deviance": 5.666906477370142,
+      "sum_obs": 5927.0,
+      "sum_pred": 6449.633203282021
+     },
+     "aoi:AUS-NSW": {
+      "n": 24,
+      "mae": 14.810245789393472,
+      "rmse": 24.25559186070717,
+      "bias": 13.441012158951102,
+      "poisson_deviance": 3.6059817592198815,
+      "sum_obs": 2323.0,
+      "sum_pred": 2645.5842918148264
+     },
+     "aoi:BGD": {
+      "n": 24,
+      "mae": 19.056910521020956,
+      "rmse": 33.07912839670146,
+      "bias": -14.42534340209871,
+      "poisson_deviance": 5.091368032187888,
+      "sum_obs": 2914.0,
+      "sum_pred": 2567.791758349631
+     },
+     "aoi:BGD-A": {
+      "n": 24,
+      "mae": 1.2644111062011991,
+      "rmse": 1.7133711634925493,
+      "bias": 0.30869183064593625,
+      "poisson_deviance": 1.3275420810666543,
+      "sum_obs": 65.0,
+      "sum_pred": 72.40860393550247
+     },
+     "aoi:BGD-B": {
+      "n": 24,
+      "mae": 13.70571693519984,
+      "rmse": 26.973180395702546,
+      "bias": -11.464332684932742,
+      "poisson_deviance": 4.485473689704683,
+      "sum_obs": 1819.0,
+      "sum_pred": 1543.8560155616142
+     },
+     "aoi:BGD-C": {
+      "n": 24,
+      "mae": 2.409645036086052,
+      "rmse": 3.487776463989286,
+      "bias": -0.17554073667270131,
+      "poisson_deviance": 1.453030293656025,
+      "sum_obs": 197.0,
+      "sum_pred": 192.78702231985517
+     },
+     "aoi:BGD-D": {
+      "n": 24,
+      "mae": 1.0620548446992568,
+      "rmse": 1.53065398645616,
+      "bias": 0.10615069674289164,
+      "poisson_deviance": 1.3003274691095592,
+      "sum_obs": 45.0,
+      "sum_pred": 47.5476167218294
+     },
+     "aoi:BGD-E": {
+      "n": 24,
+      "mae": 1.4005003615554112,
+      "rmse": 2.1539188520388164,
+      "bias": -0.9025432343866365,
+      "poisson_deviance": 1.0955535813789643,
+      "sum_obs": 138.0,
+      "sum_pred": 116.33896237472072
+     },
+     "aoi:BGD-F": {
+      "n": 24,
+      "mae": 1.5403024962094303,
+      "rmse": 2.690009233972519,
+      "bias": 0.6097042152347664,
+      "poisson_deviance": 1.7801644225258446,
+      "sum_obs": 45.0,
+      "sum_pred": 59.632901165634394
+     },
+     "aoi:BGD-G": {
+      "n": 24,
+      "mae": 2.9221052983387685,
+      "rmse": 4.714156109868076,
+      "bias": -0.7385054286957408,
+      "poisson_deviance": 1.6455627366344923,
+      "sum_obs": 233.0,
+      "sum_pred": 215.27586971130222
+     },
+     "aoi:USA": {
+      "n": 24,
+      "mae": 17.817835781374015,
+      "rmse": 23.809530437010856,
+      "bias": 1.2091136140322003,
+      "poisson_deviance": 3.3635068342944265,
+      "sum_obs": 3628.0,
+      "sum_pred": 3657.018726736773
+     },
+     "aoi:USA-CA": {
+      "n": 24,
+      "mae": 13.587221068291305,
+      "rmse": 19.010472150970802,
+      "bias": -2.804607118053051,
+      "poisson_deviance": 3.6990437807518517,
+      "sum_obs": 2013.0,
+      "sum_pred": 1945.6894291667268
+     }
+    }
+   },
+   "interval": {
+    "q_low": -0.5505083151461758,
+    "q_high": 0.31264656173493244,
+    "n_val_aoi_months": 72,
+    "formula": "low=(\u0177+1)\u00b7exp(q_low)\u22121, high=(\u0177+1)\u00b7exp(q_high)\u22121, clipped \u22650",
+    "nominal": 0.8,
+    "fitted_on": "validation AOI-months of the gated non-overlapping regions BGD, AUS-NSW, USA-CA (one pooled interval, applied to every AOI)",
+    "test_coverage": 0.8181818181818182,
+    "n_test_aoi_months": 66,
+    "test_coverage_by_aoi": {
+     "AUS": {
+      "coverage": 1.0,
+      "n": 22,
+      "kind": "country",
+      "gated": false
+     },
+     "AUS-NSW": {
+      "coverage": 0.8181818181818182,
+      "n": 22,
+      "kind": "admin1",
+      "gated": true
+     },
+     "BGD": {
+      "coverage": 0.8181818181818182,
+      "n": 22,
+      "kind": "country",
+      "gated": true
+     },
+     "BGD-A": {
+      "coverage": 0.8636363636363636,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-B": {
+      "coverage": 0.6363636363636364,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-C": {
+      "coverage": 0.5454545454545454,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-D": {
+      "coverage": 0.6363636363636364,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-E": {
+      "coverage": 0.5454545454545454,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-F": {
+      "coverage": 0.5909090909090909,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "BGD-G": {
+      "coverage": 0.6818181818181818,
+      "n": 22,
+      "kind": "admin1",
+      "gated": false
+     },
+     "USA": {
+      "coverage": 1.0,
+      "n": 22,
+      "kind": "country",
+      "gated": false
+     },
+     "USA-CA": {
+      "coverage": 0.8181818181818182,
+      "n": 22,
+      "kind": "admin1",
+      "gated": true
+     }
+    }
+   },
+   "test": {
+    "cell_month": {
+     "all": {
+      "n": 100232,
+      "mae": 0.12362296126721857,
+      "rmse": 0.5176126540629101,
+      "bias": 0.0010152845217321577,
+      "poisson_deviance": 0.3241674929939094,
+      "sum_obs": 10493.0,
+      "sum_pred": 10594.763998182258
+     },
+     "active": {
+      "n": 2197,
+      "mae": 1.5108550806878696,
+      "rmse": 2.153184132022227,
+      "bias": -0.008375197353963153,
+      "poisson_deviance": 1.9849430386896807,
+      "sum_obs": 4649.0,
+      "sum_pred": 4630.599691413343
+     },
+     "inactive": {
+      "n": 98035,
+      "mae": 0.09253458501009439,
+      "rmse": 0.4123446831266903,
+      "bias": 0.001225728635374251,
+      "poisson_deviance": 0.2869489090810863,
+      "sum_obs": 5844.0,
+      "sum_pred": 5964.164306768915
+     },
+     "country:AUS": {
+      "n": 48444,
+      "mae": 0.11897047007035862,
+      "rmse": 0.5102514872310374,
+      "bias": 0.005735777449109637,
+      "poisson_deviance": 0.31942014853900125,
+      "sum_obs": 4635.0,
+      "sum_pred": 4912.864002744667
+     },
+     "country:BGD": {
+      "n": 22352,
+      "mae": 0.10748888895388034,
+      "rmse": 0.4806003962190271,
+      "bias": -0.0011222406045828547,
+      "poisson_deviance": 0.27751363003178836,
+      "sum_obs": 2055.0,
+      "sum_pred": 2029.915678006364
+     },
+     "country:USA": {
+      "n": 29436,
+      "mae": 0.14353103532240338,
+      "rmse": 0.5553645096377925,
+      "bias": -0.005130305835329992,
+      "poisson_deviance": 0.36740663892755887,
+      "sum_obs": 3803.0,
+      "sum_pred": 3651.9843174312264
+     },
+     "season:DJF": {
+      "n": 22780,
+      "mae": 0.1089964039544628,
+      "rmse": 0.48465265018937254,
+      "bias": 0.014230917859475002,
+      "poisson_deviance": 0.2854412929503349,
+      "sum_obs": 1887.0,
+      "sum_pred": 2211.1803088388406
+     },
+     "season:MAM": {
+      "n": 27336,
+      "mae": 0.10768759192540527,
+      "rmse": 0.49154962521297446,
+      "bias": -0.005447239625465424,
+      "poisson_deviance": 0.27804351162974456,
+      "sum_obs": 2594.0,
+      "sum_pred": 2445.094257598277
+     },
+     "season:JJA": {
+      "n": 27336,
+      "mae": 0.12255797538212375,
+      "rmse": 0.5123026934359883,
+      "bias": -0.00701080087522697,
+      "poisson_deviance": 0.33282470537436093,
+      "sum_obs": 3006.0,
+      "sum_pred": 2814.3527472747955
+     },
+     "season:SON": {
+      "n": 22780,
+      "mae": 0.15864994485226408,
+      "rmse": 0.5823077284464775,
+      "bias": 0.005185982636977364,
+      "poisson_deviance": 0.40785381581794,
+      "sum_obs": 3006.0,
+      "sum_pred": 3124.1366844703443
+     },
+     "spatial_holdout": {
+      "n": 16456,
+      "mae": 0.12013896427226063,
+      "rmse": 0.5602846388011203,
+      "bias": -0.006361257412557354,
+      "poisson_deviance": 0.3340423578975058,
+      "sum_obs": 1681.0,
+      "sum_pred": 1576.3191480189562
+     },
+     "spatial_in_sample": {
+      "n": 83776,
+      "mae": 0.12430731781979959,
+      "rmse": 0.5088103062720327,
+      "bias": 0.0024642481159675976,
+      "poisson_deviance": 0.32222778738784585,
+      "sum_obs": 8812.0,
+      "sum_pred": 9018.444850163301
+     }
+    },
+    "aoi_month": {
+     "all": {
+      "n": 264,
+      "mae": 8.958588110670187,
+      "rmse": 18.307136291737116,
+      "bias": 1.2076916468892402,
+      "poisson_deviance": 2.84676879040726,
+      "sum_obs": 15706.0,
+      "sum_pred": 16024.83059477876
+     },
+     "gate_units": {
+      "n": 66,
+      "mae": 12.951505588519273,
+      "rmse": 21.85957356957449,
+      "bias": 2.8638234654490864,
+      "poisson_deviance": 3.530391148802663,
+      "sum_obs": 5483.0,
+      "sum_pred": 5672.01234871964
+     },
+     "kind:country": {
+      "n": 66,
+      "mae": 20.354784490332488,
+      "rmse": 30.951857915306658,
+      "bias": 1.541878760337237,
+      "poisson_deviance": 3.906378787792089,
+      "sum_obs": 10493.0,
+      "sum_pred": 10594.763998182258
+     },
+     "kind:admin1": {
+      "n": 198,
+      "mae": 5.159855984116086,
+      "rmse": 11.292880477061953,
+      "bias": 1.0962959424065746,
+      "poisson_deviance": 2.4935654579456497,
+      "sum_obs": 5213.0,
+      "sum_pred": 5430.066596596502
+     },
+     "aoi:AUS": {
+      "n": 22,
+      "mae": 28.2789670704356,
+      "rmse": 41.40971170777541,
+      "bias": 12.63018194293942,
+      "poisson_deviance": 5.219690532188512,
+      "sum_obs": 4635.0,
+      "sum_pred": 4912.864002744667
+     },
+     "aoi:AUS-NSW": {
+      "n": 22,
+      "mae": 15.624385445548052,
+      "rmse": 26.37699121935622,
+      "bias": 11.35930552477525,
+      "poisson_deviance": 5.238611051188333,
+      "sum_obs": 1597.0,
+      "sum_pred": 1846.9047215450555
+     },
+     "aoi:BGD": {
+      "n": 22,
+      "mae": 13.594435259562239,
+      "rmse": 23.257961185484668,
+      "bias": -1.1401964542561804,
+      "poisson_deviance": 3.2005321935864064,
+      "sum_obs": 2055.0,
+      "sum_pred": 2029.915678006364
+     },
+     "aoi:BGD-A": {
+      "n": 22,
+      "mae": 1.2842615871076388,
+      "rmse": 2.6529237024550123,
+      "bias": -0.13292332938660614,
+      "poisson_deviance": 1.4141306819654553,
+      "sum_obs": 75.0,
+      "sum_pred": 72.07568675349467
+     },
+     "aoi:BGD-B": {
+      "n": 22,
+      "mae": 8.83223470052789,
+      "rmse": 13.523096630434353,
+      "bias": -2.240877911554311,
+      "poisson_deviance": 2.9751920943418924,
+      "sum_obs": 1146.0,
+      "sum_pred": 1096.7006859458052
+     },
+     "aoi:BGD-C": {
+      "n": 22,
+      "mae": 2.7782331550684334,
+      "rmse": 4.353180995957408,
+      "bias": 1.434404758323746,
+      "poisson_deviance": 2.4408152808443386,
+      "sum_obs": 173.0,
+      "sum_pred": 204.5569046831224
+     },
+     "aoi:BGD-D": {
+      "n": 22,
+      "mae": 1.9369004906938327,
+      "rmse": 3.5888881165274604,
+      "bias": -0.614539235777391,
+      "poisson_deviance": 2.5436672711003423,
+      "sum_obs": 78.0,
+      "sum_pred": 64.4801368128974
+     },
+     "aoi:BGD-E": {
+      "n": 22,
+      "mae": 2.5557332160268826,
+      "rmse": 3.959388561336396,
+      "bias": 0.8175403560956263,
+      "poisson_deviance": 2.1809330285215616,
+      "sum_obs": 108.0,
+      "sum_pred": 125.98588783410378
+     },
+     "aoi:BGD-F": {
+      "n": 22,
+      "mae": 1.6516832577233964,
+      "rmse": 2.5223018010809217,
+      "bias": 0.3983621652322737,
+      "poisson_deviance": 1.8319268028693416,
+      "sum_obs": 48.0,
+      "sum_pred": 56.76396763511002
+     },
+     "aoi:BGD-G": {
+      "n": 22,
+      "mae": 2.139575943901119,
+      "rmse": 3.375058562225076,
+      "bias": 0.47302982812239364,
+      "poisson_deviance": 1.664782709046338,
+      "sum_obs": 157.0,
+      "sum_pred": 167.40665621869266
+     },
+     "aoi:USA": {
+      "n": 22,
+      "mae": 19.190951140999626,
+      "rmse": 24.866755779582732,
+      "bias": -6.864349207671529,
+      "poisson_deviance": 3.298913637601348,
+      "sum_obs": 3803.0,
+      "sum_pred": 3651.9843174312264
+     },
+     "aoi:USA-CA": {
+      "n": 22,
+      "mae": 9.63569606044753,
+      "rmse": 14.030126358640274,
+      "bias": -1.6276386741718107,
+      "poisson_deviance": 2.1520302016332473,
+      "sum_obs": 1831.0,
+      "sum_pred": 1795.1919491682202
+     }
+    }
+   },
+   "onnx": {
+    "path": "models/D1_mlp/model.onnx",
+    "input": "x: float32[N, 16] raw features in FEATURES order",
+    "output": "rate: float32[N]",
+    "input_name": "x",
+    "output_name": "rate",
+    "input_features": [
+     "aqua_count",
+     "aqua_day",
+     "aqua_night",
+     "aqua_frp_sum",
+     "aqua_frp_mean",
+     "aqua_conf_mean",
+     "aqua_scan_mean",
+     "terra_count",
+     "aqua_count_3x3",
+     "month_sin",
+     "month_cos",
+     "lat",
+     "aqua_clim",
+     "country_AUS",
+     "country_BGD",
+     "country_USA"
+    ],
+    "opset": 17,
+    "dynamic_axes": {
+     "x": [
+      0
+     ],
+     "rate": [
+      0
+     ]
+    },
+    "preprocessing": "embedded (log1p on LOG1P features, then (z-mean)/scale); feed RAW feature values",
+    "sha256": "b9a7afdc585245be5e7f7f487f29203427f0c57f1e1770bc120ae1d388a05306",
+    "parity": {
+     "n": 2048,
+     "max_abs_diff": 1.430511474609375e-06,
+     "max_rel_diff": 1.0320138699171366e-06,
+     "passed": true
+    }
+   }
+  },
+  "Q1_vqc": {
+   "status": "ok",
+   "subset_only": true,
+   "info": {
+    "config": {
+     "n_qubits": 8,
+     "layers": 3,
+     "encoding": "angle+reupload",
+     "entangler": "ring",
+     "lr": 0.03
+    },
+    "selected_seed": 1,
+    "n_train_subset": 600,
+    "n_val_eval": 3000,
+    "simulator": "built-in torch statevector (complex64)",
+    "pennylane_crosscheck": {
+     "status": "skipped",
+     "reason": "pennylane not importable: ModuleNotFoundError(\"No module named 'pennylane'\")"
+    }
+   },
+   "seed_runs": [
+    {
+     "seed": 0,
+     "epochs": 4,
+     "val": {
+      "n": 3000,
+      "mae": 0.2751029670039813,
+      "rmse": 0.8696355650338923,
+      "bias": 0.056744943926731746,
+      "poisson_deviance": 0.8571447632487654,
+      "sum_obs": 349.0,
+      "sum_pred": 519.2348317801952
+     },
+     "history": [
+      {
+       "epoch": 0,
+       "val_deviance": 0.8651927063651486
+      },
+      {
+       "epoch": 1,
+       "val_deviance": 0.8642351391944489
+      },
+      {
+       "epoch": 2,
+       "val_deviance": 0.8623271691477487
+      },
+      {
+       "epoch": 3,
+       "val_deviance": 0.8571447632487654
+      }
+     ],
+     "seconds": 62.0
+    },
+    {
+     "seed": 1,
+     "epochs": 4,
+     "val": {
+      "n": 3000,
+      "mae": 0.27520564425488314,
+      "rmse": 0.8690001962977603,
+      "bias": 0.05721117345988751,
+      "poisson_deviance": 0.8512192745136513,
+      "sum_obs": 349.0,
+      "sum_pred": 520.6335203796625
+     },
+     "history": [
+      {
+       "epoch": 0,
+       "val_deviance": 0.8590235180964552
+      },
+      {
+       "epoch": 1,
+       "val_deviance": 0.8608676843398063
+      },
+      {
+       "epoch": 2,
+       "val_deviance": 0.8578324847270467
+      },
+      {
+       "epoch": 3,
+       "val_deviance": 0.8512192745136513
+      }
+     ],
+     "seconds": 54.5
+    },
+    {
+     "seed": 2,
+     "epochs": 4,
+     "val": {
+      "n": 3000,
+      "mae": 0.2776570846339067,
+      "rmse": 0.8691456454255412,
+      "bias": 0.060102526942888895,
+      "poisson_deviance": 0.8521554705271668,
+      "sum_obs": 349.0,
+      "sum_pred": 529.3075808286667
+     },
+     "history": [
+      {
+       "epoch": 0,
+       "val_deviance": 0.8625724098833095
+      },
+      {
+       "epoch": 1,
+       "val_deviance": 0.8573268083885708
+      },
+      {
+       "epoch": 2,
+       "val_deviance": 0.854936105787778
+      },
+      {
+       "epoch": 3,
+       "val_deviance": 0.8521554705271668
+      }
+     ],
+     "seconds": 59.6
+    }
+   ],
+   "val": {
+    "cell_month_subset": {
+     "n": 3000,
+     "mae": 0.27520564425488314,
+     "rmse": 0.8690001962977603,
+     "bias": 0.05721117345988751,
+     "poisson_deviance": 0.8512192745136513,
+     "sum_obs": 349.0,
+     "sum_pred": 520.6335203796625
+    }
+   },
+   "test": {
+    "cell_month_subset": {
+     "n": 3000,
+     "mae": 0.2507609645674626,
+     "rmse": 0.5663442053077979,
+     "bias": 0.0823915997693936,
+     "poisson_deviance": 0.674544668933534,
+     "sum_obs": 273.0,
+     "sum_pred": 520.1747993081808
+    }
+   }
+  },
+  "Q2_qllm": {
+   "status": "skipped",
+   "error": "skipped: no local LLM within the size cap under <input>"
+  }
+ },
+ "multi_seed": {
+  "B2_xgb": {
+   "val_mae_mean": 0.29611248256832706,
+   "val_mae_sd": 0.0004748151265424266,
+   "val_dev_mean": 0.6131570235931162,
+   "val_dev_sd": 0.001557613352207988,
+   "seeds": [
+    0,
+    1,
+    2
+   ]
+  },
+  "D1_mlp": {
+   "val_mae_mean": 0.12943780216353615,
+   "val_mae_sd": 0.0009389651906729228,
+   "val_dev_mean": 0.32674654515890883,
+   "val_dev_sd": 0.0006046048043853899,
+   "seeds": [
+    0,
+    1,
+    2
+   ]
+  },
+  "Q1_vqc": {
+   "val_mae_mean": 0.27598856529759036,
+   "val_mae_sd": 0.0014458918480333486,
+   "val_dev_mean": 0.8535065027631945,
+   "val_dev_sd": 0.003185407393816469,
+   "seeds": [
+    0,
+    1,
+    2
+   ]
+  }
+ },
+ "qml_subset_comparison": {
+  "status": "ok",
+  "config": {
+   "n_qubits": 8,
+   "layers": 3,
+   "encoding": "angle+reupload",
+   "entangler": "ring",
+   "lr": 0.03
+  },
+  "selected_seed": 1,
+  "n_train_subset": 600,
+  "n_val_eval": 3000,
+  "subset_rule": "stratified by aqua_count>0 (feature), inverse-probability weights",
+  "simulator": "built-in torch statevector (complex64)",
+  "device": "cpu",
+  "pennylane_crosscheck": {
+   "status": "skipped",
+   "reason": "pennylane not importable: ModuleNotFoundError(\"No module named 'pennylane'\")"
+  },
+  "pca_explained_variance": [
+   0.45273664593696594,
+   0.16678380966186523,
+   0.09367623925209045,
+   0.07080022990703583,
+   0.053114376962184906,
+   0.0523395836353302,
+   0.04219549521803856,
+   0.02291492559015751
+  ],
+  "seed_runs": [
+   {
+    "seed": 0,
+    "epochs": 4,
+    "val": {
+     "n": 3000,
+     "mae": 0.2751029670039813,
+     "rmse": 0.8696355650338923,
+     "bias": 0.056744943926731746,
+     "poisson_deviance": 0.8571447632487654,
+     "sum_obs": 349.0,
+     "sum_pred": 519.2348317801952
+    },
+    "history": [
+     {
+      "epoch": 0,
+      "val_deviance": 0.8651927063651486
+     },
+     {
+      "epoch": 1,
+      "val_deviance": 0.8642351391944489
+     },
+     {
+      "epoch": 2,
+      "val_deviance": 0.8623271691477487
+     },
+     {
+      "epoch": 3,
+      "val_deviance": 0.8571447632487654
+     }
+    ],
+    "seconds": 62.0
+   },
+   {
+    "seed": 1,
+    "epochs": 4,
+    "val": {
+     "n": 3000,
+     "mae": 0.27520564425488314,
+     "rmse": 0.8690001962977603,
+     "bias": 0.05721117345988751,
+     "poisson_deviance": 0.8512192745136513,
+     "sum_obs": 349.0,
+     "sum_pred": 520.6335203796625
+    },
+    "history": [
+     {
+      "epoch": 0,
+      "val_deviance": 0.8590235180964552
+     },
+     {
+      "epoch": 1,
+      "val_deviance": 0.8608676843398063
+     },
+     {
+      "epoch": 2,
+      "val_deviance": 0.8578324847270467
+     },
+     {
+      "epoch": 3,
+      "val_deviance": 0.8512192745136513
+     }
+    ],
+    "seconds": 54.5
+   },
+   {
+    "seed": 2,
+    "epochs": 4,
+    "val": {
+     "n": 3000,
+     "mae": 0.2776570846339067,
+     "rmse": 0.8691456454255412,
+     "bias": 0.060102526942888895,
+     "poisson_deviance": 0.8521554705271668,
+     "sum_obs": 349.0,
+     "sum_pred": 529.3075808286667
+    },
+    "history": [
+     {
+      "epoch": 0,
+      "val_deviance": 0.8625724098833095
+     },
+     {
+      "epoch": 1,
+      "val_deviance": 0.8573268083885708
+     },
+     {
+      "epoch": 2,
+      "val_deviance": 0.854936105787778
+     },
+     {
+      "epoch": 3,
+      "val_deviance": 0.8521554705271668
+     }
+    ],
+    "seconds": 59.6
+   }
+  ],
+  "val_subset": {
+   "B0_identity@subset": {
+    "n": 3000,
+    "mae": 0.10366666666666667,
+    "rmse": 0.7600438583836242,
+    "bias": -0.07833333333333334,
+    "poisson_deviance": 2.112955650028136,
+    "sum_obs": 349.0,
+    "sum_pred": 114.0
+   },
+   "B0_ratio@subset": {
+    "n": 3000,
+    "mae": 0.14761282348632812,
+    "rmse": 0.9255875126185161,
+    "bias": 0.02017831341425578,
+    "poisson_deviance": 2.1360589101787038,
+    "sum_obs": 349.0,
+    "sum_pred": 409.53494024276733
+   },
+   "B1_poisson@subset": {
+    "n": 3000,
+    "mae": 0.177783819116652,
+    "rmse": 0.8529602610057729,
+    "bias": -0.0015119872043530146,
+    "poisson_deviance": 0.4856584842079611,
+    "sum_obs": 349.0,
+    "sum_pred": 344.46403838694096
+   },
+   "B2_xgb@subset": {
+    "n": 3000,
+    "mae": 0.3121020477116108,
+    "rmse": 0.8013071007987304,
+    "bias": 0.13508449202775955,
+    "poisson_deviance": 0.691013959331786,
+    "sum_obs": 349.0,
+    "sum_pred": 754.2534760832787
+   },
+   "D1_mlp@subset": {
+    "n": 3000,
+    "mae": 0.17626425167297324,
+    "rmse": 0.7197688650338468,
+    "bias": 0.0013619476767877737,
+    "poisson_deviance": 0.46126956897338806,
+    "sum_obs": 349.0,
+    "sum_pred": 353.0858430303633
+   },
+   "Q1_vqc": {
+    "n": 3000,
+    "mae": 0.27520564425488314,
+    "rmse": 0.8690001962977603,
+    "bias": 0.05721117345988751,
+    "poisson_deviance": 0.8512192745136513,
+    "sum_obs": 349.0,
+    "sum_pred": 520.6335203796625
+   },
+   "B0_identity@full_data": {
+    "n": 3000,
+    "mae": 0.10366666666666667,
+    "rmse": 0.7600438583836242,
+    "bias": -0.07833333333333334,
+    "poisson_deviance": 2.112955650028136,
+    "sum_obs": 349.0,
+    "sum_pred": 114.0
+   },
+   "B0_month_ratio@full_data": {
+    "n": 3000,
+    "mae": 0.14782473293940226,
+    "rmse": 0.9309298968833191,
+    "bias": 0.019060130755106607,
+    "poisson_deviance": 2.1363575103662886,
+    "sum_obs": 349.0,
+    "sum_pred": 406.1803922653198
+   },
+   "B1_poisson@full_data": {
+    "n": 3000,
+    "mae": 0.1591580286261936,
+    "rmse": 0.6624289801639571,
+    "bias": -0.006378353117654721,
+    "poisson_deviance": 0.39713210933333715,
+    "sum_obs": 349.0,
+    "sum_pred": 329.86494064703584
+   },
+   "B2_xgb@full_data": {
+    "n": 3000,
+    "mae": 0.29748171265920004,
+    "rmse": 0.7648953010343441,
+    "bias": 0.13614855696757636,
+    "poisson_deviance": 0.6105545519212894,
+    "sum_obs": 349.0,
+    "sum_pred": 757.445670902729
+   },
+   "D1_mlp@full_data": {
+    "n": 3000,
+    "mae": 0.12876112625460762,
+    "rmse": 0.6205564288524633,
+    "bias": 0.0037942216181351494,
+    "poisson_deviance": 0.27528520505183757,
+    "sum_obs": 349.0,
+    "sum_pred": 360.38266485440545
+   }
+  },
+  "n_test_eval": 3000,
+  "test_subset": {
+   "B0_identity@subset": {
+    "n": 3000,
+    "mae": 0.087,
+    "rmse": 0.5237683966538391,
+    "bias": -0.069,
+    "poisson_deviance": 2.718045622967847,
+    "sum_obs": 273.0,
+    "sum_pred": 66.0
+   },
+   "B0_ratio@subset": {
+    "n": 3000,
+    "mae": 0.12111996014912924,
+    "rmse": 0.708564524476726,
+    "bias": -0.011966941833496093,
+    "poisson_deviance": 2.764760354090531,
+    "sum_obs": 273.0,
+    "sum_pred": 237.09917449951172
+   },
+   "B1_poisson@subset": {
+    "n": 3000,
+    "mae": 0.15024656104296447,
+    "rmse": 0.5146559797888511,
+    "bias": 0.003420073818415403,
+    "poisson_deviance": 0.4649534447673585,
+    "sum_obs": 273.0,
+    "sum_pred": 283.2602214552462
+   },
+   "B2_xgb@subset": {
+    "n": 3000,
+    "mae": 0.29047504792610807,
+    "rmse": 0.5403246932389653,
+    "bias": 0.14973961412906647,
+    "poisson_deviance": 0.6417873320859296,
+    "sum_obs": 273.0,
+    "sum_pred": 722.2188423871994
+   },
+   "D1_mlp@subset": {
+    "n": 3000,
+    "mae": 0.1598770679831505,
+    "rmse": 0.5040380247971159,
+    "bias": 0.01050458109130462,
+    "poisson_deviance": 0.4924767837343108,
+    "sum_obs": 273.0,
+    "sum_pred": 304.51374327391386
+   },
+   "Q1_vqc": {
+    "n": 3000,
+    "mae": 0.2507609645674626,
+    "rmse": 0.5663442053077979,
+    "bias": 0.0823915997693936,
+    "poisson_deviance": 0.674544668933534,
+    "sum_obs": 273.0,
+    "sum_pred": 520.1747993081808
+   },
+   "B0_identity@full_data": {
+    "n": 3000,
+    "mae": 0.087,
+    "rmse": 0.5237683966538391,
+    "bias": -0.069,
+    "poisson_deviance": 2.718045622967847,
+    "sum_obs": 273.0,
+    "sum_pred": 66.0
+   },
+   "B0_ratio@full_data": {
+    "n": 3000,
+    "mae": 0.12011367734273275,
+    "rmse": 0.7017598876259319,
+    "bias": -0.013112022399902343,
+    "poisson_deviance": 2.763238842619953,
+    "sum_obs": 273.0,
+    "sum_pred": 233.66393280029297
+   },
+   "B0_month_ratio@full_data": {
+    "n": 3000,
+    "mae": 0.1198860216140747,
+    "rmse": 0.694427583431969,
+    "bias": -0.013500407854715983,
+    "poisson_deviance": 2.762302459907058,
+    "sum_obs": 273.0,
+    "sum_pred": 232.49877643585205
+   },
+   "B1_poisson@full_data": {
+    "n": 3000,
+    "mae": 0.1413968610788385,
+    "rmse": 0.4879701771403045,
+    "bias": -0.001838610328733921,
+    "poisson_deviance": 0.42929321630088785,
+    "sum_obs": 273.0,
+    "sum_pred": 267.48416901379824
+   },
+   "B2_xgb@full_data": {
+    "n": 3000,
+    "mae": 0.2808125723749399,
+    "rmse": 0.5098764709620449,
+    "bias": 0.15333799923956395,
+    "poisson_deviance": 0.5885506292447624,
+    "sum_obs": 273.0,
+    "sum_pred": 733.0139977186918
+   },
+   "D1_mlp@full_data": {
+    "n": 3000,
+    "mae": 0.11711839327542112,
+    "rmse": 0.46254241871289736,
+    "bias": 0.0011205112923247118,
+    "poisson_deviance": 0.3635693053485702,
+    "sum_obs": 273.0,
+    "sum_pred": 276.36153387697414
+   }
+  }
+ },
+ "qllm": {
+  "status": "skipped",
+  "reason": "skipped: no local LLM within the size cap under <input>",
+  "llm_search": {
+   "size_cap_gb": 0.5,
+   "free_ram_gb": 1.0,
+   "free_vram_gb": null,
+   "too_large": []
+  }
+ },
+ "backcast_summary": {
+  "BGD": {
+   "est_total_2003_2012": 11800.90334391594,
+   "aqua_total_2003_2012": 3874.0,
+   "months_estimated": 109
+  },
+  "BGD-A": {
+   "est_total_2003_2012": 320.8712332248688,
+   "aqua_total_2003_2012": 110.0,
+   "months_estimated": 109
+  },
+  "BGD-B": {
+   "est_total_2003_2012": 6550.754380702972,
+   "aqua_total_2003_2012": 2114.0,
+   "months_estimated": 109
+  },
+  "BGD-C": {
+   "est_total_2003_2012": 961.5971586704254,
+   "aqua_total_2003_2012": 320.0,
+   "months_estimated": 109
+  },
+  "BGD-D": {
+   "est_total_2003_2012": 260.59346318244934,
+   "aqua_total_2003_2012": 84.0,
+   "months_estimated": 109
+  },
+  "BGD-E": {
+   "est_total_2003_2012": 702.806512594223,
+   "aqua_total_2003_2012": 250.0,
+   "months_estimated": 109
+  },
+  "BGD-F": {
+   "est_total_2003_2012": 287.4393527507782,
+   "aqua_total_2003_2012": 99.0,
+   "months_estimated": 109
+  },
+  "BGD-G": {
+   "est_total_2003_2012": 1031.8353085517883,
+   "aqua_total_2003_2012": 339.0,
+   "months_estimated": 109
+  },
+  "AUS": {
+   "est_total_2003_2012": 30949.093187332153,
+   "aqua_total_2003_2012": 9291.0,
+   "months_estimated": 109
+  },
+  "AUS-NSW": {
+   "est_total_2003_2012": 13244.448563814163,
+   "aqua_total_2003_2012": 3866.0,
+   "months_estimated": 109
+  },
+  "USA": {
+   "est_total_2003_2012": 18317.17937350273,
+   "aqua_total_2003_2012": 5817.0,
+   "months_estimated": 109
+  },
+  "USA-CA": {
+   "est_total_2003_2012": 9527.639549255371,
+   "aqua_total_2003_2012": 2951.0,
+   "months_estimated": 109
+  }
+ },
+ "split_manifest": {
+  "contract_version": "1.0+v1.1",
+  "backcast_years": [
+   2003,
+   2004,
+   2005,
+   2006,
+   2007,
+   2008,
+   2009,
+   2010,
+   2011,
+   2012
+  ],
+  "train_years": [
+   2013,
+   2014,
+   2015,
+   2016,
+   2017,
+   2018,
+   2019,
+   2020
+  ],
+  "val_years": [
+   2021,
+   2022
+  ],
+  "test_years": [
+   2023,
+   2024
+  ],
+  "spatial_holdout": {
+   "block_size_cells": 20,
+   "block_size_km": 100,
+   "fraction": 0.2,
+   "rule": "sha256('lumos-block-v1:{bx}_{by}')[:8] as int % 10000 < 2000; bx=floor(ix/20), by=floor(iy/20)",
+   "n_blocks": 296,
+   "n_holdout_blocks": 50,
+   "n_holdout_cells": 748,
+   "n_cells": 4556
+  },
+  "row_id_encoding": "int64 triples (country_index, cell_key=(ix+5000)*10000+(iy+2000), year*12+month-1), C-order, sha256 of bytes",
+  "countries": [
+   "Australia",
+   "Bangladesh",
+   "United_States"
+  ],
+  "rows": {
+   "train": 342984,
+   "val": 109344,
+   "test": 100232
+  },
+  "sha256": {
+   "train": "d92b09dd4442f58b8d406e26a150a0129a7210c9adc9e8e346d94ba524749936",
+   "val": "6b3332b4f3bcf57dd95803096d04c50a99d122bab8b03b4219bf4ec1c26008fe",
+   "test": "6fb998171bb2c08b325bbed9959a3215fbbef02348dcf779dc1265f531a35e57"
+  },
+  "eligibility": "rows with all features finite and target finite (source months COMPLETE: partial months such as S-NPP Jan 2012 or the last month of a current-year file are excluded); train excludes spatial-holdout blocks"
+ },
+ "checksum_report": {
+  "ok": 121,
+  "mismatch": [],
+  "missing_file": [],
+  "no_hash": []
+ },
+ "panel_memory": {
+  "n_cells": 4556,
+  "cells_per_country": {
+   "Australia": 2202,
+   "Bangladesh": 1016,
+   "United_States": 1338
+  },
+  "n_months": 300,
+  "cell_months": 1366800,
+  "bytes_per_cell_month": 93,
+  "panel_gb": 0.13,
+  "peak_country_build_gb": 0.09,
+  "free_ram_gb_at_start": 2.5,
+  "guard": {
+   "fraction_of_free_ram": 0.9,
+   "optional_countries": [
+    "United_States"
+   ],
+   "dropped": [],
+   "estimate_if_all_kept_gb": 0.13,
+   "free_ram_gb": 2.5,
+   "measured_on_real_data": false,
+   "note": "estimate from real cell counts, not a measurement; unmeasured until the first real run"
+  },
+  "rss_gb_after_panel": 0.44
+ },
+ "timings_s": {
+  "env_probe": 8.66,
+  "bundle_verify": 0.41,
+  "ingest": 17.5,
+  "panel": 4.93,
+  "aoi_assign": 0.32,
+  "splits": 0.32,
+  "B0": 0.44,
+  "B1_poisson": 29.76,
+  "B2_xgb": 80.6,
+  "D1_mlp": 341.85,
+  "val_eval": 1.7,
+  "test_eval": 1.85,
+  "backcast_series": 2.36,
+  "export": 64.6,
+  "Q1_vqc_and_subset_classical": 197.75,
+  "Q2_qllm": 0.05,
+  "research_test_subset": 5.37
+ },
+ "device": "cpu",
+ "quick_test": true,
+ "amp_bf16": false,
+ "ingest_type_rule": {
+  "main": "standard rows with type == 0",
+  "static": "standard rows with finite type != 0",
+  "standard_rows_without_type": "counted nowhere (a standard file with no usable type is unavailable)",
+  "nrt_rows": "never used for training: counted nowhere, their month is flagged partial",
+  "totals": {
+   "standard_rows_without_type": 0,
+   "nrt_rows": 72
+  }
+ },
+ "availability": {
+  "Australia": {
+   "aqua": {
+    "partial_months": [
+     "2002-07",
+     "2024-11",
+     "2024-12",
+     "2025-09"
+    ],
+    "missing_months": 21,
+    "notes_sample": [
+     "Aqua MODIS record starts 2002-07-03 (partial month)",
+     "after the last acq_date 2025-09-10 of current-year file modis_2025_Australia (not yet published)",
+     "current-year file modis_2025_Australia ends 2025-09-10 (partial month)",
+     "modis_2024_Australia contains near-real-time rows (no `type`; never used for training): excluded from the counts, month shown as partial"
+    ]
+   },
+   "terra": {
+    "partial_months": [
+     "2024-11",
+     "2024-12",
+     "2025-09"
+    ],
+    "missing_months": 15,
+    "notes_sample": [
+     "Terra MODIS absent from modis_2008_Australia (no rows in the whole file): platform outage, unavailable (not zero)",
+     "after the last acq_date 2025-09-10 of current-year file modis_2025_Australia (not yet published)",
+     "current-year file modis_2025_Australia ends 2025-09-10 (partial month)",
+     "modis_2024_Australia contains near-real-time rows (no `type`; never used for training): excluded from the counts, month shown as partial"
+    ]
+   },
+   "snpp": {
+    "partial_months": [
+     "2012-01",
+     "2024-11",
+     "2024-12",
+     "2025-09"
+    ],
+    "missing_months": 147,
+    "notes_sample": [
+     "S-NPP VIIRS record starts 2012-01-20 (partial month)",
+     "after the last acq_date 2025-09-10 of current-year file viirs-snpp_2025_Australia (not yet published)",
+     "current-year file viirs-snpp_2025_Australia ends 2025-09-10 (partial month)",
+     "viirs-snpp_2016_Australia: manifest status 'missing' \u2192 unavailable (missing is not zero)",
+     "viirs-snpp_2024_Australia contains near-real-time rows (no `type`; never used for training): excluded from the counts, month shown as partial"
+    ]
+   }
+  },
+  "Bangladesh": {
+   "aqua": {
+    "partial_months": [
+     "2002-07",
+     "2024-11",
+     "2024-12",
+     "2025-09"
+    ],
+    "missing_months": 21,
+    "notes_sample": [
+     "Aqua MODIS record starts 2002-07-03 (partial month)",
+     "after the last acq_date 2025-09-08 of current-year file modis_2025_Bangladesh (not yet published)",
+     "current-year file modis_2025_Bangladesh ends 2025-09-08 (partial month)",
+     "modis_2024_Bangladesh contains near-real-time rows (no `type`; never used for training): excluded from the counts, month shown as partial"
+    ]
+   },
+   "terra": {
+    "partial_months": [
+     "2024-11",
+     "2024-12",
+     "2025-09"
+    ],
+    "missing_months": 3,
+    "notes_sample": [
+     "after the last acq_date 2025-09-08 of current-year file modis_2025_Bangladesh (not yet published)",
+     "current-year file modis_2025_Bangladesh ends 2025-09-08 (partial month)",
+     "modis_2024_Bangladesh contains near-real-time rows (no `type`; never used for training): excluded from the counts, month shown as partial"
+    ]
+   },
+   "snpp": {
+    "partial_months": [
+     "2012-01",
+     "2024-11",
+     "2024-12"
+    ],
+    "missing_months": 144,
+    "notes_sample": [
+     "S-NPP VIIRS record starts 2012-01-20 (partial month)",
+     "viirs-snpp_2024_Bangladesh contains near-real-time rows (no `type`; never used for training): excluded from the counts, month shown as partial",
+     "viirs-snpp_2025_Bangladesh is header-only (0 rows): treated as unavailable, not zero"
+    ]
+   }
+  },
+  "United_States": {
+   "aqua": {
+    "partial_months": [
+     "2002-07",
+     "2025-09"
+    ],
+    "missing_months": 21,
+    "notes_sample": [
+     "Aqua MODIS record starts 2002-07-03 (partial month)",
+     "after the last acq_date 2025-09-10 of current-year file modis_2025_United_States (not yet published)",
+     "current-year file modis_2025_United_States ends 2025-09-10 (partial month)"
+    ]
+   },
+   "terra": {
+    "partial_months": [
+     "2024-11",
+     "2025-09"
+    ],
+    "missing_months": 3,
+    "notes_sample": [
+     "after the last acq_date 2025-09-10 of current-year file modis_2025_United_States (not yet published)",
+     "current-year file modis_2025_United_States ends 2025-09-10 (partial month)",
+     "modis_2024_United_States contains near-real-time rows (no `type`; never used for training): excluded from the counts, month shown as partial"
+    ]
+   },
+   "snpp": {
+    "partial_months": [
+     "2012-01",
+     "2024-11",
+     "2024-12",
+     "2025-09"
+    ],
+    "missing_months": 135,
+    "notes_sample": [
+     "S-NPP VIIRS record starts 2012-01-20 (partial month)",
+     "after the last acq_date 2025-09-10 of current-year file viirs-snpp_2025_United_States (not yet published)",
+     "current-year file viirs-snpp_2025_United_States ends 2025-09-10 (partial month)",
+     "viirs-snpp_2024_United_States contains near-real-time rows (no `type`; never used for training): excluded from the counts, month shown as partial"
+    ]
+   }
+  }
+ },
+ "cells_export": {
+  "BGD": "all years at est_min=1.0 within budget",
+  "BGD-A": "all years at est_min=1.0 within budget",
+  "BGD-B": "all years at est_min=1.0 within budget",
+  "BGD-C": "all years at est_min=1.0 within budget",
+  "BGD-D": "all years at est_min=1.0 within budget",
+  "BGD-E": "all years at est_min=1.0 within budget",
+  "BGD-F": "all years at est_min=1.0 within budget",
+  "BGD-G": "all years at est_min=1.0 within budget",
+  "AUS-NSW": "all years at est_min=1.0 within budget",
+  "USA-CA": "all years at est_min=1.0 within budget"
+ },
+ "features_export": {
+  "AUS-NSW": {
+   "max_mb": 0.207,
+   "years": 25
+  },
+  "BGD": {
+   "max_mb": 0.161,
+   "years": 25
+  },
+  "USA-CA": {
+   "max_mb": 0.124,
+   "years": 25
+  }
+ },
+ "recent_layer": {
+  "status": "recent/<aoi>.json written for 12 AOIs from 3 NRT files"
+ },
+ "aoi_notes": [
+  "BD-H (Mymensingh) is absent from this Natural Earth file; its cells fall into whichever NE polygon contains them (NE's pre-2015 Dhaka division contains Mymensingh)",
+  "Bangladesh: 126 cells assigned to the nearest division (\u22640.1\u00b0), 132 cells unassigned to any admin-1 (offshore / outside NE)"
+ ],
+ "notes": [
+  "Q1/Q2 are evaluated on bounded subsets (matched-budget comparison) and are not selection candidates for the app estimate (v1.1).",
+  "cells/<aoi>/<year>.json rows kept if aqua>0 or viirs>0 or est\u2265est_min (default 1.0; raised per AOI-year if > 15.0 MB, see cells_export); cell grids skipped for ['AUS', 'USA']; cell rows use complete months only.",
+  "static_source_detections_modis = Aqua MODIS type\u22600 detections; static_source_detections_viirs = S-NPP VIIRS type\u22600 detections (null before 2012 / when missing).",
+  "Partial months (S-NPP from 2012-01-20, Aqua from 2002-07-03, last month of a current-year file, months with NRT rows) are extract_status=partial: observed counts shown but excluded from training, baselines and anomalies.",
+  "Years that Notebook A marked missing (e.g. FIRMS 2025 yearly country files: 404) stay on the calendar as unavailable (null, extract_status missing), never zero.",
+  "Release stage is decided per region on non-overlapping evaluation regions (see release); the all-AOI pooled AOI-month metric ('all') double-counts nested AOIs and is descriptive only; the gate uses the 'gate_units' subgroup.",
+  "Absolute local paths are replaced by placeholders (<input>, <work>, <run>, <home>, <local-path>, <kaggle-path>) in every exported file.",
+  "Anomaly flags: |z(log1p)|\u22651 vs same calendar month in other years (2003+), retrospective."
+ ]
+}

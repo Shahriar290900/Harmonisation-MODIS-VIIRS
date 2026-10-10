@@ -268,7 +268,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 | 2.1 Attach inputs and pick the GPU | manual | Manual: import, add A's output (+ optional model), RTX PRO 6000, Internet OFF | 5 min |
 | 2.2 Config and switches | 1 | Switches, budgets, locate A's bundle, create or resume the run folder | < 10 s |
 | 2.3 Offline guard and environment probe | 2 | Block the network, probe RAM/disk/GPU, torch smoke test | < 1 min |
-| 2.4 Verify the bundle | 3 | SHA-256 check of every file, synthetic detection, offline PennyLane install | 1–3 min |
+| 2.4 Verify the bundle | 3 | SHA-256 check of every file, synthetic detection, offline install of PennyLane and ONNX packages | 1–3 min |
 | 2.5 Ingest the fire records | 4 | Clean, quarantine and aggregate detections to 5 km cell × month | 5–15 min |
 | 2.6 Grid, panel, features and areas | 5 | Availability rules, cell × month feature panel, areas of interest | 2–10 min |
 | 2.7 Freeze the splits | 6 | Train/val/test years, 20% spatial holdout, sealed test vault | < 1 min |
@@ -276,11 +276,11 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 | 2.9 XGBoost B2 | 8 | Poisson XGBoost, 3 seeds, wall-clock capped | 5–30 min |
 | 2.10 PyTorch MLP D1 | 9 | Poisson MLP, 3 seeds, wall-clock capped | 5–30 min |
 | 2.11 Validation gate and selection | 10 | Score on validation, apply the gate, freeze the selection | < 3 min |
-| 2.12 Open the test set once | 11 | One-time test evaluation, interval coverage, release stage | < 2 min |
+| 2.12 Open the test set once | 11 | One-time test evaluation, per-region interval coverage, per-region release stage | < 2 min |
 | 2.13 Backcast and anomalies | 12 | 2003–2012 VIIRS-scale estimate, intervals, anomaly flags | < 5 min |
 | 2.14 Export the app bundle | 13 | Write and zip the app bundle (before research stages) | 2–10 min |
 | 2.15 Research: simulated quantum Q1 | 14 | Research: simulated variational quantum regressor on a 4,000-row subset | 5–20 min |
-| 2.16 Research: QLLM Q2 | 15 | Research: LLM-guided vs random search over Q1 designs (needs a local model) | < 1 min / 20–90 min |
+| 2.16 Research: QLLM Q2 | 15 | Research: LLM-guided vs random search over Q1 designs (needs a local model) | < 1 min / 20–45 min |
 | 2.17 Research results and bundle refresh | 16 | Research scores on a test subset; refresh bundle metrics and zip | < 3 min |
 | 2.18 Final summary and download | 17 | Summary table, release stage, figures, download the zip | < 1 min |
 
@@ -312,10 +312,10 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 **Steps**
 
 - [ ] 2.2.1 For the first real run leave `RUN_XGB`, `RUN_DL`, `RUN_QML` and `RUN_QLLM` all `True`. Set one to `False` only to skip that model (without an attached model, Q2 is skipped honestly anyway).
-- [ ] 2.2.2 Budgets in minutes come from environment variables with defaults: `XGB_MAX_MINUTES` 120, `DL_MAX_MINUTES` 120, `QLLM_MAX_MINUTES` 90. To change one on Kaggle, edit the default string inside `os.environ.get(...)`.
+- [ ] 2.2.2 Budgets in minutes come from environment variables with defaults for the first real run: `XGB_MAX_MINUTES` 45, `DL_MAX_MINUTES` 45, `QLLM_MAX_MINUTES` 45 (the real-data speed is unmeasured; raise them after the first run has shown the B2 and D1 timings). To change one on Kaggle, edit the default string inside `os.environ.get(...)`.
 - [ ] 2.2.3 Change switches or budgets before the first run only: they are part of the run fingerprint, so a change starts a fresh run folder instead of resuming.
 - [ ] 2.2.4 Run the cell.
-- [ ] 2.2.5 Read the log line `Lumos Notebook B B-1.1.0 · run <timestamp> · QUICK_TEST=False · input=/kaggle/input · bundle=... · work=/kaggle/working`.
+- [ ] 2.2.5 Read the log line `Lumos Notebook B B-1.2.0 · run <timestamp> · QUICK_TEST=False · input=/kaggle/input · bundle=... · work=/kaggle/working`.
 - [ ] 2.2.6 After a crash, a second Run All shows `(RESUMED)` and `resuming run ...: checkpointed stages [...]`.
 
 **Check before moving on**
@@ -336,7 +336,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 - [ ] 2.3.1 Run the cell.
 - [ ] 2.3.2 Look for `network guard installed: all non-loopback sockets/DNS are refused`.
 - [ ] 2.3.3 Read the printed JSON: `device_selected`, `smoke_test`, `ram` and `disk_work`.
-- [ ] 2.3.4 Read the `GPU:` line (name, VRAM, compute capability, CUDA version, bf16 support).
+- [ ] 2.3.4 Read the `GPU:` line (name, VRAM, compute capability, CUDA version, bf16 support). `amp_bf16` in `env_B.json` says whether D1 will train with bf16 autocast: only on compute capability 8.0 or newer (the Blackwell has 12.0; a T4 has 7.5 and trains in fp32).
 
 **Check before moving on**
 
@@ -348,27 +348,27 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 **Time:** estimate: under 1 min
 
 ### Phase 2 · Section 2.4 — Verify the bundle  (cell 3)
-**What this cell does:** Reads `sources.json`, checks for the synthetic-fixture markers, and checks the SHA-256 of every file marked `ok`. A file that is missing or does not match is skipped, and a manifest `error` is treated exactly like `missing`. If `RUN_QML` is on, it then installs PennyLane offline from Notebook A's wheelhouse, pinning torch, numpy, scipy, pandas and scikit-learn so they are never upgraded (with a `--no-deps` retry).
+**What this cell does:** Reads `sources.json`, checks for the synthetic-fixture markers, and checks the SHA-256 of every file marked `ok`. A file that is missing or does not match is skipped, and a manifest `error` is treated exactly like `missing`. It then installs offline from Notebook A's wheelhouse, one package at a time: `pennylane` and `pennylane-lightning` when `RUN_QML` is on, and `onnxruntime` and `onnxscript` when `RUN_DL` is on (needed for the ONNX export and its parity check, also when `RUN_QML` is off). torch, numpy, scipy, pandas and scikit-learn are pinned so they are never upgraded; if the resolver fails, the package is retried with `--no-deps`.
 
 **Steps**
 
 - [ ] 2.4.1 Run the cell.
 - [ ] 2.4.2 Read `sources: N entries; checksum ok=..., mismatches=..., missing files=..., unhashed=...`.
 - [ ] 2.4.3 Read `SYNTHETIC=... [...]`.
-- [ ] 2.4.4 Read `offline pip: {...}` and its `import_check` entry.
+- [ ] 2.4.4 Read `offline pip: {...}` with one entry per package (`installed`, `already_installed`, `installed --no-deps ...` or `failed ...`) and the two import checks: `import_check` (PennyLane) and `import_check_onnxruntime`.
 
 **Check before moving on**
 
 - [ ] `mismatches=0` and `missing files=0`.
 - [ ] `SYNTHETIC=False []` on real data. `True` means the synthetic test fixture is attached: every number will be demo data.
-- [ ] `import_check` says `pennylane importable` (or you accept the built-in simulator fallback).
+- [ ] `import_check` says `pennylane importable` (or you accept the built-in simulator fallback), and `import_check_onnxruntime` says `onnxruntime importable` (otherwise the ONNX parity check in 2.14 is recorded as not checked, never as passed).
 
-**If it fails:** Mismatches or missing files mean Notebook A's output is incomplete or corrupted: commit Notebook A again (1.12) and attach the new version. Skipped files are never used, so the run can continue, but those years become unavailable. `pennylane NOT importable` only affects the Q1 cross-check.
+**If it fails:** Mismatches or missing files mean Notebook A's output is incomplete or corrupted: commit Notebook A again (1.12) and attach the new version. Skipped files are never used, so the run can continue, but those years become unavailable. `pennylane NOT importable` only affects the Q1 cross-check; `onnxruntime NOT importable` only affects the ONNX parity check (the ONNX file is still written).
 
 **Time:** estimate: 1–3 min (hashing several GB)
 
 ### Phase 2 · Section 2.5 — Ingest the fire records  (cell 4)
-**What this cell does:** Reads every usable FIRMS file, removes exact duplicate rows, quarantines rows with an invalid latitude, longitude or date, negative FRP or an unknown satellite (each with a reason), assigns every detection to a 5 km equal-area cell and UTC month, and aggregates counts per platform (type 0 vegetation fires as the main count, other types as static sources). Optional NRT files go to a separate recent layer that is never used for training. The result is checkpointed.
+**What this cell does:** Reads every usable FIRMS file, removes exact duplicate rows, quarantines rows with an invalid latitude, longitude or date, negative FRP or an unknown satellite (each with a reason), assigns every detection to a 5 km equal-area cell and UTC month, and aggregates counts per platform (type 0 vegetation fires as the main count, other types as static sources). Type rule: standard rows with `type == 0` are the main count, other types are static sources, standard rows without a `type` are counted nowhere (a standard file with no `type` at all is treated as unavailable), and near-real-time rows (no `type`, version contains NRT) are never used for training: they are not counted, their month is flagged partial, and Notebook A's optional Area-API NRT files go to a separate recent layer. The result is checkpointed.
 
 **Steps**
 
@@ -376,7 +376,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 - [ ] 2.5.2 Watch one line per file: `ingest [  i/N] <id> rows=... quarantined=... last=YYYY-MM-DD ...s · RSS ... GB`.
 - [ ] 2.5.3 `skipped (...)` lines are files that were missing or failed 2.4; they stay unavailable, never zero.
 - [ ] 2.5.4 If NRT data was fetched, look for `ingest NRT ...: N detections (recent observed layer only; not used for training)`.
-- [ ] 2.5.5 Read the closing line `ingested X raw rows; duplicates removed Y; quarantined Z; aggregate rows W` and the quarantine reason counts printed below it.
+- [ ] 2.5.5 Read the closing line `ingested X raw rows; duplicates removed Y; quarantined Z; aggregate rows W` and the quarantine reason counts printed below it. A per-file `type rule: ...` note appears only when a file has standard rows without `type` or NRT rows; both are excluded from the counts, never counted as zero or as fires.
 
 **Check before moving on**
 
@@ -396,14 +396,17 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 - [ ] 2.6.1 Run the cell.
 - [ ] 2.6.2 Read `panel <country>: N cells` for each country, then `panel: 3 countries, N cells × M months = ... cell-months (2001–2025)`.
 - [ ] 2.6.2a Before the panel is built, read `panel plan: ... panel arrays ≈ X GB, peak while building the largest country ≈ Y GB (free RAM Z GB)`. A `WARNING: estimated panel memory exceeds 60% of free RAM` line means the kernel may run out of memory; write down the numbers (they are also in `metrics.json` under `panel_memory`).
-- [ ] 2.6.3 Read the `availability <country> <platform>: complete=... partial=[...] missing=...` lines.
+- [ ] 2.6.3 Read the `availability <country> <platform>: complete=... partial=[...] missing=...` lines. A year that Notebook A marked `missing` (for example 2025: FIRMS has no yearly country files for it yet) is listed as missing months with the manifest reason; it is unavailable, never zero, and stays on the calendar.
+- [ ] 2.6.3a Read the `MEMORY panel: ...` line (cells per country, estimated panel GB, RSS, free RAM). If the estimate exceeds 90% of free RAM, a `MEMORY GUARD:` line says that the United States was dropped from the panel (fail-soft, so the kernel is not killed); real United States memory is unmeasured until this first real run.
 - [ ] 2.6.4 A `NOTE: BD-H (Mymensingh) is absent from this Natural Earth file ...` line is expected: Natural Earth's Dhaka polygon still contains Mymensingh.
 - [ ] 2.6.5 Read `Bangladesh: k cells assigned to the nearest division (≤0.1°), u cells unassigned ...`.
 - [ ] 2.6.6 Read one `AOI <id> <kind> <name> cells=...` line per area.
 
 **Check before moving on**
 
-- [ ] Aqua availability lists `2002-07` as partial and S-NPP lists `2012-01` as partial (the satellites' first months).
+- [ ] Aqua availability lists `2002-07` as partial (Aqua started on 3 July 2002) and S-NPP lists `2012-01` as partial (S-NPP started on 20 Jan 2012).
+- [ ] The line `gate regions (non-overlapping evaluation units): ['BGD', 'AUS-NSW', 'USA-CA']` is present (a unit missing from the bundle is named).
+- [ ] The `MEMORY panel:` line shows `guard dropped nothing`.
 - [ ] The AOI lines include `BGD`, the Bangladesh divisions (`BGD-A` ...), `AUS`, `AUS-NSW`, `USA` and `USA-CA`, each with cells > 0.
 - [ ] Unassigned Bangladesh cells are a small share of the `BGD` cells (offshore detections).
 
@@ -464,10 +467,10 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 
 **If it fails:** `B2: wall-clock budget reached` keeps the best model so far; that is fine. If B2 crashes, it is recorded as failed and the run continues. To skip it, set `RUN_XGB = False` in 2.2 before a fresh Run All (this starts a new run folder).
 
-**Time:** estimate: 5–30 min on the GPU, capped by XGB_MAX_MINUTES (120) (fixture, 3 seeds on CPU: 32 s)
+**Time:** estimate: 5–30 min on the GPU, capped by XGB_MAX_MINUTES (45 by default for the first real run) (fixture, 3 seeds on CPU: 32 s)
 
 ### Phase 2 · Section 2.10 — PyTorch MLP D1  (cell 9)
-**What this cell does:** If `RUN_DL` is on: trains a Poisson neural network (layers 128-128-64, bf16 on the GPU) for each of 3 seeds, up to 40 epochs with early stopping after 5, inside the `DL_MAX_MINUTES` budget, and keeps the best seed (checkpointed). The ONNX export happens in 2.14. On CPU it uses a capped sample and one seed.
+**What this cell does:** If `RUN_DL` is on: trains a Poisson neural network (layers 128-128-64, bf16 autocast only on GPUs with compute capability 8.0 or newer, otherwise fp32) for each of 3 seeds, up to 40 epochs with early stopping after 5, inside the `DL_MAX_MINUTES` budget, and keeps the best seed (checkpointed). The ONNX export happens in 2.14. On CPU it uses a capped sample and one seed.
 
 **Steps**
 
@@ -482,16 +485,16 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 
 **If it fails:** `wall-clock budget reached` keeps the best epoch; that is fine. If D1 crashes, it is recorded as failed and the run continues. To skip it, set `RUN_DL = False` in 2.2 before a fresh Run All.
 
-**Time:** estimate: 5–30 min on the GPU, capped by DL_MAX_MINUTES (120) (fixture, 3 seeds on CPU: 98 s)
+**Time:** estimate: 5–30 min on the GPU, capped by DL_MAX_MINUTES (45 by default for the first real run) (fixture, 3 seeds on CPU: 98 s)
 
 ### Phase 2 · Section 2.11 — Validation gate and selection  (cell 10)
-**What this cell does:** Scores every full-panel model on the validation years. The baseline is the better of B1 and B0_month_ratio by validation area-month MAE. Another model replaces it only if it is at least 10% better and not more than 10% worse on active cells (Aqua count > 0); the best passing model wins. It also builds 80% intervals from validation residuals and writes `selection_frozen.json` before the test years are touched.
+**What this cell does:** Scores every full-panel model on the validation years. The area-month MAE used for the gate is pooled over the three non-overlapping evaluation regions (`BGD`, `AUS-NSW`, `USA-CA`); whole-country `AUS` and `USA` and the Bangladesh divisions overlap those regions, would be counted twice and are left out. The baseline is the better of B1 and B0_month_ratio by that validation MAE. Another model replaces it only if it is at least 10% better and not more than 10% worse on active cells (Aqua count > 0); the best passing model wins. It also builds 80% intervals from the validation residuals of the same regions and writes `selection_frozen.json` before the test years are touched.
 
 **Steps**
 
 - [ ] 2.11.1 Run the cell.
 - [ ] 2.11.2 Read `SELECTED (validation only): <model>; gate baseline <model> val AOI-month MAE=...`.
-- [ ] 2.11.3 Read the table of `val_cell_MAE`, `val_active_MAE`, `val_AOI_MAE` and `val_dev` per model.
+- [ ] 2.11.3 Read the table of `val_cell_MAE`, `val_active_MAE`, `val_AOI_MAE` (pooled over the gated regions) and `val_dev` per model.
 
 **Check before moving on**
 
@@ -504,18 +507,18 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 **Time:** estimate: under 3 min
 
 ### Phase 2 · Section 2.12 — Open the test set once  (cell 11)
-**What this cell does:** Opens the sealed test years (2023–2024) exactly once, scores every full-panel model, measures how often the true area-month value falls inside the 80% interval, and sets the release stage: synthetic data gives `ui_prototype`; beating both B0_identity and B0_month_ratio on test with coverage within ±10 points gives `validated_calibration`; otherwise `observed_comparison`.
+**What this cell does:** Opens the sealed test years (2023–2024) exactly once, scores every full-panel model, measures how often the true area-month value falls inside the 80% interval in each AOI, and sets the release stage region by region on the non-overlapping evaluation regions `BGD`, `AUS-NSW` and `USA-CA`. A region is `validated_calibration` only if the selected model beats both B0_identity and B0_month_ratio on that region's test area-month MAE and its interval coverage is within ±10 points of 0.80; otherwise it is `observed_comparison`. The overall stage is the weakest region (synthetic data: `ui_prototype`). Whole-country `AUS` and `USA` and the Bangladesh divisions are reported separately and never gated.
 
 **Steps**
 
 - [ ] 2.12.1 Run the cell once. Do not run it a second time on its own.
 - [ ] 2.12.2 Read `TEST SPLIT OPENED at <time> (selection frozen at .../selection_frozen.json)`.
-- [ ] 2.12.3 Read `RELEASE STAGE: <stage> — <reason>`.
+- [ ] 2.12.3 Read one `RELEASE REGION <id>: <stage> — ...` line per gated region (test MAE of the selected model and of both baselines, interval coverage and its n), then `RELEASE STAGE: <stage> — <reason>` (the weakest region's stage).
 
 **Check before moving on**
 
-- [ ] On real data the stage is `observed_comparison` or `validated_calibration`, never `ui_prototype`.
-- [ ] The reason lists the test area-month MAE of the selected model and both B0 baselines, and the interval coverage (aim: near 0.80).
+- [ ] On real data every stage is `observed_comparison` or `validated_calibration`, never `ui_prototype`.
+- [ ] Each region line lists the test area-month MAE of the selected model and both B0 baselines, and the interval coverage (aim: 0.70 to 0.90). Each region has at most 24 test area-months (n is printed per region), so coverage is coarse (standard error about 0.08): read it as a warning light, not a precise number.
 
 **If it fails:** `Test split already opened once — refusing a second look` means this cell was run again by itself. Restart the session and Run All: the run resumes from checkpoints and the test set is opened once in the new session.
 
@@ -539,7 +542,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 **Time:** estimate: under 5 min
 
 ### Phase 2 · Section 2.14 — Export the app bundle  (cell 13)
-**What this cell does:** Writes the app bundle before the research stages: monthly activity records per area and year (validated against `activity.schema.json`), cell grids (15 MB per file budget), B1 input features for BGD, AUS-NSW and USA-CA, the optional recent NRT layer, scrubbed sources, regions and boundaries, model weights (B1 JSON, B2 JSON, D1 ONNX with an onnxruntime parity check), model cards, metrics, `comparison.csv`, figures, manifest and checksums. It copies the bundle to `/kaggle/working/lumos_app_bundle/` and zips it to `/kaggle/working/lumos_app_bundle.zip`.
+**What this cell does:** Writes the app bundle before the research stages: monthly activity records per area and year (validated against `activity.schema.json`), cell grids (15 MB per file budget), B1 input features for BGD, AUS-NSW and USA-CA, the optional recent NRT layer, scrubbed sources, regions (whose `cells_exported` / `features_exported` flags reflect the files actually written) and boundaries, model weights (B1 JSON, B2 JSON, D1 ONNX with an onnxruntime parity check), model cards, metrics, `comparison.csv`, figures, manifest and checksums. It copies the bundle to `/kaggle/working/lumos_app_bundle/` and zips it to `/kaggle/working/lumos_app_bundle.zip`.
 
 **Steps**
 
@@ -548,11 +551,12 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 - [ ] 2.14.3 Read `ONNX parity: {...}`.
 - [ ] 2.14.4 Lines `cells <aoi> <year>: est cutoff raised to ...` mean a cell file was over budget and its cutoff was raised and recorded; that is expected for large areas.
 - [ ] 2.14.4a Cell grids (`cells/<aoi>/<year>.json`) are written for `BGD` and its divisions, `AUS-NSW` and `USA-CA` only; whole-country `AUS` and `USA` have none. B1 feature files (`features/<aoi>/<year>.json`) exist for `BGD`, `AUS-NSW` and `USA-CA`.
-- [ ] 2.14.5 Read `app bundle [core (before research stages Q1/Q2)]: ... zip ... MB`.
+- [ ] 2.14.5 Read `app bundle [core (before research stages Q1/Q2)]: ... zip ... MB` and the line `path scan of the exported bundle: 0 file(s) needed scrubbing` (absolute local paths are replaced by placeholders such as `<input>` in every exported file).
 
 **Check before moving on**
 
 - [ ] `schema errors: 0`.
+- [ ] No `STILL_PRESENT` or `binary_not_scrubbed` in the path-scan line.
 - [ ] ONNX parity shows `passed` true (unless D1 was skipped).
 - [ ] `/kaggle/working/lumos_app_bundle.zip` exists, and its size is well under 100 MB.
 
@@ -598,10 +602,10 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 
 **If it fails:** A model listed under `too_large` must be swapped for a smaller one (a 7B model in bf16 is about 15 GB). `transformers not importable` or any crash marks Q2 failed; the app bundle is unaffected. To skip it, set `RUN_QLLM = False` in 2.2 before a fresh Run All.
 
-**Time:** estimate: under 1 min when skipped; 20–90 min with a model, capped by QLLM_MAX_MINUTES (90)
+**Time:** estimate: under 1 min when skipped; 20–45 min with a model, capped by QLLM_MAX_MINUTES (45 by default)
 
 ### Phase 2 · Section 2.17 — Research results and bundle refresh  (cell 16)
-**What this cell does:** Scores Q1, the subset-trained classical models, the full-data models and the best Q2 designs on a bounded subset (up to 20,000 rows) of the test rows already opened in 2.12, then rewrites the app bundle's metrics, model cards, manifest, checksums and zip, and marks the run complete.
+**What this cell does:** Scores Q1, the subset-trained classical models, the full-data models and the best Q2 designs on a bounded subset (up to 20,000 rows) of the test rows already opened in 2.12, then rewrites the app bundle's metrics, model cards, manifest, checksums and zip, marks the run complete, and, once the final zip is verified file by file, deletes the duplicate stage copy `runs/<ts>/lumos_app_bundle` (the bundle stays in `lumos_app_bundle/` and the zip).
 
 **Steps**
 
@@ -610,7 +614,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 
 **Check before moving on**
 
-- [ ] That line appears and the zip size is close to the one from 2.14.
+- [ ] That line appears and the zip size is close to the one from 2.14, followed by `stage copy lumos_app_bundle removed after zip verification`.
 - [ ] `runs/<ts>/stages.json` now has `"complete": true`.
 
 **If it fails:** `research test-subset evaluation failed (app bundle unaffected)` is not fatal: the core bundle from 2.14 stands, refreshed without research test numbers.
@@ -623,7 +627,7 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 **Steps**
 
 - [ ] 2.18.1 Run the cell and read the summary table.
-- [ ] 2.18.2 Read `Selected model (validation only): ... | release stage: ...`.
+- [ ] 2.18.2 Read `Selected model (validation only): ... | release stage: ...` and the `region <id>: <stage> ...` lines below it (one per gated region, then the regions reported separately).
 - [ ] 2.18.3 Read `Device: cuda ... blocked network attempts: 0`.
 - [ ] 2.18.4 Look at the figures below (time series for BGD, AUS-NSW and USA-CA, plus AUS and USA, model comparison, test scatter, QML subset comparison).
 - [ ] 2.18.5 Download `/kaggle/working/lumos_app_bundle.zip`: right-hand **Output** panel (or the committed version's **Output** tab) → `lumos_app_bundle.zip` → **Download**. Files in an interactive session disappear when it stops, so download now or commit with **Save Version → Save & Run All**.
@@ -643,9 +647,9 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 
 **Check before you continue**
 
-- [ ] Open `manifest.json` in the bundle: `release_stage` is `observed_comparison` or `validated_calibration`, `synthetic` is false, and `release_reason` makes sense.
+- [ ] Open `manifest.json` in the bundle: `release_stage` is `observed_comparison` or `validated_calibration`, `synthetic` is false, `release_regions` has one entry per gated region (BGD, AUS-NSW, USA-CA), and `release_reason` makes sense.
 - [ ] Open `figures/timeseries_BGD.png`: the estimate continues smoothly into the VIIRS series with no jump at 2012, and Aqua sits below VIIRS.
-- [ ] Open `metrics.json` or `comparison.csv`: note the selected model and its test interval coverage (aim: near 0.80).
+- [ ] Open `metrics.json` or `comparison.csv`: note the selected model and its test interval coverage per region (`release.regions`; aim: near 0.80).
 - [ ] Open `runs/<ts>/run_log.json` (in `/kaggle/working`): note the timings and the RSS memory for Australia and the United States (ingest and panel lines).
 - [ ] Run `python notebooks/tests/check_bundle.py <unzipped lumos_app_bundle>` locally (without `--fixture`); it must pass on the real bundle (DATA-03).
 - [ ] Q2 shows `ok` if you attached a model, or `skipped` if you did not; never anything in between.
@@ -654,5 +658,5 @@ Expected result with the default config: 117 FIRMS yearly country files requeste
 ## Counts
 
 - Phase 1: 12 sections, 46 steps, 22 checks, 7 hand-off checks
-- Phase 2: 18 sections, 72 steps, 47 checks
+- Phase 2: 18 sections, 72 steps, 50 checks
 - Phase 3: 7 checks

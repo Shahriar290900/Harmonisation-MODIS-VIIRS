@@ -91,6 +91,8 @@ def main():
     check("RESUME: stage ingest reused" in log2 and "RESUME: stage panel reused" in log2, "ingest + panel reused (sha256-verified)")
     check(stages(r1)["complete"] is True and len(stages(r1)["resumes"]) == 1, "run marked complete; resume recorded")
     check((w1 / "lumos_app_bundle" / "manifest.json").exists(), "app bundle written")
+    check((w1 / "lumos_app_bundle.zip").exists() and not (r1 / "lumos_app_bundle").exists() and "stage copy lumos_app_bundle removed after zip verification" in log2,
+          "P6: duplicate stage copy runs/<ts>/lumos_app_bundle deleted after the final zip was verified (bundle + zip remain)")
 
     print("== 2. notebook: simulated crash after export_core (before Q1/Q2), then resume ==")
     w2 = base / "nb"; w2.mkdir(parents=True, exist_ok=True)
@@ -99,6 +101,7 @@ def main():
     check((w2 / "lumos_app_bundle" / "manifest.json").exists() and (w2 / "lumos_app_bundle.zip").exists(),
           "app bundle + zip already exist although the research stages never ran (export-before-Q1/Q2)")
     r2 = runs(w2)[-1]
+    check((r2 / "lumos_app_bundle" / "manifest.json").exists(), "after the simulated crash the stage copy still exists (cleanup happens only after the final, verified zip)")
     m_before = val_metrics(r2)
     man_before = json.load(open(w2 / "lumos_app_bundle" / "manifest.json"))
     check("core" in man_before.get("export_phase", ""), f"bundle phase = {man_before.get('export_phase')}")
@@ -110,6 +113,7 @@ def main():
     check(m_before == m_after and all(v is not None for v in m_after.values()), f"validation metrics identical after resume: {m_after}")
     man_after = json.load(open(w2 / "lumos_app_bundle" / "manifest.json"))
     check("final" in man_after.get("export_phase", "") and stages(r2)["complete"], "bundle refreshed with research stages; run complete")
+    check(not (r2 / "lumos_app_bundle").exists() and stages(r2)["stages"]["final"]["meta"].get("stage_copy_removed") is True, "stage copy removed after the final zip; stages.json records it")
     met = json.load(open(w2 / "lumos_app_bundle" / "metrics.json"))
     check(met["qml_subset_comparison"].get("status") == "ok" and "Q1_vqc" in met["models"], "Q1 metrics appended to metrics.json after export")
 

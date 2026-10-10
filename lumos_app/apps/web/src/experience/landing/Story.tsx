@@ -4,7 +4,7 @@ import type { PixelCompareHandle } from '../contract';
 import { MONTHS_LONG, MONTHS_SHORT, fmtNum } from '../../data/format';
 import { textOn, valueColor } from '../../ui/scale';
 import { Glyph } from '../../ui/Glyph';
-import { CircleCheck, CircleX, FlaskConical } from 'lucide-react';
+import { CircleCheck, CircleX, FlaskConical, Info } from 'lucide-react';
 import { Icon3D } from '../../ui/icons/Icon3D';
 import { annualMeans, countWord, unavailableText, useNear, type AoiSeries } from './data';
 import { mountFallbackPixels } from './fallbacks';
@@ -401,6 +401,15 @@ export function Honesty({ ctx }: { ctx: Ctx }) {
               <p className="lx-honest__small">Release rule: the selected model must beat both the identity and month-ratio baselines on test, with interval coverage within ±10 points of nominal.</p>
             </>
           ) : <p>Loading…</p>}
+        </div>
+        <div className="lx-honest__card lx-honest__card--usa" style={{ gridColumn: '1 / -1' }}>
+          <h3><span className="lx-honest__ico"><Icon3D icon={Info} tone="cyan" size={22} /></span>United States caveats</h3>
+          <ul>
+            <li><b>Alaska and Hawaii included.</b> The US national boundary includes these states.</li>
+            <li><b>Non-wildfire burning excluded.</b> FIRMS types 1, 2, and 3 (prescribed, agricultural) are excluded from the main count.</li>
+            <li><b>Grid scale limits.</b> The 5 km grid is unmeasured at the USA scale.</li>
+            <li><b>California calibration.</b> California inherits national B0_month_ratio coefficients.</li>
+          </ul>
         </div>
       </Reveal>
     </section>

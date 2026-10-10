@@ -6,7 +6,7 @@ import { fmtNum, fmtPct, fmtSigned } from '../data/format';
 type Row = Record<string, string>;
 const num = (s: string | undefined) => (s == null || s === '' ? null : Number(s));
 
-export function ModelPanel({ manifest, snapshotPath }: { manifest: Manifest; snapshotPath: string }) {
+export function ModelPanel({ manifest, snapshotPath, metrics, region }: { manifest: Manifest; snapshotPath: string; metrics?: Record<string, any> | null; region?: import('../types').Region }) {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [cards, setCards] = useState<Record<string, Record<string, unknown> | null>>({});
   useEffect(() => {
@@ -27,11 +27,21 @@ export function ModelPanel({ manifest, snapshotPath }: { manifest: Manifest; sna
   const qModels = [...new Set(qRows.map((r) => r.model_id))];
   const q2 = cards['Q2_qllm'];
 
+  const rel = metrics?.release as any;
+  const regGate = region ? (rel?.regions?.[region.aoi_id] ?? rel?.reported_separately?.[region.aoi_id]) : null;
+  const stage = regGate?.stage ?? manifest.release_stage;
+
   return (
     <div className="models">
       {manifest.synthetic && <p className="notice small">These metrics come from a synthetic fixture — plumbing checks only, not scientific results.</p>}
       <h3>AOI-month error by model</h3>
       <p className="muted small">Mean absolute error (MAE) and mean bias in detections per AOI-month. Lower MAE is better. Selection uses validation only; test was opened once. No “accuracy %”.</p>
+      {regGate && (
+        <div className="region-gate-info" style={{marginBottom: '1rem'}}>
+          <strong>Release stage for {region?.name}: </strong> <span className="badge">{stage}</span>
+          {regGate.note && <p className="small muted">{regGate.note}</p>}
+        </div>
+      )}
       <div className="table-wrap">
         <table className="tbl tbl--num">
           <thead>
@@ -54,7 +64,16 @@ export function ModelPanel({ manifest, snapshotPath }: { manifest: Manifest; sna
           </tbody>
         </table>
       </div>
-      {manifest.release_reason && <details className="details"><summary>Why this model was selected (gate)</summary><p className="small">{manifest.release_reason}</p></details>}
+      {regGate?.reasons_not_validated ? (
+        <details className="details">
+          <summary>Why {stage}?</summary>
+          <ul className="small">
+            {regGate.reasons_not_validated.map((r: string, i: number) => <li key={i}>{r}</li>)}
+          </ul>
+        </details>
+      ) : manifest.release_reason ? (
+        <details className="details"><summary>Why this model was selected (gate)</summary><p className="small">{manifest.release_reason}</p></details>
+      ) : null}
 
       <section className="qml">
         <header className="qml__head">

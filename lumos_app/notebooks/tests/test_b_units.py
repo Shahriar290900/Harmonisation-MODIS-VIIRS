@@ -188,5 +188,104 @@ plan2 = ns["panel_memory_plan"]({"Bangladesh": 20000, "Australia": 250000, "Unit
 check(plan2["panel_gb"] > plan["panel_gb"] and plan2["peak_country_build_gb"] > plan["peak_country_build_gb"], "memory scales with the number of detection cells (sparse), not with area")
 check(ns["panel_memory_plan"]({}, 300, 13, 1)["panel_gb"] == 0, "empty input is safe")
 
+
+print("== review fixes: budgets, competitions mount, bf16 gate, offline package set, path scrub, memory guard, dtype fallback ==")
+import datetime as _dt
+env_has_budget = any(k in os.environ for k in ("XGB_MAX_MINUTES", "DL_MAX_MINUTES", "QLLM_MAX_MINUTES"))
+if not env_has_budget:
+    check((ns["XGB_MAX_MINUTES"], ns["DL_MAX_MINUTES"], ns["QLLM_MAX_MINUTES"]) == (45.0, 45.0, 45.0), f"first-real-run budgets default to 45/45/45 minutes: {(ns['XGB_MAX_MINUTES'], ns['DL_MAX_MINUTES'], ns['QLLM_MAX_MINUTES'])}")
+check("budgets_min" in ns["_CFG_FP"], "budgets are part of the run fingerprint (a change starts a fresh run)")
+# P3: the competitions mount is never walked
+comp = tmp / "kin"
+(comp / "competitions" / "arc-agi" / "lumos_bundle" / "manifests").mkdir(parents=True); (comp / "competitions" / "arc-agi" / "lumos_bundle" / "manifests" / "sources.json").write_text("[]")
+(comp / "competitions" / "arc-agi" / "config.json").write_text("{}")
+(comp / "notebooks" / "me" / "a" / "lumos_bundle" / "manifests").mkdir(parents=True); (comp / "notebooks" / "me" / "a" / "lumos_bundle" / "manifests" / "sources.json").write_text("[]")
+visited = []
+list(ns["walk_limited"](comp, lambda d, fs: (visited.append(str(d)) or [])))
+check(not any("competitions" in v for v in visited), f"walk_limited never enters /kaggle/input/competitions ({len(visited)} dirs visited)")
+check(ns["locate_bundle"](comp) == comp / "notebooks" / "me" / "a" / "lumos_bundle", "locate_bundle finds A's output next to a competitions mount, never inside it")
+only_comp = tmp / "kin2"; (only_comp / "competitions" / "x" / "lumos_bundle" / "manifests").mkdir(parents=True); (only_comp / "competitions" / "x" / "lumos_bundle" / "manifests" / "sources.json").write_text("[]")
+try:
+    ns["locate_bundle"](only_comp); check(False, "a bundle only inside competitions/ must not be found")
+except FileNotFoundError:
+    check(True, "a bundle only inside competitions/ is not found (competition data is never read)")
+check(not list(ns["walk_limited"](comp, lambda d, fs: [d] if "config.json" in fs else [])), "find_local_llm-style search does not reach competitions/**/config.json")
+# P5: bf16 autocast only on compute capability >= 8
+cc = ns["_cuda_cc_major"]()
+check(ns["AMP_BF16"] == (ns["DEVICE"] == "cuda" and cc >= 8) and ns["ENV"]["amp_bf16"] == ns["AMP_BF16"], f"AMP_BF16={ns['AMP_BF16']} (device {ns['DEVICE']}, compute capability major {cc}) and env_B amp_bf16 agree")
+src_txt = text
+check("use_amp = AMP_BF16" in src_txt and '"amp_bf16": AMP_BF16' in src_txt, "D1 autocast flag and D1_INFO amp_bf16 use the same AMP_BF16 value")
+# P2: offline package set
+check(ns["offline_pkgs"](True, True) == ("pennylane", "pennylane-lightning", "onnxruntime", "onnxscript"), "RUN_QML+RUN_DL installs pennylane, pennylane-lightning, onnxruntime, onnxscript")
+check(ns["offline_pkgs"](False, True) == ("onnxruntime", "onnxscript"), "RUN_QML off but RUN_DL on still installs the ONNX packages")
+check(ns["offline_pkgs"](True, False) == ("pennylane", "pennylane-lightning") and ns["offline_pkgs"](False, False) == (), "RUN_DL off: PennyLane pair only; both off: nothing")
+ns["BUNDLE"] = tmp / "bundle_empty_wh"; (ns["BUNDLE"] / "wheelhouse").mkdir(parents=True)
+r_ort = ns["try_offline_install"](("onnxruntime",))
+check(str(r_ort.get("import_check_onnxruntime", "")).startswith("onnxruntime") and "import_check" not in r_ort, f"import_check_onnxruntime reported (and no PennyLane check when not requested): {r_ort}")
+ns["BUNDLE"] = tmp / "bundle"
+# M-path: scrub absolute local paths
+ns["INPUT_ROOT"] = Path("/Users/someone/Desktop/proj/fixtures/out")
+s1 = ns["scrub_str"]("skipped: no local LLM within the size cap under /Users/someone/Desktop/proj/fixtures/out and /Users/other/x/y.json, /kaggle/input/models/q/ here /kaggle/working/runs/1")
+check("/Users/" not in s1 and "/kaggle/" not in s1 and "<input>" in s1, f"scrub_str removes /Users/ and /kaggle/ paths: {s1}")
+o1 = ns["scrub_obj"]({"a": ["x /home/bob/z"], "b": {"c": "/Users/q/r"}, "n": 3})
+check(json.dumps(o1).count("/Users/") == 0 and "/home/" not in json.dumps(o1) and o1["n"] == 3, f"scrub_obj recursive: {o1}")
+sd = tmp / "scrubdir"; (sd / "models").mkdir(parents=True)
+(sd / "metrics.json").write_text(json.dumps({"reason": "under /Users/aa/bb/cc"})); (sd / "models" / "blob.bin").write_bytes(b"\x00/Users/zz\x00")
+hits = ns["scrub_bundle_files"](sd)
+check(any(h[0] == "metrics.json" and h[2] == "scrubbed" for h in hits) and b"/Users/" not in (sd / "metrics.json").read_bytes()
+      and any(h[0].endswith("blob.bin") and h[2] == "binary_not_scrubbed" for h in hits), f"scrub_bundle_files rewrites text files, reports binaries: {hits}")
+check(not ns["scrub_bundle_files"](sd / "models" / "nothing_here") , "scrub_bundle_files on an empty dir is safe")
+# review L: fail-soft memory guard
+g_keep, g_drop, g_plan = ns["memory_guard"]({"Bangladesh": 20000, "Australia": 250000, "United_States": 300000}, 300, 13, 64.0)
+check(g_drop == [] and set(g_keep) == {"Bangladesh", "Australia", "United_States"}, "memory guard keeps every country when the estimate fits")
+g_keep, g_drop, g_plan = ns["memory_guard"]({"Bangladesh": 20000, "Australia": 250000, "United_States": 300000}, 300, 13, 8.0)
+check(g_drop == ["United_States"] and set(g_keep) == {"Bangladesh", "Australia"}, f"memory guard drops only the optional United_States when the estimate exceeds 90% of free RAM: dropped {g_drop}, plan {g_plan['panel_gb']} GB")
+g_keep, g_drop, _ = ns["memory_guard"]({"Bangladesh": 20000, "Australia": 2500000}, 300, 13, 4.0)
+check(g_drop == [] and "Australia" in g_keep, "memory guard never drops a non-optional country (it only warns elsewhere)")
+g_keep, g_drop, _ = ns["memory_guard"]({"Bangladesh": 20000, "United_States": 3000000}, 300, 13, float("nan"))
+check(g_drop == [], "memory guard does nothing when free RAM is unknown")
+# P8: transformers dtype= first, torch_dtype= on TypeError
+exec(compile(text[text.index("def from_pretrained_dtype("):text.index("def make_llm_generate(")], SRC, "exec"), ns)
+class _New:
+    calls = []
+    @classmethod
+    def from_pretrained(cls, d, dtype=None, **kw): cls.calls.append(("dtype", dtype, sorted(kw))); return "new"
+class _Old:
+    calls = []
+    @classmethod
+    def from_pretrained(cls, d, torch_dtype=None, **kw):
+        if "dtype" in kw: raise TypeError("unexpected keyword 'dtype'")
+        cls.calls.append(("torch_dtype", torch_dtype, sorted(kw))); return "old"
+check(ns["from_pretrained_dtype"](_New, "m", "bf16", local_files_only=True) == "new" and _New.calls[0][0] == "dtype", "from_pretrained_dtype uses dtype= when accepted")
+check(ns["from_pretrained_dtype"](_Old, "m", "bf16", local_files_only=True) == "old" and _Old.calls[0] == ("torch_dtype", "bf16", ["local_files_only"]), "from_pretrained_dtype falls back to torch_dtype= on TypeError")
+
+print("== ingest type rule (standard type==0 main; standard without type counted nowhere; NRT never used) ==")
+exec(compile(text[text.index('PLATFORMS = ["aqua"'):text.index("def ingest_nrt_file(")], SRC, "exec"), ns)
+import pandas as pd
+RUN = tmp / "run_ing"; RUN.mkdir()
+ns["RUN_DIR"] = RUN
+check(ns["PLATFORM_START"]["aqua"] == _dt.date(2002, 7, 3), f"Aqua starts 2002-07-03 (NASA): {ns['PLATFORM_START']['aqua']}")
+hdr = "latitude,longitude,brightness,scan,track,acq_date,acq_time,satellite,instrument,confidence,version,bright_t31,frp,daynight"
+def _csv(name, rows, with_type=True):
+    p = tmp / name
+    lines = [hdr + (",type" if with_type else "")]
+    for r in rows: lines.append(r)
+    p.write_text("\n".join(lines) + "\n"); return p
+base = "23.5,90.5,330,1.0,1.0,2020-03-{d:02d},0530,Aqua,MODIS,60,{v},290,5.0,D"
+rows = [base.format(d=1, v="6.03") + ",0", base.format(d=2, v="6.03") + ",0", base.format(d=3, v="6.03") + ",2", base.format(d=4, v="6.03") + ",",
+        base.format(d=5, v="6.1NRT") + ",", base.format(d=6, v="6.1NRT") + ","]
+agg, q, st = ns["ingest_file"]({"_path": str(_csv("std_mixed.csv", rows)), "sensor": "modis", "id": "t1"})
+aq = ns["PLAT_CODE"]["aqua"]
+check(int(agg["count"].sum()) == 2 and int(agg["static"].sum()) == 1, f"type==0 → main (2), type 2 → static (1); untyped standard and NRT rows counted nowhere: count={int(agg['count'].sum())} static={int(agg['static'].sum())}")
+check(st["standard_rows_without_type"] == 1 and st["nrt_rows"] == 2 and st["nrt_rows_without_type"] == 2 and int(agg["nrt"].sum()) == 2, f"stats: {{std_no_type, nrt}} = {st['standard_rows_without_type']}, {st['nrt_rows']}")
+check(st["platform_nrt_months"] == {"aqua": [str(2020 * 12 + 2)]}, f"NRT months recorded per platform: {st['platform_nrt_months']}")
+try:
+    ns["ingest_file"]({"_path": str(_csv("std_notype.csv", [base.format(d=1, v="6.03"), base.format(d=2, v="6.03")], with_type=False)), "sensor": "modis", "id": "t2"})
+    check(False, "a standard file without any type must be rejected")
+except ValueError as e:
+    check("type" in str(e), f"standard file without a usable type is unavailable (ValueError → INGEST ERROR → missing, not zero): {str(e)[:70]}")
+agg3, q3, st3 = ns["ingest_file"]({"_path": str(_csv("nrt_only.csv", [base.format(d=1, v="6.1NRT"), base.format(d=2, v="6.1NRT")], with_type=False)), "sensor": "modis", "id": "t3"})
+check(int(agg3["count"].sum()) == 0 and st3["nrt_rows"] == 2, "an NRT-only file without a type column is accepted but contributes no counts (never used for training)")
+
 print(f"\n{'ALL UNIT TESTS PASSED' if not FAILS else 'FAILED: ' + str(FAILS)}")
 sys.exit(1 if FAILS else 0)

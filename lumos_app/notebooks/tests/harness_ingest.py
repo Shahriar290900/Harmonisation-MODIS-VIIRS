@@ -35,6 +35,11 @@ body = "\n".join([
 ])
 agg, st = run("viirs_mixed.csv", H_V, body + "\n", "viirs-snpp")
 print(agg.assign(plat=[ns["PLATFORMS"][i] for i in agg.platform], y=agg.ym // 12, m=agg.ym % 12 + 1)[["plat", "y", "m", "count", "static", "nrt"]].to_string())
+# type rule (v1.2): type==0 standard → main; type!=0 standard → static; NRT rows (version contains NRT) → never counted, tracked in `nrt`
+_a = agg.assign(plat=[ns["PLATFORMS"][i] for i in agg.platform], m=agg.ym % 12 + 1)
+assert int(_a.loc[(_a.plat == "snpp") & (_a.m == 1), "count"].sum()) == 1 and int(_a.loc[(_a.plat == "snpp") & (_a.m == 1), "nrt"].sum()) == 1, "Jan: 1 standard row counted, the 2.0NRT row only in `nrt`"
+assert int(_a.loc[(_a.plat == "noaa20") & (_a.m == 2), "static"].sum()) == 1 and int(_a.loc[(_a.plat == "noaa20") & (_a.m == 2), "count"].sum()) == 3, "Feb NOAA-20: 3 type-0 rows, the type-2 row is static"
+print("type rule asserts passed (NRT row never counted)")
 mbody = "\n".join(["23.8,90.4,320.1,1.0,1.0,2010-03-01,45,Aqua,MODIS,67,6.1,300.1,10.2,D,0",
                    "23.8,90.4,320.1,1.0,1.0,2010-03-01,45,Aqua,MODIS,67,6.03,300.1,10.2,D,0",
                    "23.8,90.4,320.1,1.0,1.0,2010-03-01,45,Aqua,MODIS,67,61.03,300.1,10.2,D,0",

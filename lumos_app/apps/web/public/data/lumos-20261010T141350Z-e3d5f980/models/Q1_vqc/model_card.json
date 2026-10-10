@@ -1,0 +1,132 @@
+{
+ "model_id": "Q1_vqc",
+ "description": "Simulated variational quantum circuit (torch statevector), PCA\u2192angle encoding, \u27e8Z\u27e9\u2192linear\u2192softplus; bounded subset only (research).",
+ "status": "ok",
+ "error": null,
+ "target": "viirs_snpp_count (type 0, cell-month)",
+ "prediction": "estimated_viirs_reference_detections",
+ "unit": "expected S-NPP VIIRS type-0 detections per 5 km cell per UTC calendar month; AOI value = sum over the AOI's cells",
+ "features": [
+  "aqua_count",
+  "aqua_day",
+  "aqua_night",
+  "aqua_frp_sum",
+  "aqua_frp_mean",
+  "aqua_conf_mean",
+  "aqua_scan_mean",
+  "terra_count",
+  "aqua_count_3x3",
+  "month_sin",
+  "month_cos",
+  "lat",
+  "aqua_clim",
+  "country_AUS",
+  "country_BGD",
+  "country_USA"
+ ],
+ "feature_order": [
+  "aqua_count",
+  "aqua_day",
+  "aqua_night",
+  "aqua_frp_sum",
+  "aqua_frp_mean",
+  "aqua_conf_mean",
+  "aqua_scan_mean",
+  "terra_count",
+  "aqua_count_3x3",
+  "month_sin",
+  "month_cos",
+  "lat",
+  "aqua_clim",
+  "country_AUS",
+  "country_BGD",
+  "country_USA"
+ ],
+ "feature_definitions": {
+  "aqua_count": "Aqua MODIS type-0 detections in the 5 km cell and UTC calendar month (transform log1p)",
+  "aqua_day": "Aqua type-0 detections with daynight=D (log1p)",
+  "aqua_night": "Aqua type-0 detections with daynight=N (log1p)",
+  "aqua_frp_sum": "sum of FRP (MW) of Aqua type-0 detections with finite frp (log1p)",
+  "aqua_frp_mean": "aqua_frp_sum / number of those detections; 0 if none (log1p)",
+  "aqua_conf_mean": "mean MODIS confidence (0-100) of Aqua type-0 detections; 0 if none (identity)",
+  "aqua_scan_mean": "mean scan (km) of Aqua type-0 detections; 0 if none (log1p)",
+  "terra_count": "Terra MODIS type-0 detections in the cell-month (log1p); separate series, never pooled into the target",
+  "aqua_count_3x3": "sum of aqua_count over the 3x3 block of cells (ix-1..ix+1, iy-1..iy+1) incl. itself; cells outside the universe add 0 (log1p)",
+  "month_sin": "sin(2*pi*(month-1)/12), month 1..12 (identity)",
+  "month_cos": "cos(2*pi*(month-1)/12) (identity)",
+  "lat": "latitude (deg) of the cell centre = degrees(asin((iy+0.5)*5000/6371007.181)) (identity)",
+  "aqua_clim": "mean aqua_count of this cell for this calendar month over the TRAIN years 2013-2020 (available months only) (log1p)",
+  "country_AUS": "1 if the cell belongs to Australia (FIRMS country file) else 0 (identity)",
+  "country_BGD": "1 if the cell belongs to Bangladesh (FIRMS country file) else 0 (identity)",
+  "country_USA": "1 if the cell belongs to United_States (FIRMS country file) else 0 (identity)"
+ },
+ "train_years": [
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2020
+ ],
+ "val_years": [
+  2021,
+  2022
+ ],
+ "test_years": [
+  2023,
+  2024
+ ],
+ "spatial_holdout": "20% of 100 km blocks excluded from train",
+ "info": {
+  "config": {
+   "n_qubits": 8,
+   "layers": 3,
+   "encoding": "angle+reupload",
+   "entangler": "ring",
+   "lr": 0.03
+  },
+  "selected_seed": 1,
+  "n_train_subset": 600,
+  "n_val_eval": 3000,
+  "simulator": "built-in torch statevector (complex64)",
+  "pennylane_crosscheck": {
+   "status": "skipped",
+   "reason": "pennylane not importable: ModuleNotFoundError(\"No module named 'pennylane'\")"
+  }
+ },
+ "val_summary": {
+  "cell_month": {
+   "cell_month_subset": {
+    "n": 3000,
+    "mae": 0.27520564425488314,
+    "rmse": 0.8690001962977603,
+    "bias": 0.05721117345988751,
+    "poisson_deviance": 0.8512192745136513,
+    "sum_obs": 349.0,
+    "sum_pred": 520.6335203796625
+   }
+  },
+  "aoi_month": null
+ },
+ "test_summary": {
+  "cell_month": {
+   "cell_month_subset": {
+    "n": 3000,
+    "mae": 0.2507609645674626,
+    "rmse": 0.5663442053077979,
+    "bias": 0.0823915997693936,
+    "poisson_deviance": 0.674544668933534,
+    "sum_obs": 273.0,
+    "sum_pred": 520.1747993081808
+   }
+  },
+  "aoi_month": null
+ },
+ "interval": null,
+ "selected": false,
+ "synthetic_training_data": true,
+ "intended_use": "Retrospective harmonised fire-activity calendar (VIIRS S-NPP scale) for 2003\u20132012; comparison for 2012+.",
+ "limitations": "FIRMS detections are not burned area; no cloud-cover denominator (coverage_fraction null); relationship may drift with land use; Terra kept separate."
+}

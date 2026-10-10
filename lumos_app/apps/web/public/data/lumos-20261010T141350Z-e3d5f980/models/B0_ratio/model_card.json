@@ -1,0 +1,173 @@
+{
+ "model_id": "B0_ratio",
+ "description": "Global train ratio \u03a3viirs/\u03a3aqua \u00d7 aqua count.",
+ "status": "ok",
+ "error": null,
+ "target": "viirs_snpp_count (type 0, cell-month)",
+ "prediction": "estimated_viirs_reference_detections",
+ "unit": "expected S-NPP VIIRS type-0 detections per 5 km cell per UTC calendar month; AOI value = sum over the AOI's cells",
+ "features": [
+  "aqua_count"
+ ],
+ "feature_order": [
+  "aqua_count"
+ ],
+ "feature_definitions": {
+  "aqua_count": "Aqua MODIS type-0 detections in the 5 km cell and UTC calendar month (transform log1p)"
+ },
+ "train_years": [
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2020
+ ],
+ "val_years": [
+  2021,
+  2022
+ ],
+ "test_years": [
+  2023,
+  2024
+ ],
+ "spatial_holdout": "20% of 100 km blocks excluded from train",
+ "info": {
+  "formula": "est = r * aqua_count",
+  "r": 3.540362650835646
+ },
+ "val_summary": {
+  "cell_month": {
+   "n": 109344,
+   "mae": 0.13551721005175313,
+   "rmse": 0.7573488592135231,
+   "bias": -0.0016498518881478224,
+   "poisson_deviance": 2.5419148995772165,
+   "sum_obs": 12469.0,
+   "sum_pred": 12288.598595142365
+  },
+  "aoi_month": {
+   "n": 288,
+   "mae": 8.458916783332825,
+   "rmse": 15.169807113378116,
+   "bias": -1.4468095782730315,
+   "poisson_deviance": 17.075217578088274,
+   "sum_obs": 19347.0,
+   "sum_pred": 18930.318841457367
+  }
+ },
+ "test_summary": {
+  "cell_month": {
+   "n": 100232,
+   "mae": 0.12967068335132537,
+   "rmse": 0.7238123188621651,
+   "bias": -0.0024661846653367945,
+   "poisson_deviance": 2.51011178371841,
+   "sum_obs": 10493.0,
+   "sum_pred": 10245.809378623962
+  },
+  "aoi_month": {
+   "n": 264,
+   "mae": 8.931818180915082,
+   "rmse": 15.382782164158602,
+   "bias": -1.6665016981688412,
+   "poisson_deviance": 19.196706512363985,
+   "sum_obs": 15706.0,
+   "sum_pred": 15266.043551683426
+  }
+ },
+ "interval": {
+  "q_low": -0.3656474239067129,
+  "q_high": 0.6886864407485159,
+  "n_val_aoi_months": 72,
+  "formula": "low=(\u0177+1)\u00b7exp(q_low)\u22121, high=(\u0177+1)\u00b7exp(q_high)\u22121, clipped \u22650",
+  "nominal": 0.8,
+  "fitted_on": "validation AOI-months of the gated non-overlapping regions BGD, AUS-NSW, USA-CA (one pooled interval, applied to every AOI)",
+  "test_coverage": 0.7878787878787878,
+  "n_test_aoi_months": 66,
+  "test_coverage_by_aoi": {
+   "AUS": {
+    "coverage": 1.0,
+    "n": 22,
+    "kind": "country",
+    "gated": false
+   },
+   "AUS-NSW": {
+    "coverage": 0.9090909090909091,
+    "n": 22,
+    "kind": "admin1",
+    "gated": true
+   },
+   "BGD": {
+    "coverage": 0.6363636363636364,
+    "n": 22,
+    "kind": "country",
+    "gated": true
+   },
+   "BGD-A": {
+    "coverage": 0.6363636363636364,
+    "n": 22,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-B": {
+    "coverage": 0.6363636363636364,
+    "n": 22,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-C": {
+    "coverage": 0.45454545454545453,
+    "n": 22,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-D": {
+    "coverage": 0.7727272727272727,
+    "n": 22,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-E": {
+    "coverage": 0.5909090909090909,
+    "n": 22,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-F": {
+    "coverage": 0.6818181818181818,
+    "n": 22,
+    "kind": "admin1",
+    "gated": false
+   },
+   "BGD-G": {
+    "coverage": 0.7272727272727273,
+    "n": 22,
+    "kind": "admin1",
+    "gated": false
+   },
+   "USA": {
+    "coverage": 0.9545454545454546,
+    "n": 22,
+    "kind": "country",
+    "gated": false
+   },
+   "USA-CA": {
+    "coverage": 0.8181818181818182,
+    "n": 22,
+    "kind": "admin1",
+    "gated": true
+   }
+  }
+ },
+ "selected": false,
+ "synthetic_training_data": true,
+ "intended_use": "Retrospective harmonised fire-activity calendar (VIIRS S-NPP scale) for 2003\u20132012; comparison for 2012+.",
+ "limitations": "FIRMS detections are not burned area; no cloud-cover denominator (coverage_fraction null); relationship may drift with land use; Terra kept separate.",
+ "app_recompute": {
+  "weights": "models/B0_ratio/weights.json",
+  "how": "est = r * aqua_count"
+ }
+}
