@@ -3,16 +3,16 @@
 Read-only. Kaggle CLI 2.2.4, auth via env token (not recorded). Calls sequential, >=5 s apart, no 429s seen. No pushes, no competition data downloads, no submissions.
 
 ## 1. Own kernels (`kernels list --mine`, 3 pages, 42 rows)
-- Owner: `shahriarhameem`. 40 named notebooks (Final_qllm, QML_QLLM, Antenna_LLM_QML, Thesis_Final, Capstone, notebook<hash> ...).
+- Owner: `<owner>`. 40 named notebooks (Final_qllm, QML_QLLM, Antenna_LLM_QML, Thesis_Final, Capstone, notebook<hash> ...).
 - **No Lumos notebook exists** (`-s lumos` returned "Not found"; none in the full list). Free to use `lumos-probe-*` slugs.
 - 2 rows appear as `[Private Notebook]` with empty ref and lastRunTime 2010-04-01 (never-run drafts, hidden from the CLI). The draft "Internet OFF with RTX PRO 6000" is most likely one of them.
-- **Draft not pullable.** `kernels pull shahriarhameem/internet-off-with-rtx-pro-6000 -m` and `...-pro-60` both returned HTTP 403 (GetKernel). Control: pulling `shahriarhameem/final-qllm` succeeds, a nonexistent slug also returns 403. So the CLI cannot see the draft (unsaved/never-committed drafts have no API slug). Its true slug is unknown; its metadata could not be read. It is untouched (nothing was pushed).
+- **Draft not pullable.** `kernels pull <owner>/internet-off-with-rtx-pro-6000 -m` and `...-pro-60` both returned HTTP 403 (GetKernel). Control: pulling `<owner>/final-qllm` succeeds, a nonexistent slug also returns 403. So the CLI cannot see the draft (unsaved/never-committed drafts have no API slug). Its true slug is unknown; its metadata could not be read. It is untouched (nothing was pushed).
 
-## 2. KEY FINDING: working RTX PRO 6000 template (`shahriarhameem/final-qllm`, pulled with `-m`, metadata only)
+## 2. KEY FINDING: working RTX PRO 6000 template (`<owner>/final-qllm`, pulled with `-m`, metadata only)
 ```
 "kernel_type": "notebook", "language": "python", "is_private": true,
 "enable_gpu": true, "enable_tpu": false, "enable_internet": false,
-"dataset_sources": ["shahriarhameem/ml-data"],
+"dataset_sources": ["<owner>/ml-data"],
 "competition_sources": ["arc-prize-2026-arc-agi-3"],
 "model_sources": ["qwen-lm/qwen2.5/Transformers/7b-instruct/1"],
 "docker_image": "gcr.io/kaggle-images/python@sha256:81b1e7c4...",   (pinned original environment)
@@ -37,7 +37,7 @@ Read-only. Kaggle CLI 2.2.4, auth via env token (not recorded). Calls sequential
 Matches the owner's screenshot. Probes of a few minutes cost ~0.05 h each.
 
 ## 6. Implications for other roles
-1. Create the B/probe kernel metadata with `"enable_gpu": true, "enable_internet": false, "competition_sources": ["arc-prize-2026-arc-agi-3"], "machine_shape": "NvidiaRtxPro6000"`, new slug `shahriarhameem/lumos-probe-*`; never reuse `internet-off-...` or any existing slug.
+1. Create the B/probe kernel metadata with `"enable_gpu": true, "enable_internet": false, "competition_sources": ["arc-prize-2026-arc-agi-3"], "machine_shape": "NvidiaRtxPro6000"`, new slug `<owner>/lumos-probe-*`; never reuse `internet-off-...` or any existing slug.
 2. Fallback for B: same metadata without the competition and with the T4 shape (name unverified, see above).
 3. A (fetch): `enable_internet: true`, `enable_gpu: false`, no competition.
 4. Draft notebook cannot be inspected via CLI; rely on final-qllm metadata as ground truth. The owner can confirm the draft's slug in the UI if needed.

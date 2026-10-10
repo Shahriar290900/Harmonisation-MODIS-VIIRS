@@ -760,7 +760,7 @@ def write_json(path: Path, obj) -> None:
 #
 # - [ ] The closing line shows `error=0`.
 # - [ ] With the default config it shows `ok=111, missing=6`. The 6 `missing` files are the 2025 files (3 countries × 2 sensors). `missing` is allowed only for 2025 and for any other year that FIRMS genuinely does not have (a 404 you write down). Missing files are never filled with zeros.
-# - [ ] The 2025 files are not `ok` with zero rows: a 2025 file recorded as `ok` would mean FIRMS has published it since 10 Oct 2026 (then `ok` is above 111 and that is fine); a header-only file would show the note `header-only file (0 data rows)`.
+# - [ ] No 2025 file is `ok` with zero rows. A 2025 file recorded as `ok` would mean FIRMS has published it since 10 Oct 2026 (then `ok` is above 111 and that is fine); an `ok` file with no data rows would carry the note `header-only file (0 data rows)`.
 # - [ ] The `disk:` lines show more than 2 GiB free and there is no `DISK GUARD` line.
 # - [ ] `/kaggle/working/lumos_bundle/manifests/sources.json` exists (Output panel on the right).
 #
@@ -994,6 +994,7 @@ def config_info() -> dict:
             "FETCH_API_NRT": FETCH_API_NRT, "API_NRT_DAYS": API_NRT_DAYS, "API_SOURCES": API_SOURCES,
             "api_key_used": bool(_MAP_KEY), "WHEELS": WHEELS, "MAX_WORKERS": MAX_WORKERS,
             "MAX_RETRIES": MAX_RETRIES, "USER_AGENT": USER_AGENT, "FIRMS_BASE": FIRMS_BASE, "NE_BASE": NE_BASE,
+            "DISK_MIN_FREE_GIB": DISK_MIN_FREE_GIB, "DISK_CHECK_EVERY_N": DISK_CHECK_EVERY_N,
             "SKIP_WHEELS": SKIP_WHEELS, "run_started_utc": RUN_STARTED_UTC, "run_finished_utc": utcnow()}
 
 
@@ -1022,7 +1023,11 @@ def readme_text(records: dict, env: dict) -> str:
         "## Rules for Notebook B",
         "- Use only files whose manifest status is `ok`; verify sha256.",
         "- `missing` means FIRMS had no file for that sensor/year/country: treat as **unknown (NaN), never zero**.",
-        "- Install wheels offline: `pip install --no-index --find-links <bundle>/wheelhouse pennylane onnx ...`.",
+        "- Install wheels offline: `pip install --no-index --find-links <bundle>/wheelhouse pennylane pennylane-lightning onnxruntime onnxscript`.",
+        "- FIRMS has no 2025 yearly country files (HTTP 404, checked 10 Oct 2026): the 2025 files are expected to be "
+        "`missing` (3 countries x 2 sensors); the last year with data is 2024. Never zero.",
+        "- The yearly country route is undocumented on FIRMS's download page (keyless today, may change). The United_States "
+        "file includes Alaska and Hawaii (and may include territories).",
         f"- **A and B must use the same Kaggle image / Python version** (A ran Python {env['python_version']}); "
         "wheels are built for that interpreter.",
         "- No API key is stored anywhere in this bundle (URLs show `{MAP_KEY}`).", "",
@@ -1067,6 +1072,16 @@ if RUN_PIPELINE and not DRY_RUN:
 import pandas as pd
 
 
+def country_status_counts(records: dict) -> dict:
+    """ok / missing / error counts of the FIRMS yearly country files; missing split into year 2025 and other years."""
+    fc = [r for r in records.values() if r["kind"] == "firms_country"]
+    miss = [r for r in fc if r["status"] == "missing"]
+    return {"ok": sum(r["status"] == "ok" for r in fc), "missing": len(miss),
+            "missing_2025": sum(r.get("year") == 2025 for r in miss),
+            "missing_other": sum(r.get("year") != 2025 for r in miss),
+            "error": sum(r["status"] == "error" for r in fc)}
+
+
 def summary_table(records: dict) -> pd.DataFrame:
     rows = [r for r in records.values() if r["kind"] == "firms_country"]
     if not rows:
@@ -1080,6 +1095,9 @@ if RUN_PIPELINE and not DRY_RUN:
     with pd.option_context("display.max_rows", 500, "display.width", 200):
         tab = summary_table(RECORDS)
         print(tab.to_string())
+    cc = country_status_counts(RECORDS)
+    log(f"FIRMS country files: ok={cc['ok']}, missing={cc['missing']} (2025: {cc['missing_2025']}, "
+        f"other: {cc['missing_other']}), error={cc['error']}   [default config expects ok=111, missing=6 (2025: 6), error=0]")
     st = pd.Series([r["status"] for r in RECORDS.values()]).value_counts().to_dict()
     log(f"All records by status: {st}")
     errs = [r for r in RECORDS.values() if r["status"] == "error"]

@@ -1,25 +1,32 @@
-# STATUS (9 Oct 2026)
-- **App:** PRD §6 P0 and P1 (browser harmonization, replay) are done. Not done: P1 Bangla UI and P2 (ONNX in browser, assistant).
-- **Tests:** 364 unit tests and 39 e2e tests pass (3 skipped by design). Reviewer scratch tests pass.
-- **Measured:** first view is about 0.66 MB compressed. A cached click updates the drawer in a median of 31 ms on desktop and 54 ms on mobile (headless Chromium in the sandbox, not real devices).
-- **Agent loop:** a watchdog, a reviewer and an e2e verifier ran, then a resolver fixed all findings (1 blocker, 4 high, 9 medium, 7 low, plus 4 e2e bugs). Details are in `review_app/RESOLUTION.md`.
-- **Data:** synthetic only. Neither notebook has been run on real FIRMS data or the Blackwell GPU yet.
-- **Not done:** testing on a real iOS or Android device, and deployment (that waits for the owner's go-ahead).
+# STATUS (10 Oct 2026)
 
-## Update (10 Oct 2026): 3D experience, redesign, second review loop
-- **Landing route** (`#/`): a Three.js globe hero showing the snapshot's hotspots, a GSAP scroll story, a 3D "two cameras" explainer, the 2012-jump chart, a region gallery with shader page transitions, and a text-heavy index. Fallbacks cover no-WebGL and reduced motion.
-- **Workspace route** (`#aoi=…` or `#/app`): unchanged in behaviour. It never downloads three.js or GSAP.
-- **Redesign:** pill shapes are gone; tags are now rectangles with 2–4 px corners. Emoji and unicode pictographs are replaced with Lucide icons given a 3D treatment (`ui/icons/Icon3D.tsx`).
-- **Review loop:** a reviewer found 16 issues (1 high, 5 medium, 10 low) and a watchdog found 5. A resolver fixed them; details are in `review_exp/RESOLUTION.md`. Still open: the landing downloads the workspace code, and layout breakpoints are read only once.
-- **Tests:** 367 unit tests pass. In the full e2e run, 81 passed and 1 failed (the reduced-motion transition timing). That test's bound was set too tight; after correcting it, the test passes on re-run.
-- **Unverified:** frame rates on real GPUs and phones (the sandbox uses software WebGL).
+All numbers below come from runs on **synthetic data** in a headless sandbox, not from real FIRMS data and not from real devices. They are plumbing checks, not scientific results.
 
-## Update (10 Oct 2026, later): three regions (Bangladesh, United States/California, Australia/NSW)
-- **Decision (owner):** the AOI set is now Bangladesh (`BGD` + 7 divisions `BGD-A..G`), Australia (`AUS` + `AUS-NSW`) and the United States (`USA` + `USA-CA`, California). The app still opens on Bangladesh. `BGD`, `AUS-NSW` and `USA-CA` are the three detailed regions (5 km cell grids and B1 features); whole-country `AUS` and `USA` are aggregates only.
-- **Contract and PRD:** `CONTRACT.md` has a new section 8, "v1.2 addendum: AOI set extended", and a region registry (section 9). `schema_version` stays `1.0`; old bundles (BGD and AUS only) stay valid. `PRD.md` region mentions are updated.
-- **Notebook A:** now downloads 3 countries (`Bangladesh`, `Australia`, `United_States`), so 117 FIRMS files (3 × (25 MODIS + 14 VIIRS) years) instead of 78. The whole US is fetched; no bounding-box streaming. The Notebook A owner reported its own test suite passing and the synthetic fixture regenerated for 3 countries (`review_loop/W2-NOTEBOOK-A.md`).
-- **Notebook B and the app:** their updates for `USA` / `USA-CA` (`CELLS_EXPORT_SKIP_AOIS` = `AUS`, `USA`; `FEATURE_EXPORT_AOIS` = `BGD`, `AUS-NSW`, `USA-CA`; a data-driven region gallery) were owned by other roles and were still in progress when this entry was written. Check `review_loop/` for their heartbeats; this entry does not claim they are finished or tested.
-- **Docs:** `RUNBOOK.md` (both copies), `START_HERE.md` and `README.md` are updated for 3 regions, 117 files and the new expected checks. New: root `README.md` (repo landing page) and `KAGGLE_HANDOFF.md` (click-by-click guide for running both notebooks on Kaggle). `CLAUDE_CODE_MASTER_PROMPT.md` still says "Bangladesh + New South Wales detailed AOIs" (not owned by the docs role; flagged in `review_loop/W5-DOCS.md`).
-- **Open mismatch (monitor finding, checked 10 Oct 2026):** `notebooks/lumos_B_train.py` still has `AOI_COUNTRIES = [Bangladesh, Australia]`, `FEATURE_EXPORT_AOIS = [AUS-NSW, BGD]`, `CELLS_EXPORT_SKIP_AOIS = [AUS]` and the guide text `panel: 2 countries`; both `STEP_INDEX.md` copies say the same (2.6.2) and have no 2.14.4a line and an AUS-only 2.18.4. `RUNBOOK.md` and `KAGGLE_HANDOFF.md` describe the target behaviour (3 countries, `USA`/`USA-CA` AOI lines) and now carry a readiness gate: run Notebook A, but hold Notebook B until it is updated. The docs role does not own those files; the request is in `review_loop/W5-DOCS.md`. `prompts/CLAUDE_CODE_MASTER_PROMPT.md`, `lumos_app/CLAUDE_CODE_MASTER_PROMPT.md` and `PRD.md` section 9 are also stale.
-- **Still unverified:** nothing has run on real FIRMS data, on the Blackwell GPU, or on real phones. The US download and processing time, memory use and cell-file sizes are unmeasured. The 15 MB per AOI-year cell budget for `USA-CA` is untested on real data. Real-data results for California (and the other regions) are not yet known, so no accuracy or calibration claim is made.
-- **Reminder:** the bundled data is synthetic and labelled `DEMO` / `FIXTURE_NOT_REAL_DATA`. Missing is never zero.
+## Current state
+- **Regions:** Bangladesh (`BGD` + 7 divisions `BGD-A..G`), Australia (`AUS` + `AUS-NSW`) and the United States (`USA` + `USA-CA`, California). The app opens on Bangladesh. `BGD`, `AUS-NSW` and `USA-CA` are the detailed regions (5 km cell grids and B1 features); whole-country `AUS` and `USA` are aggregates only. See `CONTRACT.md` §8-9.
+- **Notebook A** (`kaggle_notebooks/lumos_A_fetch.ipynb`): fetches 3 countries, 117 FIRMS yearly files requested. **2025 yearly files do not exist (404, checked 10 Oct 2026)**, so the expected result is 111 ok + 6 missing + 0 error. Tested against a local mirror and a synthetic fixture. Not run on Kaggle yet.
+- **Notebook B** (`kaggle_notebooks/lumos_B_train.ipynb`): now covers Bangladesh, Australia (+NSW) and the United States (+California). Run on the synthetic fixture only. **Not yet reviewed on real data**; its real-scale memory and time (especially the United States panel) are unmeasured.
+- **Kaggle probes (10 Oct 2026, tiny workloads):** torch 2.11 with `sm_120`, XGBoost GPU and a bf16 matmul worked on RTX PRO 6000; torch and XGBoost GPU also worked on T4 x2. Details in `docs/kaggle/KAGGLE_ENV.md`. Notebook B itself has not run on Kaggle.
+- **App:** PRD §6 P0 and P1 (browser harmonization, replay) are built, plus the 3D landing and the redesign. Not done: P1 Bangla UI, P2 (ONNX in browser, assistant), testing on real iOS or Android devices, deployment (waits for the owner's go-ahead).
+- **Data in the app:** synthetic only, labelled `DEMO` / `FIXTURE_NOT_REAL_DATA`. Missing is never zero.
+
+## Tests (last runs, synthetic data)
+- **Unit tests:** 446 pass in the last full run.
+- **Browser (Playwright e2e):** 95 pass, 39 skip (by design), 1 timing test (L05, reduced-motion transition on desktop) fails in the full run but passes alone with its timeout widened. This is a timing-sensitive test, not a fixed one.
+- **Measured (headless Chromium in the sandbox, software WebGL, not real devices):** first view about 531,022 bytes gzip in the last perf spec run. Frame rates on real GPUs and phones are unverified.
+- Counts change as tests are added. Re-run `npm test` and `npm run e2e` for the current figure before quoting one.
+
+## Known issues and open items
+- **Release stage per region is being redesigned.** The review found that one pooled stage (and one pooled interval-coverage number stamped on every record) covers all 12 AOIs, which is not evidence for a single region such as `USA-CA`. The per-region rule will be recorded in `CONTRACT.md` §6. Until then, read the stage as "pooled over all regions".
+- Partial months can carry hard 0 counts (for example Aqua before 3 Jul 2002, S-NPP before 20 Jan 2012). The `extract_status` of `partial` marks them; CSV readers must check it.
+- The landing route downloads the workspace code early (about 100 kB gzip); layout breakpoints are read once.
+- Unmeasured on real data: US download and processing time, memory, and the 15 MB per AOI-year cell budget for `USA-CA`.
+- Real-data results for any region are not yet known, so **no accuracy or calibration claim is made**.
+
+## Source corrections (10 Oct 2026)
+Dated in `docs/SOURCE_CHECK.md` and `CONTRACT.md` §10: no 2025 yearly files; the yearly route is undocumented; Area API window 1-5 days and no `NOAA21_SP`; satellite codes A, T, N, N20, N21; Aqua starts 3 Jul 2002; S-NPP science data delivery scheduled to cease 2 Nov 2026; NRT rows have no `type`; Fu et al. 2020 is correct (first author Yuyun Fu); burned-area products are not independent checks; no single global MODIS-to-VIIRS multiplier is defensible. **Real challenge submission dates are UNVERIFIED** (pack: 7 Oct 2026; PRD: window from 14 Nov 2026): the owner must read the official page.
+
+## History (condensed)
+- **9 Oct:** first app build and agent review loop (watchdog, reviewer, e2e verifier, resolver); details in `review_app/RESOLUTION.md`.
+- **10 Oct:** 3D landing route (Three.js globe, GSAP story), rectangular tags, Lucide icons; second review loop (`review_exp/RESOLUTION.md`).
+- **10 Oct:** owner decision to cover three regions; `CONTRACT.md` §8-9 added; Notebooks A and B and the app were updated for `USA` / `USA-CA` by separate roles. A review round on all three regions (`review_loop/`) is in progress and its findings are still being fixed.

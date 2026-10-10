@@ -2,18 +2,22 @@
 
 Oct 10, 2026 · @Shahriar Hameem
 
-Everything built so far passes its tests. Nothing has run on real NASA data or on the Blackwell GPU yet, so Phases 1–3 are the real test. This runbook has 9 phases, about 60 sections and over 250 steps; tick them off as you go.
+The tests that exist pass on synthetic data only (see the health check below for the last counts). Notebooks A and B have not yet run on real NASA data on Kaggle, and Notebook B has not been reviewed on real data, so Phases 1–3 are the real test. This runbook has 9 phases, about 60 sections and over 250 steps; tick them off as you go.
 
 ## Health check (10 Oct 2026)
 
+All test numbers are from synthetic data in a headless sandbox, not from real data or real devices. `lumos_app/STATUS.md` has the latest counts.
+
 | Part | Status | Evidence |
 | --- | --- | --- |
-| Notebook A (fetch) | Passes on a local mirror | Downloader tests (retries, 404, rate limits, key redaction) pass; now fetches 3 countries (117 FIRMS files) |
-| Notebook B (train) | Passed on synthetic data before the USA update (historical 2-country run; not re-run for 3 regions) | Quick run 130 s, 0 errors; bundle check 38/38; unit, resume and leakage tests pass. The three-region update (USA, California) is **not yet in the shipped `lumos_B_train.py`**: it still defines Bangladesh and Australia only and logs `panel: 2 countries` in its guide text. Steps 2.6.2, 2.6 check, 2.14.4a and 2.18.4 below describe the updated notebook (the target); see `lumos_app/STATUS.md` |
+| Notebook A (fetch) | Tested on a local mirror and a synthetic fixture; **not yet run on Kaggle** | Downloader tests (retries, 404, rate limits, key redaction) pass. Fetches 3 countries (117 files requested). **FIRMS has no 2025 yearly country files (404, checked 10 Oct 2026), so the expected result is 111 ok + 6 missing + 0 error** |
+| Notebook B (train) | Covers Bangladesh, Australia (+NSW) and the United States (+California). Run on the synthetic fixture only; **not yet reviewed on real data** | Fixture runs, unit, resume and leakage tests pass. Real-scale memory and time (especially the US panel) are unmeasured |
+| Kaggle environment | Probed with tiny workloads | torch 2.11 (`sm_120`) and XGBoost GPU work on the default image on both T4 x2 and RTX PRO 6000 (`docs/kaggle/KAGGLE_ENV.md`) |
 | Notebook guide cells | Added | 1.1–1.12 and 2.1–2.18, one markdown cell above every code cell |
-| Web app: data workspace | Passes | Type check clean, unit tests and build OK at the earlier 10 Oct check (367 unit tests then); the three-region update is being re-tested, see `lumos_app/STATUS.md` |
-| Web app: 3D landing | Passes | Last full browser run 81/82; the one timing test was fixed and passes |
-| Real FIRMS download | Not run | The sandbox cannot reach NASA servers |
+| Web app: data workspace | Unit tests: 446 pass in the last full run; build OK | Synthetic data only |
+| Web app: 3D landing and browser tests | e2e: 95 pass, 39 skip, 1 timing test (L05) fails in the full run but passes alone with a widened timeout | Synthetic data, headless Chromium with software WebGL |
+| Release stage per region | Being redesigned | One pooled stage is not evidence for one region; see `lumos_app/CONTRACT.md` §6 |
+| Real FIRMS download on Kaggle | Not run | FIRMS answers from the owner's machine (HEAD checks done); the full 117-file download has not been tried on Kaggle |
 | Real-scale training (Australia, United States) | Not run | Australia was estimated at about 90M cell-months; the United States panel has not been sized |
 | Real phones, real GPU frame rates | Not tested | Only emulated in headless Chromium |
 | Public deployment | Not done | Waits for your go-ahead |
@@ -22,9 +26,9 @@ Known small issues, none blocking:
 
 - The landing page also downloads the workspace code early (about 100 kB gzip).
 - Layout breakpoints are read once; rotating a tablet may need a reload.
-- The United States download (whole country, no bounding box) and its processing time and memory have not been measured on real data.
+- The United States download (whole country, no bounding box, about 767 MB for 2001–2024) and its processing time and memory have not been measured on real data.
 - Natural Earth has 7 Bangladesh divisions (no Mymensingh), so Mymensingh is counted inside its neighbour.
-- Organizer rules on reusing preparation work are still unconfirmed (step 0.3.2).
+- The challenge dates are unverified: the research pack says submission closed on 7 Oct 2026, the PRD says the project window starts 14 Nov 2026. Read the official page (step 0.3.1) and organizer rules on reusing preparation work (step 0.3.2).
 
 ## Regions covered (three-region spec, 10 Oct 2026)
 
@@ -34,12 +38,13 @@ Known small issues, none blocking:
 | Australia | `Australia` | `AUS` + `AUS-NSW` (New South Wales) | `AUS-NSW` only; whole-country `AUS` is aggregate only |
 | United States | `United_States` | `USA` + `USA-CA` (California) | `USA-CA` only; whole-country `USA` is aggregate only |
 
-- Notebook A downloads 3 countries × (25 MODIS + 14 VIIRS) years = **117 FIRMS files**, plus 2 Natural Earth files.
-- The whole United States is downloaded (under 1 GB in total, no bounding box). "Bounded" is done in the app: country totals for `USA`, detailed grids only for `USA-CA`, the same pattern as `AUS` / `AUS-NSW`.
+- Notebook A requests 3 countries × (25 MODIS + 14 VIIRS) years = **117 FIRMS files**, plus 2 Natural Earth files. The 6 files for 2025 do not exist on FIRMS, so expect **111 ok and 6 missing**.
+- The whole United States is downloaded (HEAD-measured sizes for 2001–2024: United States about 767 MB, Australia about 1762 MB, Bangladesh about 15 MB; no bounding box). "Bounded" is done in the app: country totals for `USA`, detailed grids only for `USA-CA`, the same pattern as `AUS` / `AUS-NSW`.
 - The app opens on Bangladesh by default. Bangladesh, New South Wales and California are the three detailed regions.
 - `schema_version` stays `1.0`. The extra AOIs are recorded in `lumos_app/CONTRACT.md`, §8 (v1.2 addendum: AOI set extended). Older bundles (Bangladesh and Australia only) remain valid.
 - None of this has been run on real data yet.
-- Notebook A is updated for three countries. Notebook B and its guide text (`STEP_INDEX.md`) are not yet. Until they are, the Phase 2 checks marked "three-region" (2.6.2, 2.6 AOI check, 2.14.4a, 2.18.4) will not match what the notebook prints. Do not start Phase 2 until Claude confirms Notebook B was updated.
+- Notebook A and Notebook B both cover the three regions. Notebook B is not yet reviewed on real data.
+- United States caveats to keep in mind when reading results: the file includes Alaska and Hawaii; type 0 mixes wildfire with prescribed and agricultural burning (say "hotspot", not "wildfire"); type 1/2/3 rows are excluded from the main count; the Aleutians west of the antimeridian are a known limitation; `USA-CA` uses the national month ratios. Details: `lumos_app/CONTRACT.md` §10.2.
 
 ## How to use this runbook
 
@@ -61,7 +66,7 @@ Gate: you have both zips unpacked, a phone-verified Kaggle account, and you know
 ### 0.1 Accounts
 
 - [ ] 0.1.1 Log in to kaggle.com and confirm your phone is verified (Settings → Phone verification). Internet ON in Notebook A needs it.
-- [ ] 0.1.2 Check your weekly GPU quota on Kaggle (Settings → Quotas). Notebook B needs one RTX PRO 6000 session of up to 12 hours.
+- [ ] 0.1.2 Check your weekly GPU quota on Kaggle (Settings → Quotas). Notebook B needs one GPU session of up to 12 hours (T4 x2, or RTX PRO 6000 through a competition-attached notebook; see 2.1).
 - [ ] 0.1.3 Optional: get a free FIRMS MAP\_KEY at firms.modaps.eosdis.nasa.gov/api/map\_key. Only needed for recent near-real-time data.
 - [ ] 0.1.4 Create or log in to a GitHub account. You need it for free hosting in Phase 6.
 - [ ] 0.1.5 Make sure Claude Code is installed on your laptop and signed in.
@@ -84,7 +89,7 @@ Check before moving on:
 ### 0.3 Event rules and timing
 
 - [ ] 0.3.1 Open the official challenge page in a browser (the sandbox could not read it): spaceappschallenge.org → 2026 → Harmonization of MODIS and VIIRS Hot Spots. Note the stated objectives.
-- [ ] 0.3.2 Ask your Dhaka local organizer whether work prepared before the event window (14 Nov 2026) may be entered. Write the answer here.
+- [ ] 0.3.2 Ask your Dhaka local organizer whether work prepared before the event window may be entered. The dates are UNVERIFIED: the research pack says submission closed on 7 Oct 2026, the PRD says the project window starts 14 Nov 2026. Write the real dates and the answer here.
 - [ ] 0.3.3 Note the submission deadline, the video length limit and whether a public code link is required.
 - [ ] 0.3.4 Decide your team list. Today the credits name only M. Al Shahriar Hameem; add teammates in the app footer if they join.
 
@@ -94,7 +99,7 @@ Check before moving on:
 
 ## Phase 1 — Notebook A: fetch NASA data (internet ON)
 
-Gate: a committed version of `lumos_A_fetch` whose Output tab holds `lumos_bundle/` with no `error` files. About 30–60 minutes. These steps are identical to the guide cells inside the notebook.
+Gate: a committed version of `lumos_A_fetch` whose Output tab holds `lumos_bundle/` with no `error` files (6 `missing` files for 2025 are expected). Time is not measured yet; plan 30–60 minutes. These steps are identical to the guide cells inside the notebook.
 
 ### 1.1 Create and configure the Kaggle notebook
 
@@ -103,8 +108,8 @@ Manual set-up in the Kaggle web UI before any cell runs. Nothing is executed.
 - [ ] 1.1.1 On kaggle.com click **Create → New Notebook**.
 - [ ] 1.1.2 In the editor, **File → Import Notebook** and upload `notebooks/lumos_A_fetch.ipynb`. Rename the notebook `lumos_A_fetch` (Notebook B's instructions use this name).
 - [ ] 1.1.3 Right-hand panel **Settings → Internet: ON** (Kaggle only allows this on a phone-verified account).
-- [ ] 1.1.4 **Settings → Accelerator: None** (CPU) or **GPU T4**. No GPU is needed here.
-- [ ] 1.1.5 Leave **Settings → Environment** on the default (latest) image. Notebook B must use the same image, or the offline wheels may not install.
+- [ ] 1.1.4 **Settings → Accelerator: None** (CPU). No GPU is needed here.
+- [ ] 1.1.5 Leave **Settings → Environment** on the default (latest) image; do not pick an old pinned image. Notebook B also uses the default, so the offline wheels match.
 - [ ] 1.1.6 *(Optional, only for recent near-real-time data)* **Add-ons → Secrets → Add a new secret** named `FIRMS_MAP_KEY` with your free FIRMS MAP\_KEY, and tick it for this notebook. Then set `FETCH_API_NRT = True` in 1.2.
 - [ ] 1.1.7 Start the session (the power button, or run the first cell) and follow 1.2 to 1.12 cell by cell, or use **Run All**.
 
@@ -118,9 +123,9 @@ Check before moving on:
 Sets the countries, year ranges, politeness limits for the downloader and the output folder (`/kaggle/working/lumos_bundle`). It only defines settings and prints nothing.
 
 - [ ] 1.2.1 Check `COUNTRIES` (default Bangladesh, Australia and United_States; a space in a name becomes an underscore). Leave `EXTRA_COUNTRIES = []` unless you were asked to add training countries; each extra country adds download time.
-- [ ] 1.2.2 Leave `MODIS_YEARS` (2001–2025) and `VIIRS_YEARS` (2012–2025) as they are.
+- [ ] 1.2.2 Leave `MODIS_YEARS` (2001–2025) and `VIIRS_YEARS` (2012–2025) as they are. The 2025 files do not exist on FIRMS and will be logged as `missing`.
 - [ ] 1.2.3 Set `FETCH_API_NRT = True` only if you added the `FIRMS_MAP_KEY` secret in 1.1.6. Otherwise leave it `False`.
-- [ ] 1.2.4 Leave `TRY_NOAA20 = False` (that FIRMS folder is unverified; it would only log 404s).
+- [ ] 1.2.4 Leave `TRY_NOAA20 = False` (the `viirs-noaa20` and `viirs-noaa21` folders returned 404 on 10 Oct 2026; it would only log 404s).
 - [ ] 1.2.5 Leave the politeness settings (`MAX_WORKERS = 4`, `MAX_RETRIES = 3`, `BACKOFF_BUDGET_S`, `CIRCUIT_BREAKER_N`, `FILE_DEADLINE_S`) unless FIRMS is rate-limiting you heavily.
 - [ ] 1.2.6 Run the cell. Do not set any `LUMOS_*` environment variables on Kaggle; they are for local tests only.
 
@@ -167,7 +172,7 @@ Check before moving on:
 Downloads every FIRMS yearly country CSV (MODIS 2001–2025 and VIIRS S-NPP 2012–2025 for each country), validates each file, and writes the manifest as it goes. Files already downloaded in this session are reused if their SHA-256 matches.
 
 - [ ] 1.6.1 Run the cell. The first lines show the Python version, the bundle path and the base URLs.
-- [ ] 1.6.2 Look for `FIRMS country archives: 117 files, 4 workers` (3 countries × (25 MODIS + 14 VIIRS) years with the default config).
+- [ ] 1.6.2 Look for `FIRMS country archives: 117 files, 4 workers` (3 countries × (25 MODIS + 14 VIIRS) years with the default config; 6 of them, the 2025 files, are expected to be `missing`).
 - [ ] 1.6.3 Watch the per-file lines `[  i/117] ok|missing|error <id> <rows> <MB> <note>`. Ids use the underscore name, for example `modis_2020_United_States`. The Australia and United_States files are the largest and take longest.
 - [ ] 1.6.4 Lines like `HTTP 429 for ... retry 1/3 in 12.0s` are normal: the downloader is waiting as FIRMS asked.
 - [ ] 1.6.5 If you see `circuit breaker` or `HTTP 403; stopping all requests`, the remaining files from that host are recorded as `error`.
@@ -175,9 +180,8 @@ Downloads every FIRMS yearly country CSV (MODIS 2001–2025 and VIIRS S-NPP 2012
 
 Check before moving on:
 
-- [ ] The closing line shows `error=0`.
-- [ ] `missing` appears only for files FIRMS really does not have (a 404). They are recorded as missing, never filled with zeros.
-- [ ] Any 2025 file FIRMS has not filled yet shows `ok`, `0 rows` and the note `header-only file (0 data rows)`. That is expected.
+- [ ] The closing line shows `ok=111, missing=6, error=0`.
+- [ ] The 6 `missing` files are the 2025 files (MODIS and VIIRS for Bangladesh, Australia and United_States), where FIRMS answers 404. They are recorded as missing, never filled with zeros, so the calendar ends at 2024. If you see other `missing` files, write them down; if you see any `error`, see section 8.1.
 - [ ] `/kaggle/working/lumos_bundle/manifests/sources.json` exists (Output panel on the right).
 
 ### 1.7 Optional recent NRT data
@@ -234,13 +238,13 @@ Check before moving on:
 Prints a table of every FIRMS file (rows: sensor and year; columns: country; cells: `ok <rows>`, `missing` or `error`), then counts by status and the note for every error.
 
 - [ ] 1.11.1 Run the cell.
-- [ ] 1.11.2 Scan the table column by column. MODIS should be `ok` for 2001–2025 and VIIRS S-NPP for 2012–2025.
+- [ ] 1.11.2 Scan the table column by column. MODIS should be `ok` for 2001–2024 and VIIRS S-NPP for 2012–2024; the 2025 row is `missing` in every column.
 - [ ] 1.11.3 Read `All records by status: {...}` and any `ERROR <id> - <note>` lines.
 
 Check before moving on:
 
 - [ ] The table has no `error` cells.
-- [ ] `missing` cells are only years FIRMS does not publish. Write down any you see.
+- [ ] `missing` cells are only the six 2025 files. Write down any other you see.
 
 ### 1.12 Final check and Save Version
 
@@ -259,33 +263,35 @@ Check before moving on:
 - [ ] `raw` is the largest folder and `context` is not empty.
 - [ ] The committed version's Output tab shows `lumos_bundle/manifests/sources.json`.
 
-## Phase 2 — Notebook B: train offline on the Blackwell GPU
+## Phase 2 — Notebook B: train offline on a Kaggle GPU
 
-Gate: `lumos_app_bundle.zip` is on your computer, `blocked network attempts: 0`, and no HONEST NOTE (synthetic) banner. Roughly 30–90 minutes on real data (not yet measured). These steps are identical to the guide cells inside the notebook.
+Gate: `lumos_app_bundle.zip` is on your computer, `blocked network attempts: 0`, and no HONEST NOTE (synthetic) banner. Run time on real data is not measured; for a first run cap each long stage at 45 minutes (see 2.2). These steps are identical to the guide cells inside the notebook.
 
 ### 2.1 Attach inputs and pick the GPU
 
 Manual set-up in the Kaggle web UI before any cell runs.
 
-- [ ] 2.1.1 On kaggle.com click **Create → New Notebook**, then **File → Import Notebook** and upload `notebooks/lumos_B_train.ipynb`.
+- [ ] 2.1.1 On kaggle.com click **Create → New Notebook**, then **File → Import Notebook** and upload `kaggle_notebooks/lumos_B_train.ipynb`.
 - [ ] 2.1.2 Right-hand panel **Add Input → Notebook Output**, search for `lumos_A_fetch` and add its latest successful version.
 - [ ] 2.1.3 *(Optional, enables Q2 in 2.16)* **Add Input → Models**, pick an instruct model such as Qwen2.5-7B-Instruct, framework **Transformers**. Its weights must fit in min(30 GB, half the free RAM, 85% of free VRAM).
-- [ ] 2.1.4 **Settings → Accelerator: RTX PRO 6000** (Blackwell).
-- [ ] 2.1.5 **Settings → Internet: OFF**. The Blackwell GPU is only offered with Internet OFF, and this notebook blocks all network sockets anyway.
-- [ ] 2.1.6 Leave **Settings → Environment** on the same image as Notebook A.
+- [ ] 2.1.4 Choose ONE of two options and write down which:
+  - **(a) Accelerator GPU T4 x2, no competition attached.** 31 GiB RAM, 4 CPUs. Safe for the account. Notebook B uses one T4 and turns bf16 off there. Slower and RAM-limited; the United States panel may be the limit.
+  - **(b) Accelerator RTX PRO 6000**, only in a new notebook with the competition `arc-prize-2026-arc-agi-3` attached (Add Input → Competition) and Internet OFF. 177 GiB RAM, 48 CPUs. **Warning:** a search summary of the competition page says other use of that machine could lead to moderation action such as suspension (unconfirmed). This is your decision; do not read or submit anything in the competition.
+- [ ] 2.1.5 **Settings → Internet: OFF** (required for option (b); recommended for (a)). This notebook blocks all network sockets anyway.
+- [ ] 2.1.6 Leave **Settings → Environment** on the default (latest). Do not choose an old pinned image: the probe showed torch 2.11 with `sm_120` working on the default image, and an old image can fail with "no kernel image is available".
 - [ ] 2.1.7 Start the session and follow 2.2 to 2.18, or use **Run All**. Do not set `LUMOS_INPUT`, `LUMOS_WORK` or `LUMOS_QUICK` on Kaggle; they are for local tests only.
 
 Check before moving on:
 
 - [ ] The **Input** panel lists Notebook A's output (and the model, if you added one).
-- [ ] The Settings panel shows the RTX PRO 6000 accelerator and Internet OFF.
+- [ ] The Settings panel shows your chosen accelerator and Internet OFF.
 
 ### 2.2 Config and switches
 
 Sets offline variables, run switches, seeds, epochs, time budgets, split years and gate thresholds; finds Notebook A's bundle; creates a new run folder or resumes the latest unfinished one.
 
 - [ ] 2.2.1 For the first real run leave `RUN_XGB`, `RUN_DL`, `RUN_QML` and `RUN_QLLM` all `True`. Set one to `False` only to skip that model.
-- [ ] 2.2.2 Budgets in minutes: `XGB_MAX_MINUTES` 120, `DL_MAX_MINUTES` 120, `QLLM_MAX_MINUTES` 90. To change one, edit the default string inside `os.environ.get(...)`.
+- [ ] 2.2.2 Budgets in minutes: `XGB_MAX_MINUTES` 120, `DL_MAX_MINUTES` 120, `QLLM_MAX_MINUTES` 90 by default. For the first real run lower each to 45 by editing the default string inside `os.environ.get(...)`.
 - [ ] 2.2.3 Change switches or budgets before the first run only: a change starts a fresh run folder instead of resuming.
 - [ ] 2.2.4 Run the cell.
 - [ ] 2.2.5 Read the log line `Lumos Notebook B B-1.1.0 · run <timestamp> · QUICK_TEST=False · input=/kaggle/input · bundle=... · work=/kaggle/working`.
@@ -309,7 +315,7 @@ Blocks every non-local network connection, records Python, RAM, disk, CPU and pa
 Check before moving on:
 
 - [ ] `"device_selected": "cuda"` and `"smoke_test"` shows `"ok": true`.
-- [ ] The `GPU:` line names the RTX PRO 6000 Blackwell.
+- [ ] The `GPU:` line names the GPU you chose (Tesla T4 or RTX PRO 6000).
 
 ### 2.4 Verify the bundle
 
@@ -332,7 +338,7 @@ Reads every usable FIRMS file, removes exact duplicates, quarantines invalid row
 
 - [ ] 2.5.1 Run the cell.
 - [ ] 2.5.2 Watch one line per file: `ingest [  i/N] <id> rows=... quarantined=... last=YYYY-MM-DD ...s · RSS ... GB`.
-- [ ] 2.5.3 `skipped (...)` lines are files that were missing or failed 2.4; they stay unavailable, never zero.
+- [ ] 2.5.3 `skipped (...)` lines are files that were missing (the 2025 files) or failed 2.4; they stay unavailable, never zero.
 - [ ] 2.5.4 If NRT data was fetched, look for `ingest NRT ...: N detections (recent observed layer only; not used for training)`.
 - [ ] 2.5.5 Read the closing line `ingested X raw rows; duplicates removed Y; quarantined Z; aggregate rows W` and the quarantine reason counts.
 
@@ -383,7 +389,7 @@ Defines the metrics and fits the simple baselines: B0\_identity (estimate = Aqua
 
 Check before moving on:
 
-- [ ] `r` is above 1 (VIIRS sees more, smaller fires).
+- [ ] Write down `r`. VIIRS has the sharper pixels, so you would expect it above 1, but the ratio differs by place and season; whatever value you see is a result to record, not a pass/fail test.
 - [ ] `n_iter` is greater than 1 and no `MODEL B1_poisson: failed` line.
 
 ### 2.9 XGBoost B2
@@ -401,7 +407,7 @@ Check before moving on:
 
 ### 2.10 PyTorch MLP D1
 
-Trains a Poisson neural network (128-128-64, bf16 on GPU) for 3 seeds with early stopping (`DL_MAX_MINUTES` cap). ONNX export happens in 2.14.
+Trains a Poisson neural network (128-128-64, bf16 on GPUs that support it, off on T4) for 3 seeds with early stopping (`DL_MAX_MINUTES` cap). ONNX export happens in 2.14.
 
 - [ ] 2.10.1 Run the cell.
 - [ ] 2.10.2 Watch `D1 seed s epoch e/40: train_loss=... val_dev=...` every 5 epochs.
@@ -436,8 +442,8 @@ Opens 2023–2024 exactly once, scores every model, measures 80% interval covera
 
 Check before moving on:
 
-- [ ] On real data the stage is `observed_comparison` or `validated_calibration`, never `ui_prototype`.
-- [ ] The reason lists test area-month MAE for the selected model and both B0 baselines, plus coverage (aim: near 0.80).
+- [ ] On real data the stage is `observed_comparison` or `validated_calibration`, never `ui_prototype`. Note that the stage is currently pooled over all regions and is being redesigned to be per region (`lumos_app/CONTRACT.md` §6): do not quote it as evidence for one region.
+- [ ] The reason lists test area-month MAE for the selected model and both B0 baselines, plus coverage. Compare the coverage with the nominal 0.80 and record the difference.
 
 ### 2.13 Backcast and anomalies
 
@@ -449,7 +455,7 @@ Builds each area's monthly series, applies the selected model to make VIIRS-scal
 Check before moving on:
 
 - [ ] `months_estimated` is about 109 per area when all Aqua years are available.
-- [ ] `est_total_2003_2012` is larger than `aqua_total_2003_2012` (the estimate is on the VIIRS scale).
+- [ ] Compare `est_total_2003_2012` with `aqua_total_2003_2012` and write down which is larger. The estimate is on the VIIRS scale, so a larger value is the design intent, but record what you see.
 
 ### 2.14 Export the app bundle
 
@@ -517,7 +523,7 @@ Prints one row per model, the subset comparison, the selected model with release
 - [ ] 2.18.1 Run the cell and read the summary table.
 - [ ] 2.18.2 Read `Selected model (validation only): ... | release stage: ...`.
 - [ ] 2.18.3 Read `Device: cuda ... blocked network attempts: 0`.
-- [ ] 2.18.4 Look at the figures (time series for BGD, AUS-NSW and USA-CA, plus AUS and USA if present, model comparison, test scatter, QML subset comparison).
+- [ ] 2.18.4 Look at the figures (time series for BGD, AUS-NSW and USA-CA, plus AUS and USA if present, model comparison, test scatter, QML subset comparison). Record what you see; do not adjust anything because of how a figure looks.
 - [ ] 2.18.5 Download `lumos_app_bundle.zip` from the **Output** panel now, or commit with **Save Version → Save & Run All**. Interactive session files disappear when the session stops.
 
 Check before moving on:
@@ -555,27 +561,30 @@ Check before moving on:
 
 ### 3.3 Look at the figures
 
-- [ ] 3.3.1 Open `figures/timeseries_BGD.png`. The teal estimate should run into the violet VIIRS line around 2012 with no step.
-- [ ] 3.3.2 Check Aqua (cyan) sits below VIIRS (violet) almost every month.
-- [ ] 3.3.3 Check Bangladesh peaks in its dry season (roughly February–April). If the peak is elsewhere, flag it in 3.5.
-- [ ] 3.3.4 Open `figures/timeseries_AUS-NSW.png`. Look for the 2019–20 Black Summer spike in VIIRS. It is a real event and must stay visible.
-- [ ] 3.3.4a Open `figures/timeseries_USA-CA.png`. Check the VIIRS line sits above Aqua and the estimate runs into VIIRS around 2012 with no step. Note California's peak months; do not assume them in advance. If a figure for `USA` or `AUS` exists, check the same.
-- [ ] 3.3.5 Open `figures/test_scatter_aoi_month.png`. Points should hug the diagonal, with no big group far above or below.
+Rule for this section: look, describe and record. A result that looks good and one that looks bad are both valid outcomes. Do not change the model, features, thresholds or splits because of what you see here, and never tune on the test years (2023–2024).
+
+- [ ] 3.3.1 Open `figures/timeseries_BGD.png`. Inspect whether the estimated (teal) series is continuous across 2012 where it meets the VIIRS (violet) line. A visible jump or no jump are both valid outcomes; record what you see (and roughly how large any step is).
+- [ ] 3.3.2 Note how Aqua (cyan) compares with VIIRS (violet) month by month: where it is below, where it is not.
+- [ ] 3.3.3 Note the months where Bangladesh peaks. Compare with what you expected only as a flag for the notes in 3.5; this is not a gate.
+- [ ] 3.3.4 Open `figures/timeseries_AUS-NSW.png`. Note the largest VIIRS months and whether the 2019–20 season stands out. Do not tune anything to make a known event more or less visible.
+- [ ] 3.3.4a Open `figures/timeseries_USA-CA.png`. Record the VIIRS and Aqua relationship, the 2012 continuity of the estimate, and California's peak months; do not assume them in advance. Remember that `USA-CA` uses the national month ratios. If a figure for `USA` or `AUS` exists, record the same things.
+- [ ] 3.3.5 Open `figures/test_scatter_aoi_month.png`. Record how tightly the points follow the diagonal and whether any group sits far above or below.
 - [ ] 3.3.6 Open `figures/model_comparison.png` and `figures/qml_subset_comparison.png`. Note which model wins and how Q1 compares on the matched subset.
+
+Continuity at 2012 is a sanity check, not evidence that the 2003–2011 backcast is accurate: there is no VIIRS reference before 2012, so backcast skill is only extrapolated from the 2013+ held-out years.
 
 Check before moving on:
 
-- [ ] No visible jump at 2012 in the harmonized series.
-- [ ] Black Summer is visible in NSW.
-- [ ] California and Bangladesh show no visible jump at 2012 either.
+- [ ] For each of BGD, AUS-NSW and USA-CA you have written down what the 2012 region of the series looks like (step, no step, unclear) and what the peak months are.
+- [ ] Anything surprising is written in this doc and in 3.5, not fixed.
 
 ### 3.4 Sanity-check the numbers
 
-- [ ] 3.4.1 From the notebook log (2.8.2), note the global VIIRS/Aqua ratio `r`. Expect several times more VIIRS than Aqua detections; Fu et al. 2020 found MODIS missed most VIIRS fire pixels.
+- [ ] 3.4.1 From the notebook log (2.8.2), note the global VIIRS/Aqua ratio `r`. Fu et al. 2020 found Aqua MODIS missed 65% (forests) and 83% (low-biomass lands) of VIIRS fire pixels in NE Asia, and the gap differs by region (MODIS omission against ASTER is 86.2%, regional detection probability 7% to 26%), so there is no single expected value. Record `r`, and the per-country and per-month ratios.
 - [ ] 3.4.2 Open `comparison.csv`. Find the test area-month MAE of the selected model, B0\_identity and B0\_month\_ratio.
-- [ ] 3.4.3 Check interval coverage on test is between 0.70 and 0.90 for an 80% interval.
-- [ ] 3.4.4 Check the active-cell subgroup errors are not much worse than the all-cell errors.
-- [ ] 3.4.5 Open `activity/AUS/2016.json`, `activity/USA/2016.json` or any month with a missing source. Missing values must be `null`, never `0`.
+- [ ] 3.4.3 Record the interval coverage on test next to the nominal 0.80, and say whether it is pooled over all regions (it currently is). Report the difference as it is.
+- [ ] 3.4.4 Compare the active-cell subgroup errors with the all-cell errors and record the difference.
+- [ ] 3.4.5 Open `activity/BGD/2025.json` (and the same for `USA` and `AUS`), or any month with a missing source. The 2025 FIRMS files do not exist, so those values must be `null`, never `0`. Partial months (Aqua before 3 Jul 2002, S-NPP before 20 Jan 2012) must be flagged `partial`.
 - [ ] 3.4.6 Open `runs/<ts>/run_log.json` on Kaggle and note Australia's and the United States' ingest time and peak memory for future runs.
 
 Check before moving on:
@@ -584,9 +593,9 @@ Check before moving on:
 
 ### 3.5 Decide what you will claim
 
-- [ ] 3.5.1 If `validated_calibration`: you may say "calibrated MODIS to VIIRS scale, tested on 2023–2024 held-out data", quoting the MAE and coverage.
+- [ ] 3.5.1 If `validated_calibration`: you may say "calibrated MODIS to VIIRS scale, tested on 2023–2024 held-out data (pooled over all regions)", quoting the MAE and coverage. Do not say it about one region unless that region's own test numbers exist.
 - [ ] 3.5.2 If `observed_comparison`: say "we show both sensors side by side; our calibration did not beat a simple ratio on held-out years". This is a legitimate, honest result.
-- [ ] 3.5.3 Never claim true fire counts, burned area or a quantum advantage.
+- [ ] 3.5.3 Never claim true fire counts, burned area, wildfire counts (use "hotspots") or a quantum advantage. Burned-area products are not independent checks of hotspots.
 - [ ] 3.5.4 Note Q2's status (ok or skipped) for the pitch.
 
 ### 3.6 If the results look wrong
@@ -604,7 +613,7 @@ Gate: the app runs locally on the real snapshot, the DEMO label is gone, and all
 
 - [ ] 4.1.1 Copy `lumos_app_bundle.zip` into the app folder root.
 - [ ] 4.1.2 Open a terminal in the app folder and start Claude Code (`claude`).
-- [ ] 4.1.3 Paste: "Read CLAUDE\_CODE\_MASTER\_PROMPT.md, PRD.md, CONTRACT.md and STATUS.md. Summarise the current state in 10 lines and wait."
+- [ ] 4.1.3 Paste: "Read CLAUDE\_CODE\_MASTER\_PROMPT.md, PRD.md, CONTRACT.md (including sections 7 to 10) and STATUS.md. Summarise the current state in 10 lines and wait."
 - [ ] 4.1.4 Check the summary mentions the two routes (landing and workspace) and the synthetic sample snapshot.
 
 ### 4.2 Import the real bundle
@@ -628,7 +637,7 @@ Check before moving on:
 - [ ] 4.3.5 Open the workspace. The release-stage label matches the manifest.
 - [ ] 4.3.6 Select Bangladesh, March of a recent year. Check the evidence drawer's numbers against `activity/BGD/<year>.json`.
 - [ ] 4.3.7 Turn on **Harmonize in your browser**. The parity badge must pass.
-- [ ] 4.3.8 Select New South Wales, December 2019. The Black Summer spike shows in the calendar and chart.
+- [ ] 4.3.8 Select New South Wales, December 2019. Note what the calendar and chart show for that month; compare with what you recorded in 3.3.4.
 - [ ] 4.3.8a Select California (`USA-CA`) and a recent year. Check the evidence drawer's numbers against `activity/USA-CA/<year>.json`. Then select the whole `USA` and confirm it shows the country calendar and chart but no 5 km cell map layer.
 - [ ] 4.3.9 Export CSV and Print brief once; check they carry the new snapshot id.
 - [ ] 4.3.10 Open Models: the comparison table shows real metrics; QML is labelled research.
@@ -743,15 +752,15 @@ Gate: submission filed before the deadline with the live link, code link, video 
 - [ ] 7.2.1 One-sentence summary: "Lumos puts NASA's MODIS and VIIRS fire records on one fair scale and shows each place's burning calendar, with honest error bars."
 - [ ] 7.2.2 Problem: the 2012 jump caused by the sharper VIIRS camera (two-camera analogy).
 - [ ] 7.2.3 What we built: the calendar workspace, the harmonized series, the 3D story, offline install on every device.
-- [ ] 7.2.4 Results: the release stage, test MAE against baselines, interval coverage (from Phase 3).
-- [ ] 7.2.5 Limits: not fire counts, not burned area, cloud gaps unknown, Mymensingh boundary.
-- [ ] 7.2.6 NASA data used: FIRMS MODIS C6.1 and VIIRS 375 m S-NPP (country yearly files); Natural Earth boundaries.
+- [ ] 7.2.4 Results: the release stage, test MAE against baselines, interval coverage (from Phase 3), stated as pooled over all regions unless per-region numbers exist. If the estimate did not beat the simple ratio, say so.
+- [ ] 7.2.5 Limits: not fire counts, not wildfire counts (prescribed and agricultural burning are included), not burned area, cloud gaps unknown, no 2025 data, Mymensingh boundary, USA includes Alaska and Hawaii.
+- [ ] 7.2.6 NASA data used: FIRMS MODIS C6.1 and VIIRS 375 m S-NPP (country yearly files, 2001–2024); Natural Earth boundaries.
 - [ ] 7.2.7 Research extras: simulated QML and QLLM compared fairly against classical models, no advantage claimed.
 - [ ] 7.2.8 Credits: M. Al Shahriar Hameem, Team Lumos, Dhaka (plus any teammates).
 
 ### 7.3 Record the demo video
 
-- [ ] 7.3.1 Follow the 4-minute outline in PRD v1 §11 (two-camera problem → Bangladesh calendar → compare sensors → calibration and held-out result → NSW and California, mobile, offline → limits and next step).
+- [ ] 7.3.1 Follow the 4-minute outline in PRD v1 §11 (two-camera problem → Bangladesh calendar → compare sensors → calibration and held-out result if available, else observed comparison → NSW and California, mobile, offline → limits and next step).
 - [ ] 7.3.2 Record the landing scroll at 1440 px with reduced motion OFF.
 - [ ] 7.3.3 Show the workspace on a phone, installed as an app.
 - [ ] 7.3.4 Show the Harmonize-in-your-browser parity badge (proof the trained weights are live).
@@ -782,8 +791,10 @@ Gate: submission filed before the deadline with the live link, code link, video 
 | 1.6 | Many `HTTP 429` lines | Normal waiting; if the back-off budget runs out, re-run the cell later (cached files are reused) |
 | 1.6 | `HTTP 403; stopping all requests` | FIRMS refused this session; wait an hour, then re-run |
 | 1.6 | `error` for one file | Re-run the cell; only failed files are fetched again |
+| 1.6 | `missing=6` | Expected: the six 2025 files do not exist on FIRMS (404). More than 6, or any `error`, is a problem |
 | 1.9 | `wheel FAILED pennylane` | Fine: Notebook B uses its built-in quantum simulator |
-| 2.1 | Blackwell not offered | Internet must be OFF; check your GPU quota |
+| 2.1 | RTX PRO 6000 not offered | It needs a new notebook with the competition attached and Internet OFF; otherwise use T4 x2 (option (a)); check your GPU quota |
+| 2.5–2.6 | Out of memory on T4 x2 (31 GiB RAM) | Re-run all to resume; if it repeats, set `RUN_QML = False`, then use the RTX option (177 GiB) or ask Claude to cap the US panel |
 | 2.2 | `WARNING: N bundles found` | Remove the extra inputs, keep one Notebook A version |
 | 2.3 | `device_selected: cpu` | GPU smoke test failed; the run continues on CPU with capped models (slower) |
 | 2.4 | `SYNTHETIC=True` | You attached the test fixture; attach Notebook A's real output instead |

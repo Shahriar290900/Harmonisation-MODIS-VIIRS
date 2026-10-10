@@ -6,18 +6,18 @@ Sources: `--help` output, installed source (`kaggle/api/kaggle_api_extended.py`,
 
 CLI binary (venv, Python 3.12.2, kaggle 2.2.4, kagglesdk 0.1.37, nbformat 5.11.1):
 
-    KBIN=/private/tmp/claude-501/-Users-aburoshderokonuddawla-Desktop-Lumos-Fire-Calendar-Complete/511a4843-a341-4e98-b431-30787176181b/scratchpad/kgenv/bin/kaggle
+    KBIN=<scratchpad>/kgenv/bin/kaggle
 
 Credential lookup order (CONFIRMED in `kaggle_env.get_access_token_from_env` and `KaggleApi.authenticate`):
 1. Inside a Kaggle notebook: file named by env `KAGGLE_API_V1_TOKEN_PATH`.
 2. Env `KAGGLE_API_TOKEN`: either the token string itself or a path to a file that holds it.
 3. `~/.kaggle/access_token`, then `~/.kaggle/access_token.txt`.
 4. Then legacy `~/.kaggle/kaggle.json` / `KAGGLE_USERNAME` + `KAGGLE_KEY`, then OAuth creds, then anonymous (only for commands that allow it).
-The token is introspected server side to get the username (so `id` in metadata must use that username: `shahriarhameem`). `~/.kaggle/` exists but is empty (created by the CLI itself; no secrets stored there).
+The token is introspected server side to get the username (so `id` in metadata must use that username: `shahriarhameem`, a public Kaggle handle; written `<owner>` everywhere else in these docs). `~/.kaggle/` exists but is empty (created by the CLI itself; no secrets stored there).
 
 Per-command pattern (token read from the private file, never printed):
 
-    export KAGGLE_API_TOKEN="$(cat /private/tmp/claude-501/-Users-aburoshderokonuddawla-Desktop-Lumos-Fire-Calendar-Complete/511a4843-a341-4e98-b431-30787176181b/scratchpad/.kaggle_token)"
+    export KAGGLE_API_TOKEN="$(cat <scratchpad>/.kaggle_token)"   # private token file outside the repo
     $KBIN quota
 
 (Per source lines 99-100, `KAGGLE_API_TOKEN` may also be a path to the token file; not exercised by us.)
@@ -41,7 +41,7 @@ Politeness rules we follow: sequential calls, `sleep 6` between calls, status po
 | delete | `$KBIN kernels delete OWNER/SLUG -y` | destructive; never use on owner notebooks. Only on our own `lumos-probe-*` if cleanup is wanted. |
 | quota | `$KBIN quota` | verified output: GPU used 0.05h / remaining 29.95h / total 30h; TPU 0/20h; refresh 2026-10-17T00:00. |
 
-Slug rule on push: `id` must be `OWNER/slug`, no version. `title` >= 5 characters; the slug should equal the slugified title (lowercase, spaces to dashes) or the CLI prints a warning. Use titles like `Lumos Probe T4` with id `shahriarhameem/lumos-probe-t4`.
+Slug rule on push: `id` must be `OWNER/slug`, no version. `title` >= 5 characters; the slug should equal the slugified title (lowercase, spaces to dashes) or the CLI prints a warning. Use titles like `Lumos Probe T4` with id `<owner>/lumos-probe-t4`.
 
 Rate limiting: no 429s seen over about 50 calls spaced >= 6 s.
 
@@ -95,7 +95,7 @@ Docker image / environment (matters for Blackwell sm_120): the owner's RTX noteb
 (a) T4 with Internet ON (probe or any non-RTX GPU notebook):
 
     {
-      "id": "shahriarhameem/lumos-probe-t4",
+      "id": "<owner>/lumos-probe-t4",
       "title": "Lumos Probe T4",
       "code_file": "lumos_probe_t4.ipynb",
       "language": "python",
@@ -111,12 +111,12 @@ Docker image / environment (matters for Blackwell sm_120): the owner's RTX noteb
       "model_sources": []
     }
 
-(a2) Notebook A (CPU, internet ON): same shape with `"enable_gpu": false`, `machine_shape` omitted, id e.g. `shahriarhameem/lumos-a-fetch`.
+(a2) Notebook A (CPU, internet ON): same shape with `"enable_gpu": false`, `machine_shape` omitted, id e.g. `<owner>/lumos-a-fetch`.
 
-(b) RTX PRO 6000 + competition source + Internet OFF (mirrors final-qllm minus its datasets, model and pinned image; do NOT include `shahriarhameem/ml-data` or the Qwen model):
+(b) RTX PRO 6000 + competition source + Internet OFF (mirrors final-qllm minus its datasets, model and pinned image; do NOT include `<owner>/ml-data` or the Qwen model):
 
     {
-      "id": "shahriarhameem/lumos-probe-rtx",
+      "id": "<owner>/lumos-probe-rtx",
       "title": "Lumos Probe RTX",
       "code_file": "lumos_probe_rtx.ipynb",
       "language": "python",
@@ -138,14 +138,14 @@ The RTX kernel is attached to the ARC competition only as an access path: probe 
 
 ## 5. End-to-end command template
 
-    KBIN=.../scratchpad/kgenv/bin/kaggle
-    export KAGGLE_API_TOKEN="$(cat .../scratchpad/.kaggle_token)"      # per command, never echoed
+    KBIN=<scratchpad>/kgenv/bin/kaggle
+    export KAGGLE_API_TOKEN="$(cat <scratchpad>/.kaggle_token)"      # private token file outside the repo; per command, never echoed
     $KBIN quota
     $KBIN kernels push -p docs/kaggle/probes/lumos-probe-rtx -t 600    # push + run, 10 min cap
-    sleep 60; $KBIN kernels status shahriarhameem/lumos-probe-rtx      # poll >= 60 s apart
-    $KBIN kernels logs shahriarhameem/lumos-probe-rtx                  # after finish
-    $KBIN kernels output shahriarhameem/lumos-probe-rtx -p docs/kaggle/probes/out-rtx --file-pattern 'probe.*\.json'
-    $KBIN kernels pull shahriarhameem/lumos-probe-rtx -p SCRATCH/chk -m   # verify applied machine_shape / enable_internet
+    sleep 60; $KBIN kernels status <owner>/lumos-probe-rtx      # poll >= 60 s apart
+    $KBIN kernels logs <owner>/lumos-probe-rtx                  # after finish
+    $KBIN kernels output <owner>/lumos-probe-rtx -p docs/kaggle/probes/out-rtx --file-pattern 'probe.*\.json'
+    $KBIN kernels pull <owner>/lumos-probe-rtx -p SCRATCH/chk -m   # verify applied machine_shape / enable_internet
     $KBIN quota
 
 Push response text (from source): `Kernel version N successfully pushed.  Please check progress at <url>` or `Kernel push error: <msg>`; invalid sources are listed as "not valid dataset/competition/kernel sources".

@@ -1,13 +1,13 @@
 # Claude Code prompts (from the runbook)
 
-Paste these into Claude Code with the `lumos_app` folder open, in order. Each is tagged with its runbook step. Start every new session with the master prompt (`CLAUDE_CODE_MASTER_PROMPT.md`).
+Paste these into Claude Code with the `lumos_app` folder open, in order. Each is tagged with its runbook step. Start every new session with the master prompt (`CLAUDE_CODE_MASTER_PROMPT.md`). The project covers three regions (Bangladesh, Australia with NSW, United States with California); the data is synthetic until you import a real bundle.
 
 
 ## Phase 4 — Load real data into the app with Claude Code
 
 **4.1.3**
 ```
-Read CLAUDE_CODE_MASTER_PROMPT.md, PRD.md, CONTRACT.md and STATUS.md. Summarise the current state in 10 lines and wait.
+Read CLAUDE_CODE_MASTER_PROMPT.md, PRD.md, CONTRACT.md (including sections 7 to 10) and STATUS.md. Summarise the current state in 10 lines and wait.
 ```
 
 **4.2.1**

@@ -5,9 +5,9 @@ Read together with the v1.1 amendments (sec 7), the v1.2 addendum and region reg
 Owner: M. Al Shahriar Hameem, Team Lumos (Dhaka). Do not change this file without the coordinator.
 
 ## 0. Two-notebook Kaggle design (user constraint)
-- RTX PRO 6000 Blackwell only runs with internet OFF. Internet ON gives only T4 x2.
+- RTX PRO 6000 Blackwell only runs with internet OFF, and (owner's account of Kaggle) only in a notebook with the competition `arc-prize-2026-arc-agi-3` attached; whether other use of that machine risks moderation action is unconfirmed and is the owner's decision. Internet ON gives only T4 x2. Notebook B also runs on T4 x2 with Internet OFF and no competition (31 GiB RAM, one T4 used).
 - **Notebook A `lumos_A_fetch.ipynb`** (internet ON, CPU or T4): downloads everything to `/kaggle/working/lumos_bundle/`, then the user clicks Save Version.
-- **Notebook B `lumos_B_train.ipynb`** (internet OFF, Blackwell): attach A's output (Add Input → Notebook Output). It must make **zero network calls**. Bundle located by globbing `/kaggle/input/**/lumos_bundle/manifests/sources.json`.
+- **Notebook B `lumos_B_train.ipynb`** (internet OFF, GPU T4 x2 or RTX PRO 6000): attach A's output (Add Input → Notebook Output). It must make **zero network calls**. Bundle located by globbing `/kaggle/input/**/lumos_bundle/manifests/sources.json`.
 - Both notebooks run outside Kaggle too: `LUMOS_ROOT` env var overrides paths (local testing: `LUMOS_INPUT=<dir containing lumos_bundle>`, `LUMOS_WORK=<output dir>`).
 
 ## 1. Data sources (tested 2026-10-09; corrected 2026-10-10, see sec 10)

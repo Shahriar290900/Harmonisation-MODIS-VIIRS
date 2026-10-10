@@ -3,16 +3,21 @@
 
 1. Builds a mirror directory with the FIRMS URL layout (data/country/{sensor}/{year}/...) from the
    synthetic fixture bundle (fixtures/out/lumos_bundle), plus Natural Earth stand-ins under ne/.
-   Missing on purpose: VIIRS-SNPP 2016 Australia (-> 404 -> "missing"). The fixture's 2025 files are an
-   incomplete current year; viirs-snpp 2025 Bangladesh is header-only (-> ok, 0 rows, noted).
-   Default countries are Bangladesh, Australia and United_States (3 x 39 = 117 FIRMS files).
-   Corrupted on purpose: viirs-snpp 2013 Bangladesh is an HTML page (-> "error").
+   Like real FIRMS, the mirror has NO 2025 yearly country files (-> HTTP 404 -> "missing", 6 files: 3 countries x
+   2 sensors); the fixture's 2025 files are deliberately not copied.
+   Also missing on purpose: VIIRS-SNPP 2016 Australia (-> 404 -> "missing").
+   Default countries are Bangladesh, Australia and United_States (3 x 39 = 117 FIRMS files, 111 expected ok on
+   real FIRMS: 117 - 6 for 2025).
+   Corrupted on purpose: viirs-snpp 2013 Bangladesh is an HTML page (-> "error"), so the mirror run ends with
+   ok=109 (111 - 2 deliberate faults), missing=7 (6 for 2025 + 2016 Australia), error=1.
 2. Serves it with `python -m http.server`, executes the generated lumos_A_fetch.ipynb with nbconvert
    (LUMOS_FIRMS_BASE / LUMOS_NE_BASE / LUMOS_SKIP_WHEELS=1 / LUMOS_WORK=tmp) and checks the manifest.
 3. Re-executes to check the resumable cache.
 4. Imports the .py as a module and unit-tests 429+Retry-After, 403 host stop, 5xx retries,
-   bad header, MAP_KEY redaction, stall guard (trickling stream), global back-off budget,
-   circuit breaker, disk-full per file (keeps going) and the all-files key-leak scan.
+   bad header, header-only file, MAP_KEY redaction, stall guard (trickling stream), global back-off budget,
+   circuit breaker, disk-full per file (keeps going), the disk guard (stops requesting files below 2 GiB free),
+   the wheel list (onnxruntime, no standalone onnx), 2025 plan arithmetic (117 / 111 / 6) and the all-files
+   key-leak scan.
 
 Usage: python test_notebook_A.py [--keep]
 """
@@ -50,6 +55,8 @@ def make_mirror(root: Path):
     for r in src:
         if r["status"] != "ok" or r["kind"] == "firms_api":
             continue
+        if r["kind"] == "firms_country" and r["year"] == 2025:
+            continue                      # FIRMS has no 2025 yearly country files (404)
         if r["kind"] == "firms_country":
             dst = root / "data" / "country" / r["sensor"] / str(r["year"]) / Path(r["local_path"]).name
         else:
@@ -112,8 +119,11 @@ def e2e(tmp: Path):
         by = {r["id"]: r for r in man}
         fc = [r for r in man if r["kind"] == "firms_country"]
         check(len(fc) == 3 * (25 + 14), f"{len(fc)} FIRMS country records (3 countries x 39 sensor-years)")
-        check(all(by[f"{s}_2025_{c}"]["status"] == "ok" for s in ("modis", "viirs-snpp")
-                  for c in ("Bangladesh", "Australia", "United_States")), "2025 (current-year) files fetched")
+        m25 = [by[f"{s}_2025_{c}"] for s in ("modis", "viirs-snpp") for c in ("Bangladesh", "Australia", "United_States")]
+        check(len(m25) == 6 and all(r["status"] == "missing" and r["http_status"] == 404 and not r["rows"]
+                                    and r["sha256"] is None and r["local_path"] is None for r in m25),
+              "6 files for 2025 (3 countries x 2 sensors) -> missing (404), no rows, no file: never zero")
+        check(not list((b / "raw/firms_country").rglob("*_2025_*")), "no 2025 file on disk")
         us = by["viirs-snpp_2020_United_States"]
         check(us["status"] == "ok" and us["country"] == "United_States" and us["rows"]
               and us["url"] == f"http://127.0.0.1:{port}/data/country/viirs-snpp/2020/viirs-snpp_2020_United_States.csv"
@@ -122,8 +132,6 @@ def e2e(tmp: Path):
               "United_States: underscore name in id, URL, local_path and manifest country")
         check(sorted({r["country"] for r in fc}) == ["Australia", "Bangladesh", "United_States"],
               "manifest countries = Bangladesh, Australia, United_States")
-        h0 = by["viirs-snpp_2025_Bangladesh"]
-        check(h0["rows"] == 0 and "header-only" in h0["note"], "header-only 2025 file -> ok, 0 rows, noted")
         check(by["viirs-snpp_2016_Australia"]["status"] == "missing"
               and by["viirs-snpp_2016_Australia"]["http_status"] == 404, "VIIRS 2016 Australia -> missing (404)")
         r = by["viirs-snpp_2013_Bangladesh"]
@@ -131,8 +139,14 @@ def e2e(tmp: Path):
               and not (b / "raw/firms_country/viirs-snpp/2013/viirs-snpp_2013_Bangladesh.csv").exists(),
               "HTML body -> error, file not kept")
         oks = [r for r in fc if r["status"] == "ok"]
-        n_fx = sum(1 for r in fx.values() if r["kind"] == "firms_country" and r["status"] == "ok")
-        check(len(oks) == n_fx - 1, f"{len(oks)} ok files (fixture {n_fx} minus corrupted one)")
+        miss = [r for r in fc if r["status"] == "missing"]
+        errs = [r for r in fc if r["status"] == "error"]
+        check(len(oks) == 111 - 2 and len(miss) == 6 + 1 and len(errs) == 1,
+              f"ok={len(oks)} missing={len(miss)} error={len(errs)}: 111 expected ok minus 2 deliberate faults "
+              "(corrupted 2013 BGD, missing 2016 AUS); 6 missing for 2025")
+        check(sorted(r["year"] for r in miss) == [2016] + [2025] * 6,
+              "missing = year 2025 (6) + the deliberately removed 2016 Australia only")
+        check(all(r["id"] in fx for r in oks), "every ok record is a fixture file")
         check(all(r["sha256"] == fx[r["id"]]["sha256"] and r["rows"] == fx[r["id"]]["rows"]
                   and r["bytes"] == fx[r["id"]]["bytes"] for r in oks), "sha256/rows/bytes match fixture")
         check(all((b / r["local_path"]).exists() for r in oks), "all ok files present at local_path")
@@ -144,8 +158,19 @@ def e2e(tmp: Path):
         check("Summary" in out1 or "Bangladesh" in out1, "summary table printed")
         check("United_States" in out1 and "FIRMS country archives: 117 files" in out1,
               "run log shows the 117-file plan and a United_States summary column")
+        check("(ok=109, missing=7, error=1)" in out1
+              and "FIRMS country files: ok=109, missing=7 (2025: 6, other: 1), error=1" in out1,
+              "run log closing lines show ok/missing/error and the 2025 split")
+        check("disk:" in out1 and "GiB free" in out1 and "DISK GUARD" not in out1,
+              "run log shows free disk after each batch, guard not tripped")
+        readme = (b / "README_bundle.md").read_text()
+        check("onnxruntime" in readme and "2025" in readme and "undocumented" in readme,
+              "README_bundle states the 2025 / undocumented-route caveats and the onnxruntime install line")
         cfg = json.loads((b / "manifests" / "config_A.json").read_text())
         check(cfg["SKIP_WHEELS"] is True and cfg["api_key_used"] is False, "config_A flags recorded")
+        check(cfg["WHEELS"] == ["pennylane", "pennylane-lightning", "onnxruntime", "onnxscript"]
+              and cfg["DISK_MIN_FREE_GIB"] == 2.0 and cfg["MODIS_YEARS"][-1] == 2025 and cfg["VIIRS_YEARS"][-1] == 2025,
+              "config_A: new wheel list, disk guard setting, 2025 kept in the year ranges")
         out2 = execute_notebook(env, tmp, "run2.ipynb")
         man2 = json.loads((b / "manifests" / "sources.json").read_text())
         cached = [r for r in man2 if r["status"] == "ok" and r["note"].startswith("cached")]
@@ -187,6 +212,17 @@ class Scripted(BaseHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
             self.wfile.write(b"<html>nope</html>")
+            return
+        elif p.startswith("/headeronly"):
+            head = Scripted.body.split(b"\n", 1)[0] + b"\n"
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(head)))
+            self.end_headers()
+            self.wfile.write(head)
+            return
+        elif p.startswith("/missing"):
+            self.send_response(404)
+            self.end_headers()
             return
         elif p.startswith("/api"):
             self.send_response(404)
@@ -286,6 +322,10 @@ def unit(tmp: Path):
     check("SECRETK123" not in uj[0]["url_redacted"] and "{MAP_KEY}" in uj[0]["url_redacted"],
           "Area API United_States: key redacted in url_redacted")
     fj = A.firms_country_jobs(A.COUNTRIES, A.MODIS_YEARS, A.VIIRS_YEARS)
+    n25 = sum(j["year"] == 2025 for j in fj)
+    check(len(fj) == 117 and n25 == 6 and len(fj) - n25 == 111
+          and A.MODIS_YEARS[-1] == 2025 and A.VIIRS_YEARS[-1] == 2025,
+          "default plan: 117 requests, 6 of them for 2025 (expected missing), so 111 expected ok")
     check(len(fj) == 117 and sum(j["country"] == "United_States" for j in fj) == 39
           and any(j["url"].endswith("/data/country/modis/2020/modis_2020_United_States.csv") for j in fj)
           and any(j["url"].endswith("/data/country/viirs-snpp/2020/viirs-snpp_2020_United_States.csv") for j in fj),
@@ -349,6 +389,50 @@ def unit(tmp: Path):
     r2 = A.download(job("/plain3.csv", 25))
     check(r["status"] == "error" and "No space left" in r["note"] and not left and r2["status"] == "ok",
           "disk-full OSError -> per-file error, partial removed, next file ok")
+    # ---- 404 -> missing (the 2025 case); header-only CSV -> ok with 0 rows and a note ----
+    r = A.download(dict(job("/missing/modis_2025_X.csv", 26), year=2025))
+    check(r["status"] == "missing" and r["http_status"] == 404 and r["rows"] is None and r["sha256"] is None
+          and not (A.BUNDLE / "raw/t/26.csv").exists(), "404 (like FIRMS 2025) -> missing, no file, rows None (not 0)")
+    r = A.download(job("/headeronly/a.csv", 27))
+    check(r["status"] == "ok" and r["rows"] == 0 and "header-only" in r["note"], "header-only CSV -> ok, 0 rows, noted")
+    cc = A.country_status_counts({"a": dict(r, kind="firms_country", year=2024),
+                                  "b": {"kind": "firms_country", "status": "missing", "year": 2025},
+                                  "c": {"kind": "firms_country", "status": "missing", "year": 2016},
+                                  "d": {"kind": "firms_country", "status": "error", "year": 2020},
+                                  "e": {"kind": "context", "status": "ok", "year": None}})
+    check(cc == {"ok": 1, "missing": 2, "missing_2025": 1, "missing_other": 1, "error": 1},
+          "country_status_counts splits missing into 2025 and other years")
+    # ---- wheel list (P1): onnxruntime + onnxscript, no standalone onnx ----
+    check(A.WHEELS == ["pennylane", "pennylane-lightning", "onnxruntime", "onnxscript"] and "onnx" not in A.WHEELS
+          and "onnx" not in A.wheel_list(), "WHEELS = pennylane, pennylane-lightning, onnxruntime, onnxscript (no onnx)")
+    # ---- disk guard (P7): free space logged per batch; below DISK_MIN_FREE_GIB no more files are requested ----
+    check(A.DISK_MIN_FREE_GIB == 2.0 and isinstance(A.disk_free_gib(), float) and A.disk_free_gib() > 0
+          and A.disk_free_gib(A.BUNDLE / "does" / "not" / "exist") > 0,
+          "disk_free_gib reads shutil.disk_usage (also for a not-yet-created folder)")
+    real_free, real_n = A.disk_free_gib, A.DISK_CHECK_EVERY_N
+    A.DISK_CHECK_EVERY_N = 2
+    dj = [job("/plain.csv", 40 + i) for i in range(5)]
+    A.disk_free_gib = lambda path=None: 1.5          # below the 2 GiB guard after the first batch
+    h0 = Scripted.hits.get("/plain.csv", 0)
+    recs = A.run_jobs(dj, {}, "disk-guard-test")
+    asked = Scripted.hits.get("/plain.csv", 0) - h0
+    skipped = [r for r in recs if r["status"] == "error" and r["note"].startswith("skipped: only")]
+    check(len(recs) == 5 and asked == 2 and len(skipped) == 3 and sum(r["status"] == "ok" for r in recs) == 2
+          and all("GiB" in r["note"] for r in skipped),
+          "disk guard: 2 files fetched, then 3 not requested and recorded as error (skipped: only ... GiB free)")
+    A.disk_free_gib = lambda path=None: 50.0
+    h0 = Scripted.hits.get("/plain.csv", 0)
+    recs = A.run_jobs([job("/plain.csv", 50 + i) for i in range(5)], {}, "disk-ok-test")
+    check(len(recs) == 5 and all(r["status"] == "ok" for r in recs) and Scripted.hits.get("/plain.csv", 0) - h0 == 5,
+          "plenty of free disk: all 5 files fetched")
+    A.disk_free_gib, A.DISK_CHECK_EVERY_N = real_free, real_n
+    # ---- USA bbox comment states the positive-longitude Aleutians limitation ----
+    src = PY.read_text()
+    check("POSITIVE longitudes" in src and "+172" in src and "west of -179.2)" not in src,
+          "COUNTRY_BBOX comment: Aleutians west of the antimeridian have positive longitudes (+172..+180)")
+    check("111 are expected" in src and "cease on 2 Nov 2026" in src
+          and "undocumented" in src.lower().replace("not documented", "undocumented"),
+          "guide states 111 expected ok / 6 missing, S-NPP 2 Nov 2026 note and the undocumented route")
     # ---- key-leak check scans ALL files (any suffix) and removes every hit ----
     A._MAP_KEY = "SECRET_KEY_123456"
     leak1 = A.BUNDLE / "manifests" / "a_leak.json"

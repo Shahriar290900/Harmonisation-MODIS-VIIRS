@@ -7,13 +7,13 @@ Paste everything below the line into Claude Code at the root of an empty repo. C
 You are the lead engineer for **Lumos Fire Calendar**, a NASA Space Apps 2026 entry (*Harmonization of MODIS and VIIRS Hot Spots*). Owner: **M. Al Shahriar Hameem**, Team Lumos, Dhaka. Do not invent other contributors.
 
 ## Read first (source of truth, in this order)
-1. `CONTRACT.md`: frozen data contract (v1.0 + §7 v1.1 amendments). Never rename its fields.
+1. `CONTRACT.md`: frozen data contract: v1.0, the v1.1 amendments (§7), the v1.2 addendum and region registry (§8-9, three regions) and the 10 Oct 2026 data-source corrections and USA caveats (§10). Never rename its fields. Treat the AOI list as data from `regions.json`, never hard-code it.
 2. `PRD.md` (v2): product, app requirements (§6), acceptance criteria (§8), status (§9).
 3. `docs/PRD_v1_original.md`: extra detail and caveats; v2 wins on conflicts.
 4. `notebooks/` (Kaggle A fetcher and B trainer, already built and tested) and `notebooks/TEST_REPORT.md`.
-5. `sample_bundle/lumos_app_bundle/`: a **synthetic** bundle produced by Notebook B. It has the exact real format, and every value has `value_status:"demo"`. Use it for development and tests. A real bundle (`lumos_app_bundle.zip`) replaces it when available.
+5. `apps/web/public/data/<snapshot_id>/`: a **synthetic** bundle produced by Notebook B on the test fixture (`fixtures/`). It has the exact real format, and every value has `value_status:"demo"`. Use it for development and tests. A real bundle (`lumos_app_bundle.zip`) replaces it when available. Real data does not exist yet: no claim of accuracy or calibration for any region.
 
-Do not re-ask decisions already made: PWA (one codebase for Windows/macOS/iOS/Android browsers), free static hosting, no paid APIs, Bangladesh + New South Wales detailed AOIs, global map navigation.
+Do not re-ask decisions already made: PWA (one codebase for Windows/macOS/iOS/Android browsers), free static hosting, no paid APIs, three regions: Bangladesh (`BGD` + 7 divisions, default selection), Australia (`AUS` + `AUS-NSW`) and the United States (`USA` + `USA-CA`, California). Detailed AOIs (cells and B1 features) are `BGD`, `AUS-NSW` and `USA-CA`; whole-country `AUS` and `USA` are aggregate-only. Global map navigation.
 
 ## Build
 - **Stack:** Vite + React + TypeScript; MapLibre GL JS (pin versions); compact SVG charts (visx or hand-rolled D3 scales; no heavy chart libs); Zod schemas generated from `activity.schema.json`; vite-plugin-pwa (Workbox); Vitest + Playwright.
@@ -30,7 +30,7 @@ Do not re-ask decisions already made: PWA (one codebase for Windows/macOS/iOS/An
   - Inputs come from `features/<aoi>/<year>.json`.
   - A "Harmonize in your browser" toggle recomputes the selected model and shows parity against the exported estimate. Parity must be ≤1e-3 relative; unit-test it against the sample bundle.
   - Optional (P2): `models/D1_mlp/model.onnx` via onnxruntime-web, using the input spec in its model card.
-- **Implement PRD §6 P0 fully, then P1.** States: observed / estimated / partial / missing / unsupported / demo. Missing is null and never drawn as zero. Show `release_stage` and `release_reason` in a header pill and an "About this data" sheet. A synthetic bundle shows a persistent **DEMO DATA** banner.
+- **Implement PRD §6 P0 fully, then P1.** States: observed / estimated / partial / missing / unsupported / demo. Missing is null and never drawn as zero. Show `release_stage` and `release_reason` in a header tag and an "About this data" sheet. The release stage and the interval coverage figure are being redesigned to be per region (`CONTRACT.md` §6); until then label them as pooled over all regions and never present them as evidence for one region. FIRMS 2025 yearly files do not exist, so 2025 is shown as missing, not zero. Say "hotspot", not "wildfire" (USA caveats in `CONTRACT.md` §10.2). A synthetic bundle shows a persistent **DEMO DATA** banner.
 - **Colours:**
   - Aqua `#00B4D8`, VIIRS `#8B5CF6`, estimate `#14B8A6` (dashed + band), Terra `#F59E0B`, static sources `#EF4444`.
   - Navy UI `#0B1220` / `#111A2E`.

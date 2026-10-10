@@ -230,13 +230,15 @@ transformers 5.16.1 is installed (MEASURED). The code passes `"torch_dtype": dty
 
 Rules that apply to every step: sequential calls, at least 5 s apart; status polling no faster than every 60 s (use 120 s for long runs); on HTTP 429 wait for `Retry-After`; at most 3 attempts per failing call, then record the blocker and take the fallback; no competition data download and no submission, ever; never print or write the token; no bulk downloads (always use `--file-pattern`); the Mac has about 10 GB free.
 
+`<owner>` below is the Kaggle username (see `CLI_NOTES.md` section 0), `<scratchpad>` is a private working folder outside the repo, `<repo>` is the repo root.
+
 Shell prelude for each command (token read from the private file, never echoed):
 
 ```
-S=/private/tmp/claude-501/-Users-aburoshderokonuddawla-Desktop-Lumos-Fire-Calendar-Complete/511a4843-a341-4e98-b431-30787176181b/scratchpad
+S=<scratchpad>   # a private working folder outside the repo
 KBIN=$S/kgenv/bin/kaggle
 export KAGGLE_API_TOKEN="$(cat $S/.kaggle_token)"
-L=/Users/aburoshderokonuddawla/Desktop/Lumos_Fire_Calendar_Complete/lumos_app/docs/kaggle/launch
+L=<repo>/lumos_app/docs/kaggle/launch
 ```
 
 ### R0. Freeze and stage (local, no API)
@@ -249,7 +251,7 @@ L=/Users/aburoshderokonuddawla/Desktop/Lumos_Fire_Calendar_Complete/lumos_app/do
 `$L/A/kernel-metadata.json`
 ```
 {
-  "id": "shahriarhameem/lumos-a-fetch",
+  "id": "<owner>/lumos-a-fetch",
   "title": "Lumos A Fetch",
   "code_file": "lumos_A_fetch.ipynb",
   "language": "python",
@@ -268,7 +270,7 @@ L=/Users/aburoshderokonuddawla/Desktop/Lumos_Fire_Calendar_Complete/lumos_app/do
 `$L/B-rtx/kernel-metadata.json` (same shape as the verified probe, plus the A source)
 ```
 {
-  "id": "shahriarhameem/lumos-b-train",
+  "id": "<owner>/lumos-b-train",
   "title": "Lumos B Train",
   "code_file": "lumos_B_train.ipynb",
   "language": "python",
@@ -280,12 +282,12 @@ L=/Users/aburoshderokonuddawla/Desktop/Lumos_Fire_Calendar_Complete/lumos_app/do
   "machine_shape": "NvidiaRtxPro6000",
   "dataset_sources": [],
   "competition_sources": ["arc-prize-2026-arc-agi-3"],
-  "kernel_sources": ["shahriarhameem/lumos-a-fetch"],
+  "kernel_sources": ["<owner>/lumos-a-fetch"],
   "model_sources": []
 }
 ```
 
-`$L/B-t4/kernel-metadata.json`: as above but `"id": "shahriarhameem/lumos-b-train-t4"`, `"title": "Lumos B Train T4"`, `"machine_shape": "NvidiaTeslaT4"`, `"competition_sources": []`.
+`$L/B-t4/kernel-metadata.json`: as above but `"id": "<owner>/lumos-b-train-t4"`, `"title": "Lumos B Train T4"`, `"machine_shape": "NvidiaTeslaT4"`, `"competition_sources": []`.
 
 Add an optional model to `model_sources` only if the owner wants Q2. A 7B model needs the RTX machine.
 
@@ -301,14 +303,14 @@ Expect: GPU remaining about 29.9 h; the only Lumos kernels are `lumos-probe-t4`,
 
 ```
 $KBIN kernels push -p $L/A -t 7200
-sleep 60; $KBIN kernels status shahriarhameem/lumos-a-fetch      # repeat every 120 s
-$KBIN kernels pull shahriarhameem/lumos-a-fetch -p $S/chk-a -m   # applied settings: enable_internet true, no machine_shape, docker_image digest
+sleep 60; $KBIN kernels status <owner>/lumos-a-fetch      # repeat every 120 s
+$KBIN kernels pull <owner>/lumos-a-fetch -p $S/chk-a -m   # applied settings: enable_internet true, no machine_shape, docker_image digest
 ```
 Success: status `COMPLETE`. Estimated 8 to 40 minutes plus wheels (A's own estimate; unmeasured).
 Then fetch only the small proofs (no raw data):
 ```
-$KBIN kernels files shahriarhameem/lumos-a-fetch --format json
-sleep 6; $KBIN kernels output shahriarhameem/lumos-a-fetch -p $S/out-a --file-pattern 'env_A|config_A|sources|README_bundle'
+$KBIN kernels files <owner>/lumos-a-fetch --format json
+sleep 6; $KBIN kernels output <owner>/lumos-a-fetch -p $S/out-a --file-pattern 'env_A|config_A|sources|README_bundle'
 ```
 Gate G-A (all must hold, otherwise stop and fix A; maximum 3 repair rounds):
 - `env_A.json`: `python_version` is `3.13.15`, which equals the Python of the B image. If not, rerun A with `enable_gpu: true, machine_shape: NvidiaTeslaT4` (about 1 GPU hour at most) so that it runs on the GPU image.
@@ -320,9 +322,9 @@ Gate G-A (all must hold, otherwise stop and fix A; maximum 3 repair rounds):
 
 Files already prepared: `probes/lumos-probe-offline/{kernel-metadata.json,probe.py}` (script kernel, `NvidiaTeslaT4`, Internet OFF, `kernel_sources` = A). Not pushed by this role.
 ```
-$KBIN kernels push -p /Users/aburoshderokonuddawla/Desktop/Lumos_Fire_Calendar_Complete/lumos_app/docs/kaggle/probes/lumos-probe-offline -t 600
-sleep 60; $KBIN kernels status shahriarhameem/lumos-probe-offline
-$KBIN kernels output shahriarhameem/lumos-probe-offline -p $S/out-offline --file-pattern 'rehearsal.*json'
+$KBIN kernels push -p <repo>/lumos_app/docs/kaggle/probes/lumos-probe-offline -t 600
+sleep 60; $KBIN kernels status <owner>/lumos-probe-offline
+$KBIN kernels output <owner>/lumos-probe-offline -p $S/out-offline --file-pattern 'rehearsal.*json'
 ```
 Read `rehearsal.json`:
 - `input_layout`: the real path where A's output is mounted. Confirm B's search (depth 8 from `/kaggle/input`) can reach `lumos_bundle/manifests/sources.json`.
@@ -343,27 +345,27 @@ Gate G-R: any failure is fixed in the notebooks or recorded as a degraded featur
 ```
 $KBIN quota                                                   # note GPU used before
 sleep 6; $KBIN kernels push -p $L/B-rtx -t 14400
-sleep 60; $KBIN kernels pull shahriarhameem/lumos-b-train -p $S/chk-b -m
+sleep 60; $KBIN kernels pull <owner>/lumos-b-train -p $S/chk-b -m
 ```
-Immediately verify in `$S/chk-b/kernel-metadata.json`: `machine_shape` is `NvidiaRtxPro6000`, `enable_internet` is `false`, `competition_sources` has the ARC slug, `kernel_sources` has A. If `machine_shape` differs: the CLI has no cancel command; stop the run in the UI (Session options, Stop) or use `kernels delete shahriarhameem/lumos-b-train -y` (it is our own kernel; never any other), then take R6. Note the `docker_image` digest in the run notes.
+Immediately verify in `$S/chk-b/kernel-metadata.json`: `machine_shape` is `NvidiaRtxPro6000`, `enable_internet` is `false`, `competition_sources` has the ARC slug, `kernel_sources` has A. If `machine_shape` differs: the CLI has no cancel command; stop the run in the UI (Session options, Stop) or use `kernels delete <owner>/lumos-b-train -y` (it is our own kernel; never any other), then take R6. Note the `docker_image` digest in the run notes.
 
 Monitor (no faster than every 120 s):
 ```
-$KBIN kernels status shahriarhameem/lumos-b-train
-$KBIN kernels logs shahriarhameem/lumos-b-train          # after it finishes or errors (or -f to follow)
+$KBIN kernels status <owner>/lumos-b-train
+$KBIN kernels logs <owner>/lumos-b-train          # after it finishes or errors (or -f to follow)
 ```
 Watch for: `Device: cuda` and the GPU line naming the RTX PRO 6000 in 2.3; `SYNTHETIC=False`; `mismatches=0`; the `offline pip:` line (all four installed); `panel plan:` memory line; per-stage `timing` lines.
 Success: status `COMPLETE`, then
 ```
-$KBIN kernels files shahriarhameem/lumos-b-train --format json
-$KBIN kernels output shahriarhameem/lumos-b-train -p $S/out-b --file-pattern 'lumos_app_bundle\.zip|env_B|stages|checksum_report|run_log|metrics'
+$KBIN kernels files <owner>/lumos-b-train --format json
+$KBIN kernels output <owner>/lumos-b-train -p $S/out-b --file-pattern 'lumos_app_bundle\.zip|env_B|stages|checksum_report|run_log|metrics'
 $KBIN quota                                                   # GPU used after, for the billing-rate figure
 ```
 Check the Mac has room for the zip first (`df -h /`, 10 GB free expected; the zip size is unmeasured). Record: `RELEASE STAGE` is `observed_comparison` or `validated_calibration`, `schema errors: 0`, `blocked network attempts: 0`, `Device: cuda`, ONNX parity result, and the GPU hours consumed per wall-clock hour (this measures the RTX billing rate).
 
 ### R6. Launch B on T4 x2 (fallback)
 
-Same as R5 with `$L/B-t4`, slug `shahriarhameem/lumos-b-train-t4`, no competition, `-t 21600` (6 h) for the first run. Expect longer ingest (4 CPUs) and watch for the RAM warning in 2.6 (31 GiB). After an out-of-memory kill a second push of the same kernel starts a fresh session, not a resume (resume works only inside one live session); in that case reduce the work (for example fewer extra countries in A, or fewer seeds) rather than looping.
+Same as R5 with `$L/B-t4`, slug `<owner>/lumos-b-train-t4`, no competition, `-t 21600` (6 h) for the first run. Expect longer ingest (4 CPUs) and watch for the RAM warning in 2.6 (31 GiB). After an out-of-memory kill a second push of the same kernel starts a fresh session, not a resume (resume works only inside one live session); in that case reduce the work (for example fewer extra countries in A, or fewer seeds) rather than looping.
 
 ### R7. If something goes wrong (stuck and repair rules)
 

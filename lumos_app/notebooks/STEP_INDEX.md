@@ -8,6 +8,8 @@ Every section with its steps and checks, exactly as written in the notebook guid
 
 ## Phase 1 — Notebook A: fetch the data bundle
 
+Expected result with the default config: 117 FIRMS yearly country files requested, **111 `ok` and 6 `missing`** (the 6 are year 2025: FIRMS has no 2025 yearly country files, HTTP 404 verified 10 Oct 2026; 2001–2024 return 200). Missing is never zero; the last year with data is 2024. The yearly country route is undocumented on FIRMS's download page (keyless today, may change); only the optional NRT layer needs a MAP_KEY. S-NPP science data delivery is scheduled to cease on 2 Nov 2026 (NASA Earthdata VNP64A1 page): this affects future/NRT use, not the 2013–2024 history. `/kaggle/working` is 19.5 GiB (measured); the downloader stops requesting files below 2 GiB free.
+
 | Section | Cell | What it does | Est. time |
 |---|---|---|---|
 | 1.1 Create and configure the Kaggle notebook | manual | Manual: new notebook, import, Internet ON, CPU or T4, optional secret | 5 min |
@@ -15,7 +17,7 @@ Every section with its steps and checks, exactly as written in the notebook guid
 | 1.3 Helpers | 2 | Imports, expected headers, logger with key redaction | < 5 s |
 | 1.4 Polite downloader | 3 | Download engine: retries, back-off budget, circuit breaker, stall guard, cache | < 1 s |
 | 1.5 Plan the downloads | 4 | Job lists and manifest read/write | < 1 s |
-| 1.6 Download FIRMS country archives | 5 | Download 117 FIRMS yearly CSVs (default config) | 8–40 min |
+| 1.6 Download FIRMS country archives | 5 | Request 117 FIRMS yearly CSVs (default config): 111 expected ok, 6 (year 2025) expected missing; disk guard | 8–40 min |
 | 1.7 Optional recent NRT data | 6 | Optional last 10 days of NRT detections (needs MAP_KEY) | < 1 s / ~1 min |
 | 1.8 Boundaries | 7 | Natural Earth countries and admin-1 boundaries | < 2 min |
 | 1.9 Offline wheelhouse | 8 | Download wheels for offline install in Notebook B | 1–5 min |
@@ -51,10 +53,10 @@ Every section with its steps and checks, exactly as written in the notebook guid
 **Steps**
 
 - [ ] 1.2.1 Check `COUNTRIES` (default Bangladesh, Australia and United_States; a space in a name becomes an underscore). Leave `EXTRA_COUNTRIES = []` unless you were asked to add training countries; each extra country adds download time.
-- [ ] 1.2.2 Leave `MODIS_YEARS` (2001–2025) and `VIIRS_YEARS` (2012–2025) as they are.
-- [ ] 1.2.3 Set `FETCH_API_NRT = True` only if you added the `FIRMS_MAP_KEY` secret in 1.1.6. Otherwise leave it `False`.
+- [ ] 1.2.2 Leave `MODIS_YEARS` (2001–2025) and `VIIRS_YEARS` (2012–2025) as they are. 2025 stays in the config on purpose, but FIRMS has no 2025 yearly country files (HTTP 404 on 10 Oct 2026), so those 6 requests are expected to come back `missing` (see 1.6). If FIRMS ever publishes them, the same run picks them up.
+- [ ] 1.2.3 Set `FETCH_API_NRT = True` only if you added the `FIRMS_MAP_KEY` secret in 1.1.6 (the NRT layer needs a MAP_KEY; the yearly files do not). Otherwise leave it `False`.
 - [ ] 1.2.4 Leave `TRY_NOAA20 = False` (that FIRMS folder is unverified; it would only log 404s).
-- [ ] 1.2.5 Leave the politeness settings (`MAX_WORKERS = 4`, `MAX_RETRIES = 3`, `BACKOFF_BUDGET_S`, `CIRCUIT_BREAKER_N`, `FILE_DEADLINE_S`) unless FIRMS is rate-limiting you heavily.
+- [ ] 1.2.5 Leave the politeness and disk settings (`MAX_WORKERS = 4`, `MAX_RETRIES = 3`, `BACKOFF_BUDGET_S`, `CIRCUIT_BREAKER_N`, `FILE_DEADLINE_S`, `DISK_MIN_FREE_GIB = 2`, `DISK_CHECK_EVERY_N = 12`) unless FIRMS is rate-limiting you heavily.
 - [ ] 1.2.6 Run the cell. Do not set any `LUMOS_*` environment variables on Kaggle; they are for local tests only.
 
 **Check before moving on**
@@ -66,7 +68,7 @@ Every section with its steps and checks, exactly as written in the notebook guid
 **Time:** estimate: under 1 s
 
 ### Phase 1 · Section 1.3 — Helpers  (cell 2)
-**What this cell does:** Imports the libraries and defines the expected FIRMS CSV headers, the two Natural Earth file names, rough country boxes for the optional Area API, a timestamped logger that hides the MAP_KEY, and a SHA-256 helper. Nothing is downloaded.
+**What this cell does:** Imports the libraries and defines the expected FIRMS CSV headers, the two Natural Earth file names, rough country boxes for the optional Area API (the United_States box covers the lower 48, Alaska east of the antimeridian and Hawaii, but misses the western Aleutians, whose FIRMS longitudes are positive, about +172 to +180; the yearly country files are not box-limited), a timestamped logger that hides the MAP_KEY, and a SHA-256 helper. Nothing is downloaded.
 
 **Steps**
 
@@ -82,12 +84,12 @@ Every section with its steps and checks, exactly as written in the notebook guid
 **Time:** estimate: under 5 s
 
 ### Phase 1 · Section 1.4 — Polite downloader  (cell 3)
-**What this cell does:** Defines the download engine: one HTTP session per worker thread, retries that respect `Retry-After`, a global back-off budget, a per-host circuit breaker, a stall guard for streams that trickle, header and GeoJSON validation, atomic rename of finished files, and a cache that reuses files whose SHA-256 still matches the manifest. Nothing is downloaded yet.
+**What this cell does:** Defines the download engine: one HTTP session per worker thread, retries that respect `Retry-After`, a global back-off budget, a per-host circuit breaker, a stall guard for streams that trickle, a disk guard (free space is logged after every batch of files, and no more files are requested once less than 2 GiB are free), header and GeoJSON validation, atomic rename of finished files, and a cache that reuses files whose SHA-256 still matches the manifest. Nothing is downloaded yet.
 
 **Steps**
 
 - [ ] 1.4.1 Run the cell.
-- [ ] 1.4.2 Know the behaviour you will see later: a 404 is recorded as `missing`, a 401 or 403 stops all requests to that host, and 429 or 5xx responses are retried up to `MAX_RETRIES` times.
+- [ ] 1.4.2 Know the behaviour you will see later: a 404 is recorded as `missing`, a 401 or 403 stops all requests to that host, and 429 or 5xx responses are retried up to `MAX_RETRIES` times. After every batch of `DISK_CHECK_EVERY_N` files a `disk: X.X GiB free` line is logged; if free space is below `DISK_MIN_FREE_GIB` (2 GiB) the remaining files are recorded as `error` with a `skipped: only ... GiB free` note instead of being requested.
 - [ ] 1.4.3 A file whose first line is not the expected FIRMS header (for example an HTML error page) is rejected and recorded as `error`.
 
 **Check before moving on**
@@ -104,7 +106,7 @@ Every section with its steps and checks, exactly as written in the notebook guid
 **Steps**
 
 - [ ] 1.5.1 Run the cell.
-- [ ] 1.5.2 For reference, each FIRMS file comes from `https://firms.modaps.eosdis.nasa.gov/data/country/<sensor>/<year>/<sensor>_<year>_<Country>.csv` and is saved under `lumos_bundle/raw/firms_country/<sensor>/<year>/`.
+- [ ] 1.5.2 For reference, each FIRMS file comes from `https://firms.modaps.eosdis.nasa.gov/data/country/<sensor>/<year>/<sensor>_<year>_<Country>.csv` and is saved under `lumos_bundle/raw/firms_country/<sensor>/<year>/`. This yearly country route is not documented on FIRMS's download page (it only links a JavaScript `/country/` page); it works without a key today but may change.
 
 **Check before moving on**
 
@@ -115,30 +117,31 @@ Every section with its steps and checks, exactly as written in the notebook guid
 **Time:** estimate: under 1 s
 
 ### Phase 1 · Section 1.6 — Download FIRMS country archives  (cell 5)
-**What this cell does:** Downloads every FIRMS yearly country CSV (MODIS 2001–2025 and VIIRS S-NPP 2012–2025 for each country) with bounded concurrency, validates each file, and writes `manifests/sources.json` every `MANIFEST_EVERY_N` files and at the end. Files already downloaded in an earlier run of this session are reused if their SHA-256 matches.
+**What this cell does:** Requests every FIRMS yearly country CSV in the config (MODIS 2001–2025 and VIIRS S-NPP 2012–2025 for each country) with bounded concurrency, validates each file, and writes `manifests/sources.json` every `MANIFEST_EVERY_N` files and at the end. FIRMS has no 2025 files (HTTP 404, checked 10 Oct 2026), so with the default config **111 files are expected `ok` and the 6 files for 2025 (3 countries × 2 sensors) are expected `missing`**; a missing file is never replaced by zeros. After every batch of 12 files it logs the free disk space and stops requesting more files if less than 2 GiB are free (`/kaggle/working` is 19.5 GiB on Kaggle, measured; the UI's 57.6 GiB is not what you get). Files already downloaded in an earlier run of this session are reused if their SHA-256 matches.
 
 **Steps**
 
 - [ ] 1.6.1 Run the cell. The first lines show the Python version, the bundle path and the FIRMS and Natural Earth base URLs.
-- [ ] 1.6.2 Look for `FIRMS country archives: 117 files, 4 workers` (3 countries × (25 MODIS + 14 VIIRS) years with the default config).
-- [ ] 1.6.3 Watch the per-file lines `[  i/117] ok|missing|error <id> <rows> <MB> <note>`. Ids use the underscore name, for example `modis_2020_United_States`. The Australia and United_States files are the largest and take longest.
+- [ ] 1.6.2 Look for `FIRMS country archives: 117 files, 4 workers` (3 countries × (25 MODIS + 14 VIIRS) years with the default config, 2025 included on purpose).
+- [ ] 1.6.3 Watch the per-file lines `[  i/117] ok|missing|error <id> <rows> <MB> <note>`. Ids use the underscore name, for example `modis_2020_United_States`. The six 2025 ids (`modis_2025_*`, `viirs-snpp_2025_*`) are expected to show `missing` with the note `404 not found on server`. The Australia and United_States files are the largest and take longest.
 - [ ] 1.6.4 Lines like `HTTP 429 for ... retry 1/3 in 12.0s` are normal: the downloader is waiting as FIRMS asked.
 - [ ] 1.6.5 If you see `circuit breaker` or `HTTP 403; stopping all requests`, the remaining files from that host are recorded as `error` with a `skipped: host ... refused earlier` note.
-- [ ] 1.6.6 Wait for the closing line `FIRMS country archives: done in ...s (ok=..., missing=..., error=...)`.
+- [ ] 1.6.6 Wait for the closing line `FIRMS country archives: done in ...s (ok=..., missing=..., error=...)`. With the default config the expected counts are `ok=111, missing=6, error=0`. A `disk: X GiB free` line follows every batch of 12 files.
 
 **Check before moving on**
 
 - [ ] The closing line shows `error=0`.
-- [ ] `missing` appears only for files FIRMS really does not have (a 404). They are recorded as missing, never filled with zeros.
-- [ ] Any 2025 file that FIRMS has not filled yet shows `ok`, `0 rows` and the note `header-only file (0 data rows)`. That is expected.
+- [ ] With the default config it shows `ok=111, missing=6`. The 6 `missing` files are the 2025 files (3 countries × 2 sensors). `missing` is allowed only for 2025 and for any other year that FIRMS genuinely does not have (a 404 you write down). Missing files are never filled with zeros.
+- [ ] No 2025 file is `ok` with zero rows. A 2025 file recorded as `ok` would mean FIRMS has published it since 10 Oct 2026 (then `ok` is above 111 and that is fine); an `ok` file with no data rows would carry the note `header-only file (0 data rows)`.
+- [ ] The `disk:` lines show more than 2 GiB free and there is no `DISK GUARD` line.
 - [ ] `/kaggle/working/lumos_bundle/manifests/sources.json` exists (Output panel on the right).
 
-**If it fails:** For `error` rows caused by 429, 5xx, timeouts or a tripped circuit breaker, wait a few minutes and run this cell again: good files are reused (note `cached`) and only the failed ones are fetched. For 403, check that Internet is ON. A disk-full error is recorded per file and the run keeps going.
+**If it fails:** For `error` rows caused by 429, 5xx, timeouts or a tripped circuit breaker, wait a few minutes and run this cell again: good files are reused (note `cached`) and only the failed ones are fetched. For 403, check that Internet is ON. A disk-full error is recorded per file and the run keeps going. If a `DISK GUARD` line appears, the remaining files were recorded as `error` (`skipped: only ... GiB free`): free space in `/kaggle/working` (nothing else should be there), then run this cell again; files already downloaded are reused.
 
 **Time:** estimate: 8–40 min (depends on FIRMS speed; United_States file sizes are known but its download time is unmeasured; real data not yet tested)
 
 ### Phase 1 · Section 1.7 — Optional recent NRT data  (cell 6)
-**What this cell does:** Only when `FETCH_API_NRT = True` and a MAP_KEY is found: downloads the last `API_NRT_DAYS` days (default 10) of near-real-time VIIRS and MODIS detections from the FIRMS Area API, in requests of at most 5 days. Otherwise it logs that the step is off. The key is never printed or saved.
+**What this cell does:** Only when `FETCH_API_NRT = True` and a MAP_KEY is found: downloads the last `API_NRT_DAYS` days (default 10) of near-real-time VIIRS and MODIS detections from the FIRMS Area API, in requests of at most 5 days. Otherwise it logs that the step is off. This optional layer is the only part of Notebook A that needs a MAP_KEY. The key is never printed or saved. Note the United_States box is coarse and misses the western Aleutians (positive longitudes, about +172 to +180); the yearly files are not box-limited.
 
 **Steps**
 
@@ -172,7 +175,7 @@ Every section with its steps and checks, exactly as written in the notebook guid
 **Time:** estimate: under 2 min
 
 ### Phase 1 · Section 1.9 — Offline wheelhouse  (cell 8)
-**What this cell does:** Runs `pip download --only-binary=:all:` for PennyLane, PennyLane-Lightning, ONNX and onnxscript (plus XGBoost if it is not installed), one package at a time, into `lumos_bundle/wheelhouse/`. Notebook B installs these with the internet off.
+**What this cell does:** Runs `pip download --only-binary=:all:` for PennyLane, PennyLane-Lightning, onnxruntime and onnxscript (plus XGBoost if it is not installed), one package at a time, into `lumos_bundle/wheelhouse/`. The standalone `onnx` package is not downloaded: the Kaggle image already has onnx 1.22.0 (checked 10 Oct 2026), and onnxscript pulls it in only if needed. onnxruntime is not in the image and Notebook B needs it for the ONNX parity check. Notebook B installs these with the internet off.
 
 **Steps**
 
@@ -182,7 +185,7 @@ Every section with its steps and checks, exactly as written in the notebook guid
 
 **Check before moving on**
 
-- [ ] `pennylane` and `pennylane-lightning` show `wheel ok`.
+- [ ] `pennylane`, `pennylane-lightning` and `onnxruntime` show `wheel ok` (`onnxscript` should too; without `onnxruntime` Notebook B records the ONNX parity check as not done).
 - [ ] The wheel count is greater than 0.
 
 **If it fails:** Run the cell again to retry a failed package. If PennyLane still fails, Notebook B still runs: its quantum stage (2.15) falls back to the built-in torch simulator and skips the PennyLane cross-check.
@@ -207,18 +210,18 @@ Every section with its steps and checks, exactly as written in the notebook guid
 **Time:** estimate: under 10 s
 
 ### Phase 1 · Section 1.11 — Summary table  (cell 10)
-**What this cell does:** Prints a table of every FIRMS country file (rows: sensor and year; columns: country; cells: `ok <rows>`, `missing` or `error`), then the count of all records by status and the note for every error.
+**What this cell does:** Prints a table of every FIRMS country file (rows: sensor and year; columns: country; cells: `ok <rows>`, `missing` or `error`), then the count of the FIRMS country files by status (with how many `missing` are year 2025), the count of all records by status and the note for every error.
 
 **Steps**
 
 - [ ] 1.11.1 Run the cell.
-- [ ] 1.11.2 Scan the table column by column. MODIS should be `ok` for 2001–2025 and VIIRS S-NPP for 2012–2025.
-- [ ] 1.11.3 Read `All records by status: {...}` and any `ERROR <id> - <note>` lines below it.
+- [ ] 1.11.2 Scan the table column by column. MODIS should be `ok` for 2001–2024 and VIIRS S-NPP for 2012–2024; the 2025 rows show `missing` in all three country columns (FIRMS has no 2025 yearly country files).
+- [ ] 1.11.3 Read `FIRMS country files: ok=..., missing=... (2025: ..., other: ...), error=...`, then `All records by status: {...}` and any `ERROR <id> - <note>` lines below it. With the default config expect `ok=111, missing=6 (2025: 6, other: 0), error=0`.
 
 **Check before moving on**
 
 - [ ] The table has no `error` cells.
-- [ ] `missing` cells are only years FIRMS does not publish. Write down any you see.
+- [ ] `missing` cells are only the six 2025 cells plus any other year FIRMS genuinely does not publish (404). Write down any year other than 2025.
 
 **If it fails:** For `error` cells, run 1.6 again (good files are reused), then 1.7 to 1.11. If an error remains after two tries, note the id and the reason; Notebook B treats it exactly like a missing year (unknown, not zero).
 
@@ -252,7 +255,7 @@ Every section with its steps and checks, exactly as written in the notebook guid
 
 - [ ] The committed version of this notebook finished successfully (see **Versions**).
 - [ ] Its **Output** tab lists `lumos_bundle/manifests/sources.json`.
-- [ ] The summary table (1.11) had no `error` cells, or you wrote down each remaining one.
+- [ ] The summary table (1.11) had no `error` cells (and `missing` only for 2025 plus any genuine 404 you wrote down), or you wrote down each remaining one.
 - [ ] `key leak check: passed` (1.12).
 - [ ] You noted the Python version from `README_bundle.md`; Notebook B must use the same Kaggle environment.
 - [ ] The wheelhouse has PennyLane wheels (1.9), or you accept that Q1 uses the built-in simulator.
@@ -650,6 +653,6 @@ Every section with its steps and checks, exactly as written in the notebook guid
 
 ## Counts
 
-- Phase 1: 12 sections, 46 steps, 21 checks, 7 hand-off checks
+- Phase 1: 12 sections, 46 steps, 22 checks, 7 hand-off checks
 - Phase 2: 18 sections, 72 steps, 47 checks
 - Phase 3: 7 checks

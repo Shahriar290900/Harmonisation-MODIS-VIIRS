@@ -21,8 +21,8 @@ npm run build && npm run e2e   # Playwright: desktop, tablet and mobile
 `apps/web/public/data/` currently holds a **SYNTHETIC demo snapshot** (real format, fake numbers). The app shows a DEMO DATA banner while it is loaded.
 
 ## Real data
-1. On Kaggle, run `notebooks/lumos_A_fetch.ipynb` with internet ON (it downloads 117 FIRMS files: Bangladesh, Australia, United States), then save a version.
-2. Run `notebooks/lumos_B_train.ipynb` on the RTX PRO 6000 with internet OFF. Add Notebook A's output as an input.
+1. On Kaggle, run `notebooks/lumos_A_fetch.ipynb` with internet ON (it requests 117 FIRMS files: Bangladesh, Australia, United States; the 6 files for 2025 do not exist, so expect 111 ok and 6 missing), then save a version.
+2. Run `notebooks/lumos_B_train.ipynb` with internet OFF on T4 x2 or RTX PRO 6000 (see `../KAGGLE_HANDOFF.md` for both options). Add Notebook A's output as an input.
 3. Download `lumos_app_bundle.zip`, then run `node scripts/import_bundle.mjs lumos_app_bundle.zip`. The script verifies checksums and the schema, then makes the bundle the default snapshot.
 
 ## Deploy (free)

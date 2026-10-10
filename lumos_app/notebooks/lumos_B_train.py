@@ -1,12 +1,14 @@
 # %% [markdown]
 # # Lumos Fire Calendar — Notebook B: harmonise MODIS Aqua → VIIRS S-NPP (Phase 2)
 #
-# **NASA Space Apps 2026 · Harmonization of MODIS and VIIRS Hot Spots · Team Lumos (Dhaka)** · contract v1.0 + v1.1 amendments
+# **NASA Space Apps 2026 · Harmonization of MODIS and VIIRS Hot Spots · Team Lumos (Dhaka)** · contract v1.0 + v1.1 + v1.2 amendments
 #
 # ## Purpose
 # Two satellite instruments watch the same fires. **MODIS** (on Aqua, since mid-2002) sees the Earth with 1 km pixels; **VIIRS** (on S-NPP, since 20 Jan 2012) uses 375 m pixels and so spots many more, smaller fires. Think of two cameras photographing the same street at night: the newer camera has a sharper sensor and counts more lit windows. If you join the old camera's counts (2003–2011) to the new camera's counts (2012+), it looks as if fires suddenly multiplied in 2012. That jump is an artefact of the camera change.
 #
 # This notebook learns, on years when **both** instruments flew (training 2013–2020), how many VIIRS S-NPP detections match a given pattern of Aqua MODIS detections in the same 5 km × 5 km cell and month. It then applies that mapping back to 2003–2012 to give a **retrospective, VIIRS-scale estimate**: one continuous fire calendar on the VIIRS scale, with honest uncertainty bands. Terra MODIS is kept as a separate series and never pooled into the target. 2001–2002 are *unsupported* (no full Aqua year). 2012 is labelled `backcast`; where VIIRS was observed in 2012, both values are shown.
+#
+# **Time frame, in plain words.** Our S-NPP history is 2013–2024 (training 2013–2020, validation 2021–2022, test 2023–2024). NASA has announced that delivery of all Suomi NPP VIIRS science data products ceases on 2 Nov 2026, so S-NPP is a closing reference: this calendar is a *retrospective* harmonisation, not a forecast. Aqua MODIS started on 3 July 2002, so July 2002 is a partial month and 2003 is the first full Aqua year. FIRMS has no yearly country files for 2025 yet (they answer 404): Notebook A marks them `missing`, and this notebook treats a missing year as *unavailable, never zero* (the calendar then shows 2025 as missing).
 #
 # It runs on Kaggle on the **RTX PRO 6000 Blackwell with Internet OFF**, reads only Notebook A's output, and exports `/kaggle/working/lumos_app_bundle.zip` for the app.
 #
@@ -23,7 +25,7 @@
 # | 2.1 Attach inputs and pick the GPU | manual | Manual: import, add A's output (+ optional model), RTX PRO 6000, Internet OFF | 5 min |
 # | 2.2 Config and switches | 1 | Switches, budgets, locate A's bundle, create or resume the run folder | < 10 s |
 # | 2.3 Offline guard and environment probe | 2 | Block the network, probe RAM/disk/GPU, torch smoke test | < 1 min |
-# | 2.4 Verify the bundle | 3 | SHA-256 check of every file, synthetic detection, offline PennyLane install | 1–3 min |
+# | 2.4 Verify the bundle | 3 | SHA-256 check of every file, synthetic detection, offline install of PennyLane and ONNX packages | 1–3 min |
 # | 2.5 Ingest the fire records | 4 | Clean, quarantine and aggregate detections to 5 km cell × month | 5–15 min |
 # | 2.6 Grid, panel, features and areas | 5 | Availability rules, cell × month feature panel, areas of interest | 2–10 min |
 # | 2.7 Freeze the splits | 6 | Train/val/test years, 20% spatial holdout, sealed test vault | < 1 min |
@@ -31,7 +33,7 @@
 # | 2.9 XGBoost B2 | 8 | Poisson XGBoost, 3 seeds, wall-clock capped | 5–30 min |
 # | 2.10 PyTorch MLP D1 | 9 | Poisson MLP, 3 seeds, wall-clock capped | 5–30 min |
 # | 2.11 Validation gate and selection | 10 | Score on validation, apply the gate, freeze the selection | < 3 min |
-# | 2.12 Open the test set once | 11 | One-time test evaluation, interval coverage, release stage | < 2 min |
+# | 2.12 Open the test set once | 11 | One-time test evaluation, per-region interval coverage, per-region release stage | < 2 min |
 # | 2.13 Backcast and anomalies | 12 | 2003–2012 VIIRS-scale estimate, intervals, anomaly flags | < 5 min |
 # | 2.14 Export the app bundle | 13 | Write and zip the app bundle (before research stages) | 2–10 min |
 # | 2.15 Research: simulated quantum Q1 | 14 | Research: simulated variational quantum regressor on a 4,000-row subset | 5–20 min |
@@ -69,6 +71,8 @@
 # - **Synthetic versus real.** If the input is the synthetic test fixture (detected by four separate markers), the notebook forces `release_stage = ui_prototype` and `value_status = demo`, and prints an HONEST NOTE banner. Those numbers say nothing about real fires.
 # - **Keys are never printed.** Notebook B needs no key; `sources.json` is scrubbed again before export.
 # - **Honesty rules:** missing source files are never treated as zero (header-only or truncated current-year files, platform outages and partial first months are detected); selection uses validation only; the test years (2023–2024) are opened exactly once, at the end.
+# - **The release stage is decided per region, not once for everything.** The gate uses three non-overlapping evaluation regions: Bangladesh (`BGD`), New South Wales (`AUS-NSW`) and California (`USA-CA`). Whole-country `AUS` and `USA` and the Bangladesh divisions overlap those regions (they would be counted twice) and are reported separately, never gated. `validated_calibration` needs the selected model to beat both B0_identity and B0_month_ratio on test AOI-month MAE in every gated region, and every region's 80% interval coverage within ±10 points of 0.80. Each region has only 24 test AOI-months (12 months × 2 years), so these coverage numbers are coarse; the notebook says so in the reason.
+# - **Type rule.** `type` exists only in standard FIRMS data; near-real-time (NRT) rows have no `type`. Standard rows with `type == 0` are the main count, other types are static sources, standard rows without a `type` are counted nowhere, and NRT rows are never used for training (they stay in a separate recent layer or mark their month partial).
 # - **Research stages are research.** Q1 and Q2 are simulated on classical hardware; no quantum-advantage claim, and they never become the app's estimator.
 #
 # **If the kernel dies** (out of memory, timeout), Run All again in the same session: the latest unfinished run with the same inputs and settings is resumed (checksum-verified ingest, panel and model artefacts are reused). Force a specific run with `LUMOS_RESUME_RUN=<run_id>`, or disable resuming with `LUMOS_AUTO_RESUME=0`.
@@ -78,7 +82,7 @@
 # ## Done when
 #
 # - [ ] Every cell 1–17 ran without an exception.
-# - [ ] `RELEASE STAGE` (2.12) is `observed_comparison` or `validated_calibration` (not `ui_prototype`).
+# - [ ] `RELEASE STAGE` (2.12) is `observed_comparison` or `validated_calibration` (not `ui_prototype`), and one `RELEASE REGION <id>` line per gated region (BGD, AUS-NSW, USA-CA) explains that region's outcome. The overall stage is the weakest region's.
 # - [ ] `schema errors: 0` (2.14).
 # - [ ] `blocked network attempts: 0` and `Device: cuda` in the final summary (2.18).
 # - [ ] `lumos_app_bundle.zip` is downloaded to your computer.
@@ -90,10 +94,10 @@
 # **Steps**
 #
 # - [ ] 2.2.1 For the first real run leave `RUN_XGB`, `RUN_DL`, `RUN_QML` and `RUN_QLLM` all `True`. Set one to `False` only to skip that model (without an attached model, Q2 is skipped honestly anyway).
-# - [ ] 2.2.2 Budgets in minutes come from environment variables with defaults: `XGB_MAX_MINUTES` 120, `DL_MAX_MINUTES` 120, `QLLM_MAX_MINUTES` 90. To change one on Kaggle, edit the default string inside `os.environ.get(...)`.
+# - [ ] 2.2.2 Budgets in minutes come from environment variables with defaults for the first real run: `XGB_MAX_MINUTES` 45, `DL_MAX_MINUTES` 45, `QLLM_MAX_MINUTES` 45 (the real-data speed is unmeasured; raise them after the first run has shown the B2 and D1 timings). To change one on Kaggle, edit the default string inside `os.environ.get(...)`.
 # - [ ] 2.2.3 Change switches or budgets before the first run only: they are part of the run fingerprint, so a change starts a fresh run folder instead of resuming.
 # - [ ] 2.2.4 Run the cell.
-# - [ ] 2.2.5 Read the log line `Lumos Notebook B B-1.1.0 · run <timestamp> · QUICK_TEST=False · input=/kaggle/input · bundle=... · work=/kaggle/working`.
+# - [ ] 2.2.5 Read the log line `Lumos Notebook B B-1.2.0 · run <timestamp> · QUICK_TEST=False · input=/kaggle/input · bundle=... · work=/kaggle/working`.
 # - [ ] 2.2.6 After a crash, a second Run All shows `(RESUMED)` and `resuming run ...: checkpointed stages [...]`.
 #
 # **Check before moving on**
@@ -119,7 +123,7 @@ os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
 os.environ["PIP_NO_INDEX"] = "1"
 
 QUICK_TEST = os.environ.get("LUMOS_QUICK", "0") == "1"
-CODE_VERSION = "B-1.1.0"
+CODE_VERSION = "B-1.2.0"     # 1.2.0: per-region release gate, region-level interval coverage, path scrubbing, explicit type rule
 
 RUN_XGB = True
 RUN_DL = True
@@ -145,9 +149,9 @@ LOG_EVERY_EPOCHS = 5             # progress line every N epochs (D1, Q1, Q2)
 B1_MAX_TRAIN = 4_000_000
 B1_ALPHA = 1e-4
 
-XGB_MAX_MINUTES = float(os.environ.get("XGB_MAX_MINUTES", "120"))     # wall-clock cap, whole B2 stage (all seeds)
-DL_MAX_MINUTES = float(os.environ.get("DL_MAX_MINUTES", "120"))       # wall-clock cap, whole D1 stage
-QLLM_MAX_MINUTES = float(os.environ.get("QLLM_MAX_MINUTES", "90"))    # wall-clock cap, Q2 (both arms truncated equally)
+XGB_MAX_MINUTES = float(os.environ.get("XGB_MAX_MINUTES", "45"))      # wall-clock cap, whole B2 stage (all seeds); first real run: 45, raise after seeing B2 timing
+DL_MAX_MINUTES = float(os.environ.get("DL_MAX_MINUTES", "45"))        # wall-clock cap, whole D1 stage; first real run: 45
+QLLM_MAX_MINUTES = float(os.environ.get("QLLM_MAX_MINUTES", "45"))    # wall-clock cap, Q2 (both arms truncated equally); only used when a model is attached
 
 if QUICK_TEST:
     XGB_ROUNDS, XGB_EARLY = 40, 10
@@ -171,6 +175,15 @@ INTERVAL_LEVEL = 0.80
 GATE_MAE_IMPROVEMENT = 0.10
 GATE_SUBGROUP_DEGRADATION = 0.10
 GATE_BASELINE_CANDIDATES = ["B1_poisson", "B0_month_ratio"]   # v1.1: baseline = better of these two on val AOI-month MAE
+# v1.2 review H1: the gate and the release stage use NON-OVERLAPPING evaluation regions only. BGD (country) is used instead of its seven
+# divisions, AUS-NSW instead of whole AUS, USA-CA instead of whole USA, so no detection is counted twice and whole-country counts
+# (which dominate absolute-count MAE) never decide the gate. Whole-country AUS / USA and the BGD divisions are reported separately.
+GATE_UNITS = ["BGD", "AUS-NSW", "USA-CA"]
+GATE_UNITS_SG = "gate_units"                 # subgroup key under metrics aoi_month: all gated regions pooled
+RELEASE_ORDER = {"ui_prototype": 0, "observed_comparison": 1, "validated_calibration": 2}   # release_stage = the weakest gated region
+COVERAGE_TOLERANCE = 0.10                    # |empirical coverage − 0.80| ≤ 0.10 in every gated region (n = 24 test AOI-months per region: coarse)
+MEMORY_OPTIONAL_COUNTRIES = ["United_States"]   # dropped (documented) only if the panel estimate exceeds MEMORY_GUARD_FRACTION of free RAM
+MEMORY_GUARD_FRACTION = 0.90
 ANOMALY_MIN_BASELINE = 5
 ANOMALY_Z = 1.0
 CELL_EST_MIN = 1.0          # contract §6: cells json keeps rows with aqua>0 or viirs>0 or est>=this
@@ -266,6 +279,73 @@ def grid_key_in_range(ix, iy):
     ix = _np.asarray(ix); iy = _np.asarray(iy)
     return (ix + IX_OFF >= 0) & (iy + IY_OFF >= 0) & (iy + IY_OFF < KEY_MUL)
 
+def memory_guard(cells_per_country, nm, n_base_cols, free_gb, optional=None, fraction=None):
+    """Fail-soft memory guard for the panel (review L; real USA scale is UNMEASURED). `panel_memory_plan` is computed from the REAL number of
+    cells with detections per country (not a ceiling). If max(panel GB, peak-while-building GB) exceeds `fraction` × free RAM, the optional
+    country with the most cells (default: United_States) is dropped from the panel instead of letting the kernel be killed; the drop is
+    logged, recorded in metrics (`panel_memory.guard`) and the AOI list simply lacks it (consumers treat the AOI list as data). Nothing is
+    dropped when free RAM is unknown or the estimate fits. Returns (kept cells_per_country, dropped countries, plan of the kept set)."""
+    optional = MEMORY_OPTIONAL_COUNTRIES if optional is None else optional
+    fraction = MEMORY_GUARD_FRACTION if fraction is None else fraction
+    kept, dropped = dict(cells_per_country), []
+    plan = panel_memory_plan(kept, nm, n_base_cols)
+    if free_gb is None or not math.isfinite(free_gb): return kept, dropped, plan
+    while kept and max(plan["panel_gb"], plan["peak_country_build_gb"]) > fraction * free_gb:
+        cand = [c for c in kept if c in optional]
+        if not cand: break
+        drop = max(cand, key=lambda c: kept[c]); dropped.append(drop); kept.pop(drop)
+        plan = panel_memory_plan(kept, nm, n_base_cols)
+    return kept, dropped, plan
+
+# ---- review M-path: no developer-local absolute path may reach the exported bundle (public snapshot) ----
+_ABS_PATH_RES = [(re.compile(r"(?<![\w.:/-])/Users/[^\s\"'<>,;)\]}\\]+"), "<local-path>"),
+                 (re.compile(r"(?<![\w.:/-])/home/[^\s\"'<>,;)\]}\\]+"), "<local-path>"),
+                 (re.compile(r"(?<![\w.:/-])/kaggle/(?:input|working|temp|lib)(?:/[^\s\"'<>,;)\]}\\]*)?"), "<kaggle-path>"),
+                 (re.compile(r"[A-Za-z]:\\\\(?:Users|home)[^\s\"'<>,;)\]}\\]*"), "<local-path>")]
+LOCAL_PATH_MARKERS = (b"/Users/", b"/kaggle/", b"/home/")      # scanned for in every exported file
+
+def _local_path_subs():
+    """(absolute path string, placeholder) pairs for this run, longest first. Documented placeholders: <run> <work> <bundle> <input> <home> <local-path> <kaggle-path>."""
+    out = []
+    for ph, nm_ in [("<run>", "RUN_DIR"), ("<work>", "WORK"), ("<bundle>", "BUNDLE"), ("<input>", "INPUT_ROOT")]:
+        if nm_ in globals():
+            for s in {str(globals()[nm_]), str(Path(globals()[nm_]).resolve())}:
+                if s.startswith("/") and len(s) > 1: out.append((s, ph))
+    h = str(Path.home())
+    if h.startswith("/") and len(h) > 1: out.append((h, "<home>"))
+    return sorted(set(out), key=lambda x: -len(x[0]))
+
+def scrub_str(s):
+    """Replace this run's absolute paths by placeholders, then any remaining /Users/…, /home/…, /kaggle/… path by a generic placeholder."""
+    s = str(s)
+    for a, ph in _local_path_subs(): s = s.replace(a, ph)
+    for rx, ph in _ABS_PATH_RES: s = rx.sub(ph, s)
+    return s
+
+def scrub_obj(o):
+    if isinstance(o, str): return scrub_str(o)
+    if isinstance(o, dict): return {(scrub_str(k) if isinstance(k, str) else k): scrub_obj(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)): return [scrub_obj(v) for v in o]
+    return o
+
+def scrub_bundle_files(root, scrub=True):
+    """Safety net over EVERY exported file: text files (json/csv/geojson/txt/md/sha256) containing a local-path marker are rewritten
+    with scrub_str; binary files with a marker are only reported. Returns [(relative path, marker, action)]. Run before hashing."""
+    hits = []
+    for p in sorted(Path(root).rglob("*")):
+        if not p.is_file(): continue
+        data = p.read_bytes()
+        found = [m for m in LOCAL_PATH_MARKERS if m in data]
+        if not found: continue
+        if scrub and p.suffix.lower() in (".json", ".csv", ".geojson", ".txt", ".md", ".sha256"):
+            new = scrub_str(data.decode("utf-8", errors="replace"))
+            p.write_text(new, encoding="utf-8")
+            left = [m for m in LOCAL_PATH_MARKERS if m in new.encode("utf-8")]
+            hits.append((str(p.relative_to(root)), found[0].decode(), "scrubbed" if not left else "STILL_PRESENT"))
+        else:
+            hits.append((str(p.relative_to(root)), found[0].decode(), "binary_not_scrubbed"))
+    return hits
+
 class Timer:
     def __init__(self, name): self.name = name
     def __enter__(self): self.t = time.time(); return self
@@ -317,7 +397,8 @@ def walk_limited(root, want, max_depth=INPUT_WALK_MAX_DEPTH, stop_after=None):
     for dirpath, dirnames, filenames in os.walk(root):
         depth = len(Path(dirpath).parts) - base_depth
         if depth >= max_depth: dirnames[:] = []
-        dirnames[:] = sorted(d for d in dirnames if not d.startswith("."))
+        # never walk the Kaggle `competitions` mount (project rule: no competition data is read, not even folder names)
+        dirnames[:] = sorted(d for d in dirnames if not d.startswith(".") and not (depth == 0 and d == "competitions"))
         for hit in want(Path(dirpath), filenames):
             yield hit; n += 1
             if stop_after and n >= stop_after: return
@@ -342,7 +423,8 @@ BUNDLE = locate_bundle(INPUT_ROOT)
 # ---- run folder + resume (watchdog #2): reuse the latest incomplete run with identical inputs+config ----
 _CFG_FP = {"code": CODE_VERSION, "quick": QUICK_TEST, "seeds": SEEDS, "years": [TRAIN_YEARS, VAL_YEARS, TEST_YEARS],
            "flags": [RUN_XGB, RUN_DL, RUN_QML, RUN_QLLM], "xgb": [XGB_ROUNDS, XGB_EARLY], "dl": [DL_EPOCHS, DL_PATIENCE],
-           "b1": [B1_MAX_TRAIN, B1_ALPHA], "block": [BLOCK_CELLS, HOLDOUT_FRACTION]}
+           "b1": [B1_MAX_TRAIN, B1_ALPHA], "block": [BLOCK_CELLS, HOLDOUT_FRACTION],
+           "budgets_min": [XGB_MAX_MINUTES, DL_MAX_MINUTES, QLLM_MAX_MINUTES], "gate": [GATE_UNITS, COVERAGE_TOLERANCE]}
 FINGERPRINT = hashlib.sha256((sha256_file(BUNDLE / "manifests" / "sources.json") + json.dumps(_CFG_FP, sort_keys=True)).encode()).hexdigest()
 STAGE_ORDER = ["ingest", "panel", "B1_poisson", "B2_xgb", "D1_mlp", "export_core", "Q1_vqc", "Q2_qllm", "final"]
 
@@ -533,6 +615,12 @@ with Timer("env_probe"):
     ENV, DEVICE = env_probe()
 import torch
 TORCH_DEVICE = torch.device(DEVICE)
+def _cuda_cc_major():
+    try: return int(torch.cuda.get_device_capability(0)[0])
+    except Exception: return 0
+# review P5: bf16 autocast only where bf16 is native (compute capability >= 8.0, Ampere or newer; a T4 is 7.5 and would emulate it slowly)
+AMP_BF16 = bool(DEVICE == "cuda" and _cuda_cc_major() >= 8)
+ENV["amp_bf16"] = AMP_BF16
 jdump(ENV, RUN_DIR / "env_B.json", indent=1)
 print(json.dumps({k: ENV[k] for k in ["device_selected", "smoke_test", "ram", "disk_work"] if k in ENV}, indent=1))
 if "gpu" in ENV: print("GPU:", ENV["gpu"])
@@ -683,7 +771,8 @@ PLATFORMS = ["aqua", "terra", "snpp", "noaa20"]
 PLAT_CODE = {p: i for i, p in enumerate(PLATFORMS)}
 SENSOR_FAMILY = {"aqua": "modis", "terra": "modis", "snpp": "viirs-snpp", "noaa20": "viirs-noaa20"}
 # first day of data per platform (FIRMS): partial first months are flagged `partial` and kept out of training/baselines/anomaly
-PLATFORM_START = {"aqua": dt.date(2002, 7, 4), "terra": dt.date(2000, 11, 1), "snpp": dt.date(2012, 1, 20), "noaa20": dt.date(2018, 1, 5)}
+PLATFORM_START = {"aqua": dt.date(2002, 7, 3), "terra": dt.date(2000, 11, 1), "snpp": dt.date(2012, 1, 20),
+                  "noaa20": dt.date(2018, 1, 5)}     # Aqua 2002-07-03 (NASA); NOAA-20: FIRMS pages disagree (2018-04-01 / 2020-01-01), not used here
 PLATFORM_LABEL = {"aqua": "Aqua MODIS", "terra": "Terra MODIS", "snpp": "S-NPP VIIRS", "noaa20": "NOAA-20 VIIRS"}
 STR_COLS = ["acq_date", "acq_time", "satellite", "instrument", "confidence", "version", "daynight"]
 FIRE_FAMILIES = ("modis", "viirs-snpp", "viirs-noaa20")
@@ -1605,7 +1694,7 @@ stop_hook("B2_xgb")
 
 # %% [markdown]
 # ## Phase 2 · Section 2.10 — PyTorch MLP D1
-# **What this cell does:** If `RUN_DL` is on: trains a Poisson neural network (layers 128-128-64, bf16 on the GPU) for each of 3 seeds, up to 40 epochs with early stopping after 5, inside the `DL_MAX_MINUTES` budget, and keeps the best seed (checkpointed). The ONNX export happens in 2.14. On CPU it uses a capped sample and one seed.
+# **What this cell does:** If `RUN_DL` is on: trains a Poisson neural network (layers 128-128-64, bf16 autocast only on GPUs with compute capability 8.0 or newer, otherwise fp32) for each of 3 seeds, up to 40 epochs with early stopping after 5, inside the `DL_MAX_MINUTES` budget, and keeps the best seed (checkpointed). The ONNX export happens in 2.14. On CPU it uses a capped sample and one seed.
 #
 # **Steps**
 #
@@ -1665,7 +1754,7 @@ def train_mlp(Ztr, ytr, Zva, yva, seed, wtr=None, epochs=DL_EPOCHS, patience=DL_
         mu = float(np.average(ytr, weights=wtr)) if wtr is not None else float(ytr.mean())
         model.net[-1].bias.fill_(math.log(max(mu, 1e-3)))
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-5)
-    use_amp = DEVICE == "cuda"
+    use_amp = AMP_BF16
     best, best_state, bad, hist = float("inf"), None, 0, []
     for ep in range(epochs):
         model.train(); perm = torch.randperm(len(yt), device=dev); tot = 0.0
@@ -1755,7 +1844,7 @@ if RUN_DL:
                     log(f"D1 seed {s_}: epochs={len(hist)} val MAE={mv['mae']:.4f} dev={mv['poisson_deviance']:.4f}")
                 del Ztr, Zva
                 best = min(seed_runs, key=lambda d: d["val"]["poisson_deviance"]); best_model = best["model"]
-                D1_INFO = {"selected_seed": best["seed"], "hidden": [128, 128, 64], "amp_bf16": DEVICE == "cuda",
+                D1_INFO = {"selected_seed": best["seed"], "hidden": [128, 128, 64], "amp_bf16": AMP_BF16,
                            "n_train": int(len(tr_d)), "n_train_eligible": int(len(tr)), "device": DEVICE}
                 D1_SEEDRUNS = [{k: v for k, v in d.items() if k != "model"} for d in seed_runs]
                 torch.save(best_model.state_dict(), MODEL_CACHE / "D1_mlp_state.pt")
