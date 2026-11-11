@@ -122,14 +122,14 @@ export function scrollToId(id: string, reduced: boolean) {
 
 /**
  * Scene bus: the scroll driver (Landing) publishes which chapter is on screen; the ember field and the HUD subscribe.
- * `scene` is a continuous 0..6 position (see three/embers.ts); `quiet` dims the embers behind dense reading sections.
+ * The ember field no longer uses it: it reads the page geometry itself (Embers.tsx); this only carries the HUD label.
  */
-export interface SceneState { scene: number; quiet: boolean; label: string }
-let sceneState: SceneState = { scene: 0, quiet: false, label: 'Overview' };
+export interface SceneState { label: string }
+let sceneState: SceneState = { label: 'Overview' };
 const sceneSubs = new Set<(s: SceneState) => void>();
 export const sceneBus = {
   get: () => sceneState,
   set(p: Partial<SceneState>) { sceneState = { ...sceneState, ...p }; sceneSubs.forEach((f) => f(sceneState)); },
   subscribe(f: (s: SceneState) => void) { sceneSubs.add(f); return () => { sceneSubs.delete(f); }; },
-  reset() { sceneState = { scene: 0, quiet: false, label: 'Overview' }; }
+  reset() { sceneState = { label: 'Overview' }; }
 };

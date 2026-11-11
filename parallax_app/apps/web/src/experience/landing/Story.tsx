@@ -104,7 +104,7 @@ export function TwoCameras({ ctx }: { ctx: Ctx }) {
         {flags.reduced ? (
           <StaticPixels />
         ) : (
-          <div className="lx-cam__frame" data-look={look}>
+          <div className="lx-cam__frame" data-look={look} data-ember-anchor="cameras">
             <div ref={host} className="lx-cam__host" aria-hidden="true" />
             <div className="lx-cam__legend" aria-hidden="true">
               <span className={step === 0 ? 'is-on' : ''}><i className="sw sw--aqua" />MODIS 1 km</span>
@@ -246,7 +246,7 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
           </ul>
           {ratio && <p className="lx-jump__ratio"><b>{r}</b><span>VIIRS ÷ MODIS hotspots<br />mean ratio, 2013–2024</span></p>}
           </div>
-          <div ref={box} className="lx-jump__box">
+          <div ref={box} className="lx-jump__box" data-ember-anchor="jump">
             <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img" aria-labelledby="lx-jump-desc">
               <desc id="lx-jump-desc">
                 {`${home}, mean monthly hotspots per year, ${y0}–${y1}. Raw MODIS stays low; raw VIIRS from 2012 is ${r} higher; the harmonized estimate puts all years on the VIIRS scale.`}
@@ -329,7 +329,7 @@ export function FairScale({ ctx }: { ctx: Ctx }) {
           {!flags.reduced && <Progress step={step} n={3} />}
         </div>
         <figure className="lx-fs">
-          <svg viewBox={`0 0 ${W} 250`} role="img" aria-labelledby="lx-fs-desc">
+          <svg viewBox={`0 0 ${W} 250`} role="img" aria-labelledby="lx-fs-desc" data-ember-anchor="fair">
             <desc id="lx-fs-desc">Schematic timeline, 2002 to 2025. MODIS flies throughout; VIIRS from 2012. The estimate is learned from the overlap years and drawn dashed for the years before VIIRS, with an 80% band. Illustrative, not data.</desc>
             <g className="lx-axis">{[2002, 2007, 2012, 2017, 2022].map((y) => <g key={y}><line x1={X(y)} x2={X(y)} y1={20} y2={200} /><text x={X(y)} y={222} textAnchor="middle">{y}</text></g>)}</g>
             <text className="lx-fs__lab" x={L - 10} y={53} textAnchor="end">MODIS</text>

@@ -61,7 +61,7 @@ export function hostSize(host: HTMLElement): { w: number; h: number } {
 export interface Loop { wake(): void; dispose(): void; readonly running: boolean }
 export const IDLE_FPS = 30;
 export const IDLE_SLEEP_MS = 15000;
-export function createLoop(host: HTMLElement, frame: (dt: number, t: number) => boolean, continuous: boolean): Loop {
+export function createLoop(host: HTMLElement, frame: (dt: number, t: number) => boolean, continuous: boolean, keepAlive?: () => boolean): Loop {
   let raf = 0;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let visible = true;
@@ -81,7 +81,7 @@ export function createLoop(host: HTMLElement, frame: (dt: number, t: number) => 
     const more = frame(dt, (now - t0) / 1000);
     if (more) {
       raf = requestAnimationFrame(tick);
-    } else if (continuous && now - lastWake < IDLE_SLEEP_MS) {
+    } else if (continuous && (now - lastWake < IDLE_SLEEP_MS || keepAlive?.())) {
       // ambient only: throttle; the setTimeout keeps the rAF rate (and GL draws) at ≤ IDLE_FPS
       const wait = Math.max(0, idleGap - (performance.now() - now) - 2);
       timer = setTimeout(() => { timer = null; if (!disposed && !raf) raf = requestAnimationFrame(tick); }, wait);

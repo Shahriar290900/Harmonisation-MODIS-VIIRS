@@ -20,5 +20,49 @@
 .district-label { display: none; pointer-events: none; font-size: 11px; font-weight: 600; color: var(--text); white-space: nowrap;
   text-shadow: 0 0 3px var(--bg), 0 0 3px var(--bg), 0 0 5px var(--bg); }
 .show-dlabels .district-label { display: block; }
-.map__attrib { position: absolute; right: 8px; bottom: 26px; max-width: 55%; font-size: 10px; color: var(--muted); background: color-mix(in srgb, var(--panel) 85%, transparent); padding: 2px 6px; border-radius: var(--radius-xs); pointer-events: none; }
+.map__attrib { position: absolute; left: 8px; top: 8px; z-index: 4; max-width: calc(100% - 64px); font-size: 10px; color: var(--muted); background: color-mix(in srgb, var(--panel) 85%, transparent); padding: 2px 6px; border-radius: var(--radius-xs); pointer-events: none; }
 .maplibregl-ctrl-attrib { display: block; }
+
+/* Sensor looks (inspired by gods-eye-view, MIT): display-only filters on the map canvas. */
+.look__defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.look__lab { white-space: nowrap; }
+.app--mobile .look__lab { display: none; }
+.map__stage[data-look="thermal"] .map__canvas { filter: url(#sensor-ironbow) contrast(1.15); }
+.map__stage[data-look="nvg"] .map__canvas { filter: url(#sensor-nvg) brightness(1.15) contrast(1.1); }
+.map__stage[data-look="crt"] .map__canvas { filter: url(#sensor-fringe) saturate(1.1) contrast(1.05); }
+.map__stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2; opacity: 0; }
+.map__stage[data-look="nvg"]::after { opacity: 1;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 20, 0, .65) 100%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .3  0 0 0 0 1  0 0 0 0 .3  0 0 0 .5 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+  mix-blend-mode: screen; }
+.map__stage[data-look="crt"]::after { opacity: 1;
+  background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .28) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 65%, rgba(0, 0, 0, .35) 100%); }
+/* The legend ramp gets the same filter as the data so the colour key stays truthful under a look. */
+.map__stage[data-look="thermal"] .legend__bar { filter: url(#sensor-ironbow) contrast(1.15); }
+.map__stage[data-look="nvg"] .legend__bar { filter: url(#sensor-nvg) brightness(1.15) contrast(1.1); }
+.map__stage[data-look="crt"] .legend__bar { filter: url(#sensor-fringe) saturate(1.1) contrast(1.05); }
+.map__notes { margin-bottom: 8px; flex: none; }
+/* Guarantee the map: with a look or live line on, the left column scrolls instead of squeezing the map under 220 px. */
+.app--desktop main .col-left { overflow-y: auto; }
+.app--desktop main .col-left .chart-panel { flex-shrink: 0; }
+.app--desktop main .col-left .map { flex: 1 0 auto; min-height: 0; }
+.app--desktop main .col-left .map:has(.map__notes, .look__caption) .map__stage { min-height: 220px; }
+.app--mobile .map .map__tools { flex-wrap: wrap; justify-content: flex-start; }
+.app--mobile .look__caption { flex-basis: 100%; }
+.live__line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12px; color: var(--text); background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-xs); padding: 4px 8px; }
+.live__warn { color: var(--amber); }
+.live__line .live__retry { margin-left: 0; padding: 0 8px; height: 22px; }
+.live__info { display: inline-flex; border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 2px; border-radius: 50%; }
+.live__sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.look__caption { align-self: center; }
+.map__notes .map__legend { background: var(--bg-2); color: var(--text); border-color: var(--border); max-width: 100%; backdrop-filter: none; }
+.map__overlay { z-index: 3; }
+.look__caption { font-size: 11px; color: var(--text); background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--border-2); border-radius: var(--radius-xs); padding: 2px 8px; }
+/* Live detection tag */
+.live__tag { position: absolute; z-index: 4; transform: translate(14px, -50%); pointer-events: none; font-size: 11px; line-height: 1.3; color: var(--text); background: color-mix(in srgb, var(--panel) 94%, transparent); padding: 3px 8px; white-space: nowrap; }
+.live__tag-c { position: absolute; width: 6px; height: 6px; border: 0 solid var(--text); }
+.live__tag-c--tl { left: 0; top: 0; border-width: 1.5px 0 0 1.5px; } .live__tag-c--tr { right: 0; top: 0; border-width: 1.5px 1.5px 0 0; }
+.live__tag-c--bl { left: 0; bottom: 0; border-width: 0 0 1.5px 1.5px; } .live__tag-c--br { right: 0; bottom: 0; border-width: 0 1.5px 1.5px 0; }
+/* Keep the legend stack clear of the top-left district attribution (up to two lines on narrow screens). */
+.map__attrib ~ .map__overlay { max-height: calc(100% - 56px); }

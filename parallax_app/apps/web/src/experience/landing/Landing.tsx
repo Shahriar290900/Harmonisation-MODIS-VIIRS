@@ -111,26 +111,21 @@ export default function Landing() {
     const c = gsap.context(() => {
       if (stage) ScrollTrigger.create({ trigger: stage, start: 'top top', end: 'bottom 60px', onToggle: (self) => root.classList.toggle('lx--night', self.isActive) });
       if (flags.reduced) return;
-      const secs: { sel: string | HTMLElement | null; label: string; from?: number; to?: number; quiet?: boolean }[] = [
-        { sel: stage, label: 'Overview', from: 0, to: 1 },
-        { sel: '#how', label: '01 · Two cameras', from: 1, to: 3 },
-        { sel: '#jump', label: '02 · The 2012 jump', from: 3, to: 4 },
-        { sel: '#fair', label: '03 · One fair scale', from: 4, to: 5 },
-        { sel: '#read', label: 'Read the calendar', quiet: true },
-        { sel: '#honest', label: 'Honesty', quiet: true },
-        { sel: '#regions', label: '04 · Pick a place', from: 5, to: 6 },
-        { sel: '#index', label: 'Index', quiet: true }
+      // One continuous driver: the HUD label follows the section under the 70% line (ember geometry lives in Embers.tsx).
+      const secs: [string | HTMLElement | null, string][] = [
+        [stage, 'Overview'], ['#how', '01 · Two cameras'], ['#jump', '02 · The 2012 jump'], ['#fair', '03 · One fair scale'],
+        ['#read', 'Read the calendar'], ['#honest', 'Honesty'], ['#regions', '04 · Pick a place'], ['#index', 'Index']
       ];
-      for (const sc of secs) {
-        const el = typeof sc.sel === 'string' ? root.querySelector<HTMLElement>(sc.sel) : sc.sel;
-        if (!el) continue;
-        const ranged = sc.from !== undefined && sc.to !== undefined;
-        ScrollTrigger.create({
-          trigger: el, start: ranged ? 'top top' : 'top 70%', end: ranged ? 'bottom bottom' : 'bottom 30%',
-          onToggle: (self) => { if (self.isActive) sceneBus.set({ label: sc.label, quiet: !!sc.quiet }); },
-          onUpdate: ranged ? (self) => sceneBus.set({ scene: sc.from! + (sc.to! - sc.from!) * self.progress }) : undefined
-        });
-      }
+      const els = secs.map(([sel, label]) => ({ el: typeof sel === 'string' ? root.querySelector<HTMLElement>(sel) : sel, label })).filter((x): x is { el: HTMLElement; label: string } => !!x.el);
+      ScrollTrigger.create({
+        trigger: root, start: 'top top', end: 'bottom bottom',
+        onUpdate: () => {
+          const line = window.innerHeight * 0.7;
+          let cur = els[0];
+          for (const x of els) if (x.el.getBoundingClientRect().top <= line) cur = x;
+          if (cur && sceneBus.get().label !== cur.label) sceneBus.set({ label: cur.label });
+        }
+      });
     }, root);
     return () => { c.revert(); sceneBus.reset(); };
   }, [flags.reduced]);
@@ -404,7 +399,8 @@ function Footer({ core, openHash }: { core: Core | null; openHash: string }) {
         <div>
           <h2 className="lx-foot__h">Data & credits</h2>
           <p>Active-fire detections: <a href="https://firms.modaps.eosdis.nasa.gov/" rel="noopener" target="_blank">NASA FIRMS</a> — MODIS C6.1 (Aqua, Terra) and VIIRS 375 m (S-NPP).</p>
-          <p>Boundaries: <a href="https://www.naturalearthdata.com/" rel="noopener" target="_blank">Natural Earth</a> (public domain).</p>
+          <p>Live layer: NASA FIRMS near-real-time detections from the last 24 hours (MODIS; VIIRS from S-NPP or NOAA-20). Not quality-controlled, and not used in the calendar or the model.</p>
+          <p>Boundaries: <a href="https://www.naturalearthdata.com/" rel="noopener" target="_blank">Natural Earth</a> (public domain). Bangladesh districts: <a href="https://www.geoboundaries.org/" rel="noopener" target="_blank">geoBoundaries</a> (gbOpen, CC BY 3.0 IGO), source BBS / OCHA ROAP.</p>
           <p className="lx-foot__small">We acknowledge the use of data and imagery from LANCE FIRMS operated by NASA’s Earth Science Data and Information System (ESDIS).</p>
         </div>
         <div>

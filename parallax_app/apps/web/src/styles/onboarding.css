@@ -67,3 +67,4 @@
 /* mobile: the brand must not be squeezed by the tools on its right */
 .app--mobile .topbar__brand { flex: none; }
 .app--mobile .topbar__title br { display: none; }
+.tour__x:focus-visible, .tour__skip:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }

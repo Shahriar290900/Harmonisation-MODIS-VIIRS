@@ -41,7 +41,7 @@ for (const vp of [{ w: 1440, h: 900, tag: 'desktop' }, { w: 390, h: 844, tag: 'm
       }
       if (d.alpha > 0.5) fails.push(`${vp.tag} y=${y}: shaped alpha ${d.alpha.toFixed(2)} exceeds the 0.5 cap (labels must stay readable)`);
       if (d.primary === 'places') fails.push(`${vp.tag} y=${y}: shaped embers on the region gallery (cards slide under them); that scene must fade to ambient`);
-      if (d.frame && vis.includes(d.primary) && (d.primary === 'cameras' || d.primary === 'fair')) {
+      if (d.frame && vis.includes(d.primary) && d.primary === 'cameras') {   // jump and fair are border traces, drawn outside the visual
         const a = d.anchors.find((x) => x.id === d.primary).rect, f = d.frame;
         if (f.x < a.x + a.w * 0.05 || f.y < a.y + a.h * 0.05 || f.x + f.w > a.x + a.w * 0.95 || f.y + f.h > a.y + a.h * 0.95) fails.push(`${vp.tag} y=${y}: frame for "${d.primary}" is not inset at least 5% inside its anchor on every side`);
       }

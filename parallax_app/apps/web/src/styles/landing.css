@@ -352,7 +352,7 @@
   .lx-ctas .lx-btn { flex: 1 1 100%; min-height: 50px; }
   .lx-sensors { margin-top: 20px; gap: 6px 14px; font-size: 12px; }
   .lx-sensors span { display: none; }
-  .lx-hero__aside { left: 16px; right: 16px; width: auto; bottom: 18px; padding: 10px 12px; }
+  .lx-hero__aside { left: 16px; right: 16px; width: auto; bottom: 52px; padding: 10px 12px; }
   .lx-aside__t { display: none; }
   .lx-aside__v { font-size: 12.5px; margin-top: 8px; }
   .lx-aside__s { display: none; }

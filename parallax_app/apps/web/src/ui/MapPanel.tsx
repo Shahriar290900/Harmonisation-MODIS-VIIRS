@@ -5,7 +5,8 @@ import type { Map as MlMap, GeoJSONSource, Marker, Popup } from 'maplibre-gl';
 import '../styles/live.css';
 import { admin2KeyFor, districtsInRegion, featureBbox, useAdmin2, useAdmin2Year } from '../data/admin2';
 import { clipRows, liveKeyFor, useLive } from '../data/live';
-import { LIVE_COLORS, LIVE_ICON, LiveLegend, liveFeatures, livePopup, makeLiveImages } from './LiveLayer';
+import { LIVE_COLORS, LIVE_ICON, LiveLegend, LiveTag, type LiveTagData, liveFeatures, livePopup, makeLiveImages } from './LiveLayer';
+import { SensorControl, SensorCaption, SensorFilters, lookForKey, type Look } from './SensorLook';
 import { buildDistricts, districtPopup, labelPoint } from './DistrictLayer';
 import type { CellsFile, Region, Selection } from '../types';
 import { SERIES_COLORS } from '../types';
@@ -86,6 +87,9 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
   const dark = useDarkTheme();
   const [view, setView] = useState<'cells' | 'districts'>('cells');
   const [liveOn, setLiveOn] = useState(false);
+  const [look, setLook] = useState<Look>('normal');
+  const [tag, setTag] = useState<LiveTagData | null>(null);
+  const tagKey = useRef('');
   const mlRef = useRef<typeof import('maplibre-gl') | null>(null);
   const markersRef = useRef<Marker[]>([]);
   const hoverRef = useRef<Popup | null>(null);
@@ -180,10 +184,10 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
                   'circle-stroke-color': T.stroke, 'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 6, 0, 9, 0.6]
                 }
               },
-              { id: 'live-halo-modis', type: 'circle', source: 'live-modis', layout: { visibility: 'none' }, paint: { 'circle-color': LIVE_COLORS.modis, 'circle-radius': 12, 'circle-opacity': 0.3, 'circle-pitch-alignment': 'map' } },
-              { id: 'live-halo-viirs', type: 'circle', source: 'live-viirs', layout: { visibility: 'none' }, paint: { 'circle-color': LIVE_COLORS.viirs, 'circle-radius': 10, 'circle-opacity': 0.3 } },
-              { id: 'live-modis', type: 'symbol', source: 'live-modis', layout: { visibility: 'none', 'icon-image': LIVE_ICON.modis, 'icon-size': 0.6, 'icon-allow-overlap': true, 'icon-ignore-placement': true } },
-              { id: 'live-viirs', type: 'symbol', source: 'live-viirs', layout: { visibility: 'none', 'icon-image': LIVE_ICON.viirs, 'icon-size': 0.55, 'icon-allow-overlap': true, 'icon-ignore-placement': true } }
+              { id: 'live-halo-modis', type: 'circle', source: 'live-modis', layout: { visibility: 'none' }, paint: { 'circle-color': LIVE_COLORS.modis, 'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, 3, 6, 6, 9, 10, 12, 14], 'circle-opacity': 0.3 } },
+              { id: 'live-halo-viirs', type: 'circle', source: 'live-viirs', layout: { visibility: 'none' }, paint: { 'circle-color': LIVE_COLORS.viirs, 'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, 2.5, 6, 5, 9, 8, 12, 11], 'circle-opacity': 0.3 } },
+              { id: 'live-modis', type: 'symbol', source: 'live-modis', layout: { visibility: 'none', 'icon-image': LIVE_ICON.modis, 'icon-size': ['interpolate', ['linear'], ['zoom'], 3, 0.32, 8, 0.5, 12, 0.6], 'icon-allow-overlap': true, 'icon-ignore-placement': true } },
+              { id: 'live-viirs', type: 'symbol', source: 'live-viirs', layout: { visibility: 'none', 'icon-image': LIVE_ICON.viirs, 'icon-size': ['interpolate', ['linear'], ['zoom'], 3, 0.3, 8, 0.45, 12, 0.55], 'icon-allow-overlap': true, 'icon-ignore-placement': true } }
             ]
           },
           center: [90.3, 23.7], zoom: 5, maxZoom: 12, minZoom: 1,
@@ -203,9 +207,16 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
             const p = e.features?.[0]?.properties as Record<string, unknown> | undefined;
             if (p) new maplibregl.Popup({ closeButton: true, className: 'cell-pop' }).setLngLat(e.lngLat).setDOMContent(livePopup(p)).addTo(map);
           });
-          map.on('mouseenter', id, () => (map.getCanvas().style.cursor = 'pointer'));
-          map.on('mouseleave', id, () => (map.getCanvas().style.cursor = ''));
+          map.on('mousemove', id, (e) => {
+            map.getCanvas().style.cursor = 'pointer';
+            const p = e.features?.[0]?.properties as Record<string, unknown> | undefined;
+            const g = e.features?.[0]?.geometry as GeoJSON.Point | undefined;
+            const key = `${String(p?.kind)}|${String(p?.date)}|${String(p?.time)}|${g?.coordinates?.join(',')}`;
+            if (p && key !== tagKey.current) { tagKey.current = key; setTag({ x: e.point.x, y: e.point.y, kind: p.kind === 'viirs' ? 'viirs' : 'modis', date: String(p.date ?? ''), time: String(p.time ?? ''), frp: p.frp == null || p.frp === '' ? null : Number(p.frp) }); }
+          });
+          map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; tagKey.current = ''; setTag(null); });
         }
+        map.on('movestart', () => { tagKey.current = ''; setTag(null); });
         const showDistrict = (e: { features?: { properties?: unknown }[]; lngLat: { lng: number; lat: number }; point: { x: number; y: number } }, sticky: boolean) => {
           if (liveAt(e.point).length) return;
           const p = e.features?.[0]?.properties as Record<string, unknown> | undefined;
@@ -310,13 +321,12 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
   }, [ready, liveOn, liveRows]);
   useEffect(() => {
     const map = mapRef.current;
-    if (!ready || !map || !liveOn || live.status !== 'ok') return;
+    if (!ready || !map || !liveOn || live.status !== 'ok' || !visible) return;
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const pulse = (ph: number) => {
-      for (const [id, base] of [['live-halo-modis', 9], ['live-halo-viirs', 7]] as const) {
+      for (const [id, base] of [['live-halo-modis', 0.4], ['live-halo-viirs', 0.4]] as const) {
         if (!map.getLayer(id)) continue;
-        map.setPaintProperty(id, 'circle-radius', base + 12 * ph);
-        map.setPaintProperty(id, 'circle-opacity', 0.45 * (1 - ph));
+        map.setPaintProperty(id, 'circle-opacity', base * (1 - ph));
       }
     };
     if (still) { pulse(0.3); return; }
@@ -327,8 +337,14 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [ready, liveOn, live.status]);
+  }, [ready, liveOn, live.status, visible]);
 
+  const onKey = (e: React.KeyboardEvent) => {
+    const t = e.target as HTMLElement;
+    if (e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+    const l = lookForKey(e.key);
+    if (l) setLook(l);
+  };
   const tableMode = !!failed || showTable;
   const seriesName = SERIES_OPTS.find((o) => o.k === (districtsOn && dist ? dist.used : seriesUsed))?.label ?? '';
   const districtSub = !distYear.loaded ? 'Loading districts…'
@@ -337,7 +353,7 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
     : `${dist?.active ?? 0} of ${dist?.total ?? 0} districts with active cells · sums of 5 km cells`;
 
   return (
-    <section className="panel map" aria-label="Map of 5 km cells">
+    <section className="panel map" aria-label="Map of 5 km cells" onKeyDown={onKey}>
       <div className="panel__head">
         <h2 className="panel__title">Map <span className="muted">· {region?.name ?? ''} · {monthLabel(selection.year, selection.month)}</span></h2>
         <div className="map__tools">
@@ -348,6 +364,8 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
               </button>
             ))}
           </div>
+          {!tableMode && <SensorControl look={look} onLook={setLook} />}
+          {!tableMode && <SensorCaption look={look} />}
           {!tableMode && admin2.available && (
             <div className="seg seg--sm" role="group" aria-label="Map view">
               <button className={!districtsOn ? 'is-on' : ''} aria-pressed={!districtsOn} onClick={() => setView('cells')}>Cells</button>
@@ -358,8 +376,15 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
           {!failed && <button className="btn btn--ghost btn--sm" aria-pressed={showTable} onClick={() => setShowTable(!showTable)}>{showTable ? 'Map' : 'Table'}</button>}
         </div>
       </div>
-      <div className="map__stage">
+      {!tableMode && liveOn && (
+        <div className="map__notes">
+          {liveOn && <LiveLegend status={live.status} data={live.data} covered={!!liveKey} nModis={liveRows.modis.length} nViirs={liveRows.viirs.length} regionName={region?.name ?? ''} retry={live.retry} />}
+        </div>
+      )}
+      <div className="map__stage" data-look={look}>
+        <SensorFilters />
         <div ref={box} className="map__canvas" hidden={tableMode} aria-hidden={tableMode} />
+        {!tableMode && tag && liveOn && <LiveTag tag={tag} />}
         {!tableMode && districtsOn && <div className="map__attrib" aria-label="District boundary attribution">District boundaries: geoBoundaries (CC BY 3.0 IGO), source BBS / OCHA ROAP</div>}
         {!tableMode && (
           <div className="map__overlay">
@@ -371,7 +396,6 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
                 : <div className="map__legend-sub">{subIcon(cells, monthState)}{legendSub(cells, pts.length, monthState)}</div>}
               {!districtsOn && cells.error && cells.retry && <button className="btn btn--sm map__retry" onClick={cells.retry}><Icon3D icon={RotateCw} tone="current" size={14} />Retry</button>}
             </div>
-            {liveOn && <LiveLegend status={live.status} data={live.data} covered={!!liveKey} nModis={liveRows.modis.length} nViirs={liveRows.viirs.length} regionName={region?.name ?? ''} retry={live.retry} />}
           </div>
         )}
         {tableMode && (

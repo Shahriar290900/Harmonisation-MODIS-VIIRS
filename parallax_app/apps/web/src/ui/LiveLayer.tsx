@@ -1,6 +1,8 @@
 import type { LiveData, LiveRow, LiveStatus } from '../data/live';
 import { LIVE_NOTE, fmtUtc } from '../data/live';
 import { fmtNum } from '../data/format';
+import { Info } from 'lucide-react';
+import { Tip } from './Tip';
 
 /** Map colours for the two instruments (data colours, same in both themes; shapes differ too: MODIS = larger circle, VIIRS = smaller diamond). */
 export const LIVE_COLORS = { modis: '#F97316', viirs: '#D946EF' } as const;
@@ -56,36 +58,50 @@ interface LegendProps {
   status: LiveStatus; data: LiveData | null; covered: boolean; nModis: number; nViirs: number; regionName: string; retry: () => void;
 }
 
-/** Live legend + honest messages: 'feed unavailable' is never conflated with 'no detections'. */
+/** Compact live status line. 'feed unavailable', 'no detections' and 'not covered' stay distinct in the line itself;
+ *  the longer caveat sits behind an info tip and is also in visually-hidden text for screen readers. */
 export function LiveLegend({ status, data, covered, nModis, nViirs, regionName, retry }: LegendProps) {
   let body: React.ReactNode;
-  if (!covered) body = <div className="live__msg">The live feed covers Bangladesh, California and New South Wales only; nothing to show for {regionName || 'this area'}.</div>;
-  else if (status === 'loading' || status === 'idle') body = <div className="live__msg" role="status">Loading live detections…</div>;
+  if (!covered) body = <>Live feed covers Bangladesh, California and New South Wales only; nothing to show for {regionName || 'this area'}.</>;
+  else if (status === 'loading' || status === 'idle') body = <>Loading live detections…</>;
   else if (status === 'unavailable') {
     body = (
-      <div className="live__msg live__msg--warn" role="status">
-        Live feed unavailable (it runs only on the deployed site and needs a network connection). This is not the same as zero detections.
-        <button className="btn btn--sm live__retry" onClick={retry}>Retry</button>
-      </div>
+      <><span className="live__warn">Live feed unavailable here (runs on the deployed site). Not the same as zero detections.</span>
+        <button className="btn btn--sm live__retry" onClick={retry}>Retry</button></>
     );
   } else {
     const t = data ? fmtUtc(data.fetched_utc) : null;
     body = (
       <>
-        <div className="live__keys">
-          <span className="live__key"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill={LIVE_COLORS.modis} stroke="currentColor" strokeWidth="1" /></svg>MODIS {nModis}</span>
-          <span className="live__key"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1 11 6 6 11 1 6Z" fill={LIVE_COLORS.viirs} stroke="currentColor" strokeWidth="1" /></svg>VIIRS {data?.viirs_source ? `(${data.viirs_source}) ` : ''}{nViirs}</span>
-        </div>
-        {nModis + nViirs === 0 && <div className="live__msg">No detections in the last 24 h in this area (feed reachable, nothing detected).</div>}
-        {t && <div className="live__time">Fetched {t.utc}{t.local ? ` · ${t.local} local` : ''}</div>}
+        <span className="live__key"><svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill={LIVE_COLORS.modis} stroke="currentColor" strokeWidth="1" /></svg>MODIS {nModis}</span>
+        <span className="live__key"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1 11 6 6 11 1 6Z" fill={LIVE_COLORS.viirs} stroke="currentColor" strokeWidth="1" /></svg>VIIRS {data?.viirs_source ? `(${data.viirs_source}) ` : ''}{nViirs}</span>
+        {nModis + nViirs === 0 ? <span>No detections in the last 24 h in this area (feed reachable).</span> : null}
+        {t && <span className="muted">{t.utc} UTC</span>}
+        <span className="muted">near-real-time · not confirmed wildfires</span>
       </>
     );
   }
   return (
-    <div className="map__legend live__legend" aria-label="Live detections legend">
-      <div className="map__legend-title">Live · last 24 h</div>
+    <div className="live__line" aria-label="Live detections, last 24 h" role="status">
+      <b>Live · 24 h</b>
       {body}
-      <div className="live__note">{LIVE_NOTE}</div>
+      <Tip text={LIVE_NOTE}>
+        <button type="button" className="live__info" aria-label="About live detections" aria-describedby="live-note"><Info size={13} aria-hidden="true" /></button>
+      </Tip>
+      <span id="live-note" className="live__sr">{LIVE_NOTE}</span>
+    </div>
+  );
+}
+
+export interface LiveTagData { x: number; y: number; kind: 'modis' | 'viirs'; date: string; time: string; frp: number | null }
+
+/** Compact screen-space detection tag (one at a time): bracket corners + satellite + UTC time + FRP. */
+export function LiveTag({ tag }: { tag: LiveTagData }) {
+  const t = tag.time.padStart(4, '0');
+  return (
+    <div className="live__tag" style={{ left: tag.x, top: tag.y }} aria-hidden="true">
+      <i className="live__tag-c live__tag-c--tl" /><i className="live__tag-c live__tag-c--tr" /><i className="live__tag-c live__tag-c--bl" /><i className="live__tag-c live__tag-c--br" />
+      <b>{tag.kind === 'viirs' ? 'VIIRS' : 'MODIS'}</b> {tag.date} {t.slice(0, 2)}:{t.slice(2)} UTC · FRP {tag.frp == null ? '—' : fmtNum(tag.frp, 1) + ' MW'}
     </div>
   );
 }
