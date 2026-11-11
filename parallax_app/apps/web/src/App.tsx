@@ -231,7 +231,7 @@ export function App() {
         <Explainer />
       </Dialog>
       <PwaToast pwa={pwa} />
-      <Joyride steps={tourSteps} run={true} continuous={true} showSkipButton={true} showProgress={true} />
+      <Joyride steps={tourSteps} run={true} continuous={true} />
     </div>
   );
 }
