@@ -1,6 +1,6 @@
 # Parallax Fire — PRD v2.0
 
-Owner: M. Al Shahriar Hameem · __TEAM_PARALLAX__, Dhaka · NASA Space Apps 2026 — *Harmonization of MODIS and VIIRS Hot Spots* · 9 Oct 2026
+Owner: M. Al Shahriar Hameem · Team Lumos, Dhaka · NASA Space Apps 2026 — *Harmonization of MODIS and VIIRS Hot Spots* · 9 Oct 2026
 Supersedes PRD v1.0 (`docs/PRD_v1_original.md`). v1 still holds wherever v2 is silent.
 
 **Product promise:** Pick a place. See its burning seasons over 20+ years on one fair scale. Tell real change apart from satellite change.

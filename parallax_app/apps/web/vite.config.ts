@@ -20,7 +20,7 @@ export default defineConfig({
       manifest: {
         name: 'Parallax Fire',
         short_name: 'Fire Calendar',
-        description: 'Harmonized MODIS + VIIRS burning-activity calendar (NASA Space Apps 2026, __TEAM_PARALLAX__)',
+        description: 'Harmonized MODIS + VIIRS burning-activity calendar (NASA Space Apps 2026, Team Lumos)',
         theme_color: '#0B1220',
         background_color: '#0B1220',
         display: 'standalone',

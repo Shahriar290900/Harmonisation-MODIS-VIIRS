@@ -41,9 +41,9 @@ export function TopBar({ regions, aoiId, onAoi, years, from, to, onRange, manife
         </div>
       </div>
       <div className="topbar__controls">
-        <label className="field">
+        <label className="field" title="Select the area of interest to analyze">
           <span className="field__lab">Area</span>
-          <select value={aoiId} onChange={(e) => onAoi(e.target.value)} aria-label="Area of interest">
+          <select value={aoiId} onChange={(e) => onAoi(e.target.value)} aria-label="Area of interest" title="Select Region">
             {groups.map((g) => (
               <optgroup key={g} label={g}>
                 {regions.filter((r) => r.country === g).map((r) => <option key={r.aoi_id} value={r.aoi_id}>{r.kind === 'admin1' ? ' ' : ''}{r.name}</option>)}
@@ -51,20 +51,20 @@ export function TopBar({ regions, aoiId, onAoi, years, from, to, onRange, manife
             ))}
           </select>
         </label>
-        <div className="field field--range">
+        <div className="field field--range" title="Select the year range to view">
           <span className="field__lab">Years</span>
-          <select aria-label="From year" value={from} onChange={(e) => onRange(Math.min(+e.target.value, to), to)}>{years.map((y) => <option key={y}>{y}</option>)}</select>
+          <select aria-label="From year" title="Start Year" value={from} onChange={(e) => onRange(Math.min(+e.target.value, to), to)}>{years.map((y) => <option key={y}>{y}</option>)}</select>
           <span className="muted" aria-hidden>–</span>
-          <select aria-label="To year" value={to} onChange={(e) => onRange(from, Math.max(+e.target.value, from))}>{years.map((y) => <option key={y}>{y}</option>)}</select>
+          <select aria-label="To year" title="End Year" value={to} onChange={(e) => onRange(from, Math.max(+e.target.value, from))}>{years.map((y) => <option key={y}>{y}</option>)}</select>
         </div>
       </div>
       <div className="topbar__right">
         {status}
-        <button className={'stage-tag stage-tag--' + stage.tone} onClick={onAbout} aria-haspopup="dialog" title="Release stage — why?" aria-label={`Release stage: ${stage.label}. Why?`}>
+        <button className={'stage-tag stage-tag--' + stage.tone} onClick={onAbout} aria-haspopup="dialog" title={`Release stage: ${stage.label} — click to learn more`} aria-label={`Release stage: ${stage.label}. Why?`}>
           <StageTag tone={stage.tone} label={compact ? stage.short : stage.label} help />
         </button>
-        <button className={'btn btn--ghost' + (compact ? ' btn--icon' : '')} onClick={onExplain} aria-haspopup="dialog" aria-label={compact ? 'What is harmonization?' : undefined}><Icon3D icon={CircleHelp} tone="amber" size={compact ? 20 : 16} />{!compact && 'What is harmonization?'}</button>
-        <button className="btn btn--ghost" onClick={onModels} aria-haspopup="dialog"><Icon3D icon={BarChart3} tone="violet" size={16} />Models</button>
+        <button className={'btn btn--ghost' + (compact ? ' btn--icon' : '')} onClick={onExplain} aria-haspopup="dialog" aria-label={compact ? 'What is harmonization?' : undefined} title="Understand how MODIS and VIIRS data are harmonized"><Icon3D icon={CircleHelp} tone="amber" size={compact ? 20 : 16} />{!compact && 'What is harmonization?'}</button>
+        <button className="btn btn--ghost" onClick={onModels} aria-haspopup="dialog" title="View models & evidence of skill"><Icon3D icon={BarChart3} tone="violet" size={16} />Models</button>
       </div>
     </header>
   );

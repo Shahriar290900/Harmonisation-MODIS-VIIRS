@@ -91,9 +91,9 @@ export function CompareChart({ flat, selection, onSelect, height = 260 }: Props)
             </li>
           ))}
         </ul>
-        <div className="seg" role="group" aria-label="Y axis scale">
-          <button className={log ? 'is-on' : ''} aria-pressed={log} onClick={() => setLog(true)}>log</button>
-          <button className={!log ? 'is-on' : ''} aria-pressed={!log} onClick={() => setLog(false)}>linear</button>
+        <div className="seg" role="group" aria-label="Y axis scale" title="Toggle between logarithmic and linear Y axis scale">
+          <button className={log ? 'is-on' : ''} aria-pressed={log} onClick={() => setLog(true)} title="Logarithmic Scale (better for comparing small and large values)">log</button>
+          <button className={!log ? 'is-on' : ''} aria-pressed={!log} onClick={() => setLog(false)} title="Linear Scale (better for absolute differences)">linear</button>
         </div>
       </div>
       <div className="chart__plot" ref={ref}>

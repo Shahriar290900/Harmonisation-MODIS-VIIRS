@@ -2,7 +2,7 @@
 
 Read together with the v1.1 amendments (sec 7), the v1.2 addendum and region registry (sec 8-9) and the data-source corrections and USA caveats (sec 10, 2026-10-10). Where sec 10 corrects a statement in sec 1-6, sec 10 wins.
 
-Owner: M. Al Shahriar Hameem, __TEAM_PARALLAX__ (Dhaka). Do not change this file without the coordinator.
+Owner: M. Al Shahriar Hameem, Team Lumos (Dhaka). Do not change this file without the coordinator.
 
 ## 0. Two-notebook Kaggle design (user constraint)
 - RTX PRO 6000 Blackwell only runs with internet OFF, and (owner's account of Kaggle) only in a notebook with the competition `arc-prize-2026-arc-agi-3` attached; whether other use of that machine risks moderation action is unconfirmed and is the owner's decision. Internet ON gives only T4 x2. Notebook B also runs on T4 x2 with Internet OFF and no competition (31 GiB RAM, one T4 used).

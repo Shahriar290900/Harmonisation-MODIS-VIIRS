@@ -357,7 +357,7 @@ function Footer({ core, openHash }: { core: Core | null; openHash: string }) {
         </div>
         <div>
           <h2 className="lx-foot__h">Made by</h2>
-          <p><b>M. Al Shahriar Hameem</b><br />__TEAM_PARALLAX__ · Dhaka, Bangladesh</p>
+          <p><b>built by M Al Shahriar Hameem</b><br />shahriar.hameem@gmail.com 🇧🇩 Team Lumos</p>
           <p>NASA Space Apps Challenge 2026 — <i>Harmonization of MODIS and VIIRS Hot Spots</i></p>
         </div>
         <div>

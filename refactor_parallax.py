@@ -6,7 +6,7 @@ IGNORE_EXTS = {'.png', '.jpg', '.jpeg', '.gif', '.zip', '.pdf', '.svg', '.onnx',
 
 REPLACEMENTS = [
     # Protect team name
-    ("__TEAM_PARALLAX__", "__TEAM_PARALLAX__"),
+    ("Team Lumos", "Team Lumos"),
     ("__team_parallax__", "__team_parallax__"),
     ("__Team_parallax__", "__Team_parallax__"),
     
@@ -27,7 +27,7 @@ REPLACEMENTS = [
     ("parallax", "parallax"),
     
     # Restore team name
-    ("__TEAM_PARALLAX__", "__TEAM_PARALLAX__"),
+    ("Team Lumos", "Team Lumos"),
     ("__team_parallax__", "__team_parallax__"),
     ("__Team_parallax__", "__Team_parallax__"),
 ]
@@ -57,7 +57,7 @@ def rename_file_or_dir(path):
     for old, new in REPLACEMENTS:
         new_base_name = new_base_name.replace(old, new)
         
-    # We don't want "__TEAM_PARALLAX__" logic affecting filenames realistically, but it's fine.
+    # We don't want "Team Lumos" logic affecting filenames realistically, but it's fine.
     
     if new_base_name != base_name:
         new_path = os.path.join(dir_name, new_base_name)

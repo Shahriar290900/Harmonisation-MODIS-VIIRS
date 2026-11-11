@@ -28,8 +28,8 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 var(--font); -webkit-font-smoothing: antialiased; }
-body { min-height: 100vh; overflow-x: hidden; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 var(--font); -webkit-font-smoothing: antialiased; scrollbar-gutter: stable; scroll-behavior: smooth; }
+body { min-height: 100vh; overflow-x: hidden; overscroll-behavior-y: none; }
 button, select, input { font: inherit; color: inherit; }
 a { color: #7DD3FC; }
 code { font-family: var(--mono); font-size: 0.86em; background: #0B1220; border: 1px solid var(--border); border-radius: var(--radius-xs); padding: 0 4px; overflow-wrap: anywhere; }
@@ -41,6 +41,24 @@ p { margin: 0; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
 .skip { position: absolute; left: -999px; top: 8px; z-index: 100; background: var(--text); color: var(--bg); padding: 8px 12px; border-radius: var(--radius-sm); }
 .skip:focus { left: 8px; }
+
+[aria-busy="true"] {
+  position: relative;
+  overflow: hidden;
+  pointer-events: none;
+}
+[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  animation: shimmer 1.5s infinite;
+  z-index: 10;
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
 
 /* ---------- boot ---------- */
 .boot { display: grid; place-items: center; align-content: center; gap: 14px; min-height: 100vh; color: var(--muted); }

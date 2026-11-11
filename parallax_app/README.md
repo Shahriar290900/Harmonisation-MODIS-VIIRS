@@ -1,4 +1,4 @@
-# Parallax Fire (NASA Space Apps 2026, __TEAM_PARALLAX__)
+# Parallax Fire (NASA Space Apps 2026, Team Lumos)
 
 This is a harmonized MODIS + VIIRS burning-activity calendar, built as a single PWA that runs on Windows, macOS, iOS and Android browsers.
 

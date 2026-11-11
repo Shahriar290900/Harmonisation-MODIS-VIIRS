@@ -1,7 +1,7 @@
 # %% [markdown]
 # # Parallax Fire — Notebook B: harmonise MODIS Aqua → VIIRS S-NPP (Phase 2)
 #
-# **NASA Space Apps 2026 · Harmonization of MODIS and VIIRS Hot Spots · __TEAM_PARALLAX__ (Dhaka)** · contract v1.0 + v1.1 + v1.2 amendments
+# **NASA Space Apps 2026 · Harmonization of MODIS and VIIRS Hot Spots · Team Lumos (Dhaka)** · contract v1.0 + v1.1 + v1.2 amendments
 #
 # ## Purpose
 # Two satellite instruments watch the same fires. **MODIS** (on Aqua, since mid-2002) sees the Earth with 1 km pixels; **VIIRS** (on S-NPP, since 20 Jan 2012) uses 375 m pixels and so spots many more, smaller fires. Think of two cameras photographing the same street at night: the newer camera has a sharper sensor and counts more lit windows. If you join the old camera's counts (2003–2011) to the new camera's counts (2012+), it looks as if fires suddenly multiplied in 2012. That jump is an artefact of the camera change.

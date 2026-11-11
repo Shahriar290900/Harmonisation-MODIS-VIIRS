@@ -9,7 +9,7 @@ Pace: ~140 words per minute for voice-over. Speak calmly; pauses are good.
 
 ### 0:00–1:00 — WHO (attention & authenticity). First 45 s must grab attention; first 15 s circular/curious.
 - **0:00–0:15 hook** — VISUAL: black screen; a single bright pixel appears over Bangladesh on a dark globe; it splits into a coarse square (1 km) and then many small squares (375 m). VO: *"Two satellites looked at the same fire. One saw one dot. The other saw nine. Which one is right?"* (Do NOT claim "nine" as data — it is a metaphor; keep the on-screen text "illustrative".)
-- **0:15–0:45 story** — VO: *"We are __TEAM_PARALLAX__ from Dhaka. [ADD: one true sentence about why fire/smoke matters to your team or place.] When we looked at NASA's fire record, we noticed something strange: around 2012 the number of fires suddenly jumped. Not because the world caught fire — because NASA's camera got sharper."*
+- **0:15–0:45 story** — VO: *"We are Team Lumos from Dhaka. [ADD: one true sentence about why fire/smoke matters to your team or place.] When we looked at NASA's fire record, we noticed something strange: around 2012 the number of fires suddenly jumped. Not because the world caught fire — because NASA's camera got sharper."*
 - **0:45–1:00 who we are** — VISUAL: team name card, then the project title: **Parallax Fire** + tagline *"Same fires. Two cameras. One honest record."* VO: *"We built Parallax Fire to tell the difference between fire changing and the camera changing."*
 
 ### 1:00–2:00 — WHY (empathy for the problem). Short story or killer data point; if it takes more than 60 s you are too long.
@@ -43,7 +43,7 @@ Pace: ~140 words per minute for voice-over. Speak calmly; pauses are good.
 ## C. 30 SECONDS OF GLORY (global nominee video; exact structure from the guide)
 | Time | Beat (guide) | VO (≈ 75 words total) | VISUAL |
 |---|---|---|---|
-| 0:00–0:02 | Introduce yourself | *"We're __TEAM_PARALLAX__ from Dhaka."* | Team card over the dark globe |
+| 0:00–0:02 | Introduce yourself | *"We're Team Lumos from Dhaka."* | Team card over the dark globe |
 | 0:02–0:05 | Lead us in | *"Satellites say fires jumped in 2012. Did they?"* | The 2012 step in the chart |
 | 0:05–0:10 | Name your solution (title + tagline) | *"Parallax Fire: same fires, two cameras, one honest record."* | Title animation with the tagline |
 | 0:10–0:20 | Describe your idea | *"We put NASA's MODIS and VIIRS on one fair scale — a calendar of burning seasons for Bangladesh, California and Australia, with clear labels for what's observed and what's estimated."* | Fast screen recording: calendar → click month → chart toggle → estimate band → CSV |
@@ -53,4 +53,4 @@ Rules: nothing in the 30 s version may state a measured result unless it is meas
 
 ---------------------------------------------------------------------------
 ## D. Caption / description text for posting (honest)
-*"Parallax Fire — a NASA Space Apps 2026 project by __TEAM_PARALLAX__ (Dhaka) for 'Harmonization of MODIS and VIIRS Hot Spots'. It places NASA's MODIS and VIIRS fire detections on one clearly labelled scale and shows burning seasons for Bangladesh, California and New South Wales. Data: NASA FIRMS (MODIS Collection 6.1; VIIRS 375 m S-NPP); boundaries: Natural Earth. Demo data is labelled."*
+*"Parallax Fire — a NASA Space Apps 2026 project by Team Lumos (Dhaka) for 'Harmonization of MODIS and VIIRS Hot Spots'. It places NASA's MODIS and VIIRS fire detections on one clearly labelled scale and shows burning seasons for Bangladesh, California and New South Wales. Data: NASA FIRMS (MODIS Collection 6.1; VIIRS 375 m S-NPP); boundaries: Natural Earth. Demo data is labelled."*

@@ -1,7 +1,7 @@
 # LUMOS FIRE CALENDAR
 ## Product requirements and execution plan
 
-Prepared for M. Al Shahriar Hameem | __TEAM_PARALLAX__ | 9 October 2026
+Prepared for M. Al Shahriar Hameem | Team Lumos | 9 October 2026
 
 Version 1.0 - preparation and prototype blueprint. This document contains proposed methods and acceptance targets, not trained results. No application has been built or deployed in this research task.
 

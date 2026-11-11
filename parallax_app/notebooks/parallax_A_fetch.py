@@ -11,7 +11,7 @@
 # %% [markdown]
 # # Parallax Fire — Notebook A: fetch the data bundle (Phase 1)
 #
-# **NASA Space Apps 2026 · __TEAM_PARALLAX__ (Dhaka)** · contract v1.0
+# **NASA Space Apps 2026 · Team Lumos (Dhaka)** · contract v1.0
 #
 # ## Purpose
 # This notebook downloads everything Notebook B needs and saves it in `/kaggle/working/parallax_bundle/`. It runs on Kaggle with **Internet ON** (CPU or T4). It fetches:

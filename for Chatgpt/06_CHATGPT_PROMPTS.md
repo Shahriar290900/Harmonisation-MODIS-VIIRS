@@ -2,7 +2,7 @@
 
 Attach or paste the other files first (01 → 05, then 07). Replace anything in `[BRACKETS]`. Each prompt repeats the guardrails because chat tools forget.
 
-**Standing guardrails to include in every request** (already embedded below): *Project = Parallax Fire (__TEAM_PARALLAX__, Dhaka, NASA Space Apps 2026, Harmonization of MODIS and VIIRS Hot Spots). The app currently runs on synthetic demo data. Do not invent numbers, accuracy percentages, quotes, or statistics. Anything not in the provided files must be marked [ADD] or [MEASURED]. Never imply NASA endorsement. Never call a hotspot a confirmed wildfire.*
+**Standing guardrails to include in every request** (already embedded below): *Project = Parallax Fire (Team Lumos, Dhaka, NASA Space Apps 2026, Harmonization of MODIS and VIIRS Hot Spots). The app currently runs on synthetic demo data. Do not invent numbers, accuracy percentages, quotes, or statistics. Anything not in the provided files must be marked [ADD] or [MEASURED]. Never imply NASA endorsement. Never call a hotspot a confirmed wildfire.*
 
 ---------------------------------------------------------------------------
 ## P1 — Storyboard for the 240-second pitch video

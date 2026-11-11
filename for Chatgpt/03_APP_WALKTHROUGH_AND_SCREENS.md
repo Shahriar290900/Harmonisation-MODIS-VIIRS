@@ -12,7 +12,7 @@ All screenshots are in `assets/`. They show the **demo build with synthetic data
 - **"The fire record jumps" chart:** the 2012 discontinuity explained as an artefact of the instrument change (the factor drawn is illustrative).
 - **"What this can — and cannot — claim"** card: the honesty section.
 - **Region gallery:** cards for Bangladesh, divisions, New South Wales, California with silhouettes and sparklines; shader-style page transition into the workspace.
-- **Index list** and **footer** ("Made by __TEAM_PARALLAX__, Dhaka", data and credits, "This snapshot" card).
+- **Index list** and **footer** ("Made by Team Lumos, Dhaka", data and credits, "This snapshot" card).
 - Fallbacks: no-WebGL and reduced-motion versions exist.
 
 ## Workspace (see `desktop-workspace.png`, `mobile-workspace.png`)

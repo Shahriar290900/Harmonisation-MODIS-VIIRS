@@ -1,6 +1,6 @@
 # Parallax Fire: complete package (10 Oct 2026)
 
-Owner: M. Al Shahriar Hameem · __TEAM_PARALLAX__, Dhaka · NASA Space Apps 2026, *Harmonization of MODIS and VIIRS Hot Spots*
+Owner: M. Al Shahriar Hameem · Team Lumos, Dhaka · NASA Space Apps 2026, *Harmonization of MODIS and VIIRS Hot Spots*
 
 Three regions: **Bangladesh** (country + 7 divisions), **United States** (country + California) and **Australia** (country + New South Wales). The app opens on Bangladesh.
 

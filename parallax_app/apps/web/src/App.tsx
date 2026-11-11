@@ -18,6 +18,11 @@ import { fmtNum, monthLabel } from './data/format';
 import { DEFAULT_AOI } from './data/regions';
 import { ArrowRight, CalendarDays, FileText, FlaskConical, Info, Map as MapIcon, Pause, Play, TrendingDown, TrendingUp } from 'lucide-react';
 import { Icon3D } from './ui/icons/Icon3D';
+import NProgress from 'nprogress';
+import 'nprogress/nprogress.css';
+import { Joyride, type Step } from 'react-joyride';
+
+NProgress.configure({ showSpinner: false });
 
 type Tab = MobileTab;
 
@@ -108,6 +113,19 @@ export function App() {
     setPlaying(!playing);
   };
 
+  useEffect(() => {
+    if (act.loading || !cells.loaded) NProgress.start();
+    else NProgress.done();
+  }, [act.loading, cells.loaded]);
+
+  const tourSteps: Step[] = [
+    { target: '.tour-topbar', content: 'Here you can select the region, year, and month to analyze.' },
+    { target: '.tour-calendar', content: 'This grid shows the fire activity across months. The color intensity represents the number of hotspots detected.' },
+    { target: '.tour-chart', content: 'Compare MODIS and VIIRS satellite detections over the years to spot the harmonization effect.' },
+    { target: '.tour-map', content: 'See the physical locations of the detected fires on this interactive map.' },
+    { target: '.tour-evidence', content: 'Review the mathematical evidence and confidence scores for the harmonization models.' }
+  ];
+
   if (error) return <div className="boot boot--err"><h1>Could not load the data snapshot</h1><p>{error}</p></div>;
   if (!core) return <div className="boot" aria-busy="true"><div className="boot__spin" /><p>Loading snapshot…</p></div>;
 
@@ -116,7 +134,7 @@ export function App() {
   const idx = flat.findIndex((p) => p.year === sel.year && p.month === sel.month);
 
   const calendarPanel = (
-    <section className="panel cal-panel" aria-label="Burning calendar">
+    <section className="panel cal-panel tour-calendar" aria-label="Burning calendar">
       <div className="panel__head">
         <h2 className="panel__title">Burning calendar <span className="muted">· {region?.name}</span></h2>
         <div className="replay">
@@ -135,16 +153,18 @@ export function App() {
     </section>
   );
   const chartPanel = (
-    <section className="panel chart-panel" aria-label="Compare sensors">
+    <section className="panel chart-panel tour-chart" aria-label="Compare sensors">
       <div className="panel__head"><h2 className="panel__title">Compare sensors <span className="muted">· raw vs harmonized</span></h2></div>
       <CompareChart flat={flat} selection={sel} onSelect={onSelect} height={desktop ? 190 : mobile ? 210 : 250} />
     </section>
   );
-  const mapPanel = <MapPanel region={region} regions={core.regions} geo={geo} cells={cells} selection={sel} visible={!mobile || tab === 'map'} monthState={monthState} />;
+  const mapPanel = <div className="tour-map" style={{display:'contents'}}><MapPanel region={region} regions={core.regions} geo={geo} cells={cells} selection={sel} visible={!mobile || tab === 'map'} monthState={monthState} /></div>;
   const evidence = (
-    <Evidence record={record} state={monthState} yearError={act.errors.get(sel.year)} offline={act.offline} onRetry={act.retry}
-      selection={sel} region={region} manifest={m} snapshotPath={core.snapshotPath} sources={core.sources}
-      allRecords={allRecords} expanded={!desktop || drawerOpen} onToggle={desktop ? () => setDrawerOpen(!drawerOpen) : undefined} embedded={mobile} />
+    <div className="tour-evidence" style={{display:'contents'}}>
+      <Evidence record={record} state={monthState} yearError={act.errors.get(sel.year)} offline={act.offline} onRetry={act.retry}
+        selection={sel} region={region} manifest={m} snapshotPath={core.snapshotPath} sources={core.sources}
+        allRecords={allRecords} expanded={!desktop || drawerOpen} onToggle={desktop ? () => setDrawerOpen(!drawerOpen) : undefined} embedded={mobile} />
+    </div>
   );
 
   return (
@@ -160,9 +180,11 @@ export function App() {
           <button className="linkish" onClick={() => setDlg('about')}>Details</button>
         </div>
       )}
-      <TopBar regions={core.regions} aoiId={sel.aoiId} onAoi={(id) => setSelection({ aoiId: id })} years={allYears} from={from} to={to} onRange={onRange}
-        manifest={m} onAbout={() => setDlg('about')} onModels={() => setDlg('models')} onExplain={() => setDlg('explain')} compact={mobile}
-        status={desktop ? <StatusLine createdUtc={m.created_utc} snapshotId={m.snapshot_id} offlineReady={pwa.offlineReady} /> : null} />
+      <div className="tour-topbar">
+        <TopBar regions={core.regions} aoiId={sel.aoiId} onAoi={(id) => setSelection({ aoiId: id })} years={allYears} from={from} to={to} onRange={onRange}
+          manifest={m} onAbout={() => setDlg('about')} onModels={() => setDlg('models')} onExplain={() => setDlg('explain')} compact={mobile}
+          status={desktop ? <StatusLine createdUtc={m.created_utc} snapshotId={m.snapshot_id} offlineReady={pwa.offlineReady} /> : null} />
+      </div>
       {region?.note && <p className="region-note" role="note"><Icon3D icon={Info} tone="cyan" size={14} />{region.note}</p>}
 
       <main id="main" className={'main' + (mobile ? ' main--tab-' + tab : '')}>
@@ -185,7 +207,7 @@ export function App() {
 
       {!desktop && <footer className="foot">
         <StatusLine createdUtc={m.created_utc} snapshotId={m.snapshot_id} offlineReady={pwa.offlineReady} />
-        <span className="foot__credit">__TEAM_PARALLAX__, Dhaka · NASA Space Apps 2026 · Data: NASA FIRMS, Natural Earth</span>
+        <span className="foot__credit">Team Lumos, Dhaka · NASA Space Apps 2026 · Data: NASA FIRMS, Natural Earth</span>
       </footer>}
 
       {mobile && (
@@ -209,6 +231,7 @@ export function App() {
         <Explainer />
       </Dialog>
       <PwaToast pwa={pwa} />
+      <Joyride steps={tourSteps} run={true} continuous={true} showSkipButton={true} showProgress={true} />
     </div>
   );
 }

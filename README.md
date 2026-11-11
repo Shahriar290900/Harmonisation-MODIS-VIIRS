@@ -1,6 +1,6 @@
 # 🔥 Parallax Fire
 > NASA Space Apps 2026 entry, challenge *Harmonization of MODIS and VIIRS Hot Spots*. 
-> **__TEAM_PARALLAX__**, Dhaka. Owner: M. Al Shahriar Hameem.
+> **Team Lumos**, Dhaka. Owner: M. Al Shahriar Hameem.
 
 [![Deploy to GitHub Pages](https://github.com/Shahriar290900/Harmonisation-MODIS-VIIRS/actions/workflows/pages.yml/badge.svg)](https://github.com/Shahriar290900/Harmonisation-MODIS-VIIRS/actions/workflows/pages.yml)
 
@@ -90,4 +90,4 @@ Exact clicks and what to send back on failure: `KAGGLE_HANDOFF.md`.
 - No API keys or tokens belong in this repo. Zip files and `.env` files are git-ignored.
 
 ## 📊 Data and credits
-Fire detections: **NASA FIRMS** (MODIS Collection 6.1, VIIRS 375 m S-NPP), 2001–2024. NASA plans to stop delivering S-NPP VIIRS science data on 2 Nov 2026; the historical years used here are unaffected. Boundaries: Natural Earth (public domain). Built by __TEAM_PARALLAX__, Dhaka (M. Al Shahriar Hameem).
+Fire detections: **NASA FIRMS** (MODIS Collection 6.1, VIIRS 375 m S-NPP), 2001–2024. NASA plans to stop delivering S-NPP VIIRS science data on 2 Nov 2026; the historical years used here are unaffected. Boundaries: Natural Earth (public domain). Built by Team Lumos, Dhaka (M. Al Shahriar Hameem).

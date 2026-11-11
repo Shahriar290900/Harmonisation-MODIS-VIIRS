@@ -756,7 +756,7 @@ Gate: submission filed before the deadline with the live link, code link, video 
 - [ ] 7.2.5 Limits: not fire counts, not wildfire counts (prescribed and agricultural burning are included), not burned area, cloud gaps unknown, no 2025 data, Mymensingh boundary, USA includes Alaska and Hawaii.
 - [ ] 7.2.6 NASA data used: FIRMS MODIS C6.1 and VIIRS 375 m S-NPP (country yearly files, 2001–2024); Natural Earth boundaries.
 - [ ] 7.2.7 Research extras: simulated QML and QLLM compared fairly against classical models, no advantage claimed.
-- [ ] 7.2.8 Credits: M. Al Shahriar Hameem, __TEAM_PARALLAX__, Dhaka (plus any teammates).
+- [ ] 7.2.8 Credits: M. Al Shahriar Hameem, Team Lumos, Dhaka (plus any teammates).
 
 ### 7.3 Record the demo video
 

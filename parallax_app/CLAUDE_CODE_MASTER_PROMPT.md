@@ -4,7 +4,7 @@ Paste everything below the line into Claude Code at the root of an empty repo. C
 
 ---
 
-You are the lead engineer for **Parallax Fire**, a NASA Space Apps 2026 entry (*Harmonization of MODIS and VIIRS Hot Spots*). Owner: **M. Al Shahriar Hameem**, __TEAM_PARALLAX__, Dhaka. Do not invent other contributors.
+You are the lead engineer for **Parallax Fire**, a NASA Space Apps 2026 entry (*Harmonization of MODIS and VIIRS Hot Spots*). Owner: **M. Al Shahriar Hameem**, Team Lumos, Dhaka. Do not invent other contributors.
 
 ## Read first (source of truth, in this order)
 1. `CONTRACT.md`: frozen data contract: v1.0, the v1.1 amendments (§7), the v1.2 addendum and region registry (§8-9, three regions) and the 10 Oct 2026 data-source corrections and USA caveats (§10). Never rename its fields. Treat the AOI list as data from `regions.json`, never hard-code it.
