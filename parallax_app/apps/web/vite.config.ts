@@ -34,7 +34,11 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}', 'basemap/*.geojson', 'data/index.json', 'data/*/manifest.json', 'data/*/regions.json', 'data/*/geo/*.geojson'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        // Live FIRMS function: never serve from the precache fallback, never cache in the SW.
+        navigateFallbackDenylist: [/^\/api\//, /^\/\.netlify\//],
         runtimeCaching: [
+          { urlPattern: ({ url }: { url: URL }) => url.pathname.startsWith('/api/') || url.pathname.startsWith('/.netlify/functions/'), handler: 'NetworkOnly' },
+          { urlPattern: /\/geo-admin2\/.*\.geojson$/, handler: 'CacheFirst', options: { cacheName: 'parallax-admin2-geo', expiration: { maxEntries: 20 } } },
           { urlPattern: /\/data\/.*\.(json|geojson|csv)$/, handler: 'CacheFirst', options: { cacheName: 'parallax-data', expiration: { maxEntries: 2000 } } }
         ]
       }

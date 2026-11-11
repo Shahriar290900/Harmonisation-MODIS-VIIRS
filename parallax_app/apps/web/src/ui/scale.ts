@@ -1,8 +1,9 @@
-// Sequential "burning activity" scale: amber → orange → red → deep red. Strong colours only.
-const STOPS = ['#FDE047', '#FBBF24', '#F59E0B', '#F97316', '#EF4444', '#DC2626', '#B91C1C', '#7F1D1D'];
+// Sequential "burning activity" scale: amber → orange → red → deep red. Strong colours only; reads on paper and on navy.
+// Zero is a theme token (--cal-zero in app.css): pale sand on light, dark amber-brown on dark.
+const STOPS = ['#FCD34D', '#FBBF24', '#F59E0B', '#F97316', '#EF4444', '#DC2626', '#B91C1C', '#7F1D1D'];
 function hexToRgb(h: string) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
 const RGB = STOPS.map(hexToRgb);
-export const ZERO_COLOR = '#4A3412'; // observed zero: dark amber-brown, distinct from "missing" hatch
+export const ZERO_COLOR = 'var(--cal-zero)'; // observed zero: theme-aware, distinct from the "missing" hatch (CSS only; never pass to canvas/maplibre)
 
 export function rampColor(t: number): string {
   const x = Math.max(0, Math.min(1, t)) * (RGB.length - 1);
@@ -21,7 +22,7 @@ export function valueColor(v: number | null, max: number): string | null {
 }
 /** dark text on light ramp cells, light text on dark ones */
 export function textOn(v: number | null, max: number): string {
-  if (v == null || v <= 0) return '#F3E8D2';
+  if (v == null || v <= 0) return 'var(--cal-zero-text)';
   return rampT(v, max) > 0.55 ? '#FFF7ED' : '#1C1305';
 }
 export const RAMP_CSS = `linear-gradient(90deg, ${STOPS.join(', ')})`;

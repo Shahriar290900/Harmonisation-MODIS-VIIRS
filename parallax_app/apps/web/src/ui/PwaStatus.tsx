@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Wifi, WifiOff } from 'lucide-react';
+import { Download, Share, Wifi, WifiOff, X } from 'lucide-react';
+import { Tip } from './Tip';
 import { useOnline } from './hooks';
 import { Icon3D } from './icons/Icon3D';
 
@@ -65,8 +66,41 @@ export function StatusLine({ createdUtc, snapshotId, offlineReady }: { createdUt
   const online = useOnline();
   return (
     <div className="statusline">
-      <span className={'net ' + (online ? 'net--on' : 'net--off')} role="status"><Icon3D icon={online ? Wifi : WifiOff} tone={online ? 'teal' : 'amber'} size={14} />{online ? (offlineReady ? 'Online · opened areas work offline' : 'Online') : 'Offline — showing areas you\'ve opened before'}</span>
-      <span title={snapshotId}>Snapshot {snapshotAge(createdUtc)}</span>
+      <Tip text={online ? 'You are online. Areas you have opened are saved so they still work without a connection.' : 'You are offline. Only areas you opened before are available; they are not missing, just not saved yet.'} side="bottom"><span tabIndex={0} className={'net ' + (online ? 'net--on' : 'net--off')} role="status"><Icon3D icon={online ? Wifi : WifiOff} tone={online ? 'teal' : 'amber'} size={14} />{online ? (offlineReady ? 'Online · opened areas work offline' : 'Online') : 'Offline — showing areas you\'ve opened before'}</span></Tip>
+      <Tip text={`Data snapshot ${snapshotId}. A snapshot is a frozen copy of the data, so numbers do not change under you.`} side="bottom"><span tabIndex={0}>Snapshot {snapshotAge(createdUtc)}</span></Tip>
+    </div>
+  );
+}
+
+// ---- Install prompt (beforeinstallprompt where available; iOS gets a Share -> Add to Home Screen hint) ----
+type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
+const DISMISS_KEY = 'parallax.install.dismissed';
+const isStandalone = () => typeof matchMedia !== 'undefined' && (matchMedia('(display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true);
+const isIos = () => typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent) && !('MSStream' in window);
+
+export function InstallPrompt({ compact }: { compact?: boolean }) {
+  const [evt, setEvt] = useState<BIPEvent | null>(null);
+  const [gone, setGone] = useState(() => { try { return localStorage.getItem(DISMISS_KEY) === '1'; } catch { return false; } });
+  const [installed, setInstalled] = useState(isStandalone);
+  useEffect(() => {
+    const on = (e: Event) => { e.preventDefault(); setEvt(e as BIPEvent); };
+    const done = () => { setInstalled(true); setEvt(null); };
+    window.addEventListener('beforeinstallprompt', on); window.addEventListener('appinstalled', done);
+    return () => { window.removeEventListener('beforeinstallprompt', on); window.removeEventListener('appinstalled', done); };
+  }, []);
+  const dismiss = () => { setGone(true); try { localStorage.setItem(DISMISS_KEY, '1'); } catch { /* ignore */ } };
+  if (installed || gone || !compact) return null;
+  const ios = isIos();
+  if (!evt && !ios) return null;
+  return (
+    <div className="install" role="region" aria-label="Install app">
+      {evt ? (
+        <><Download size={18} aria-hidden /><span>Install Parallax Fire as an app. It opens full screen and works offline.</span>
+          <button className="btn btn--primary btn--sm" onClick={() => { void evt.prompt(); void evt.userChoice.finally(() => setEvt(null)); }}>Install app</button></>
+      ) : (
+        <><Share size={18} aria-hidden /><span>Install: tap <b>Share</b>, then <b>Add to Home Screen</b>.</span></>
+      )}
+      <button className="icon-btn install__x" onClick={dismiss} aria-label="Dismiss install prompt"><X size={16} aria-hidden /></button>
     </div>
   );
 }

@@ -1,0 +1,24 @@
+/* Live layer + district view (MapPanel). Theme tokens only; map data colours live in LiveLayer.tsx. */
+.map__stage .map__legend { background: color-mix(in srgb, var(--panel) 92%, transparent); color: var(--text); }
+.map__stage .cell-pop .maplibregl-popup-content { background: var(--panel); color: var(--text); border: 1px solid var(--border-2); }
+.map__stage .cell-pop .maplibregl-popup-tip { border-top-color: var(--panel) !important; border-bottom-color: var(--panel) !important; }
+.map__stage .cell-pop .muted { color: var(--muted); margin-top: 2px; }
+.map__overlay { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; max-height: calc(100% - 20px); overflow: hidden; }
+.live__legend { max-width: 300px; }
+.live__keys { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.live__key { display: inline-flex; align-items: center; gap: 5px; color: var(--text); }
+.live__time { color: var(--muted); margin-top: 4px; }
+.live__msg { margin-top: 4px; color: var(--text); }
+.live__msg--warn { color: var(--amber); }
+.live__retry { margin-left: 8px; pointer-events: auto; }
+.live__note { color: var(--muted); margin-top: 6px; font-size: 11px; line-height: 1.35; }
+.live__dot { width: 8px; height: 8px; border-radius: 50%; background: #F97316; display: inline-block; }
+.map__live-btn[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--border-2), inset 0 -2px 0 var(--amber); color: var(--text); }
+.map__live-btn[aria-pressed="true"] .live__dot { animation: live-pulse 1.6s ease-out infinite; }
+@keyframes live-pulse { 0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, .6); } 100% { box-shadow: 0 0 0 7px rgba(249, 115, 22, 0); } }
+@media (prefers-reduced-motion: reduce) { .map__live-btn[aria-pressed="true"] .live__dot { animation: none; } }
+.district-label { display: none; pointer-events: none; font-size: 11px; font-weight: 600; color: var(--text); white-space: nowrap;
+  text-shadow: 0 0 3px var(--bg), 0 0 3px var(--bg), 0 0 5px var(--bg); }
+.show-dlabels .district-label { display: block; }
+.map__attrib { position: absolute; right: 8px; bottom: 26px; max-width: 55%; font-size: 10px; color: var(--muted); background: color-mix(in srgb, var(--panel) 85%, transparent); padding: 2px 6px; border-radius: var(--radius-xs); pointer-events: none; }
+.maplibregl-ctrl-attrib { display: block; }

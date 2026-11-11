@@ -47,7 +47,7 @@ function Progress({ step, n }: { step: number; n: number }) {
 }
 
 const CAMERAS = [
-  { k: 'MODIS · 1 km', h: 'One camera sees in big squares.', p: 'Aqua MODIS reads the ground in pixels about 1 km wide. A small fire inside a big pixel often stays below the detection threshold — so it is never counted.' },
+  { k: 'MODIS · 1 km', h: 'One camera sees in big squares.', p: 'Aqua MODIS reads the ground in pixels about 1 km wide (try the MODIS look). A small fire inside a big pixel often stays below the detection threshold — so it is never counted.' },
   { k: 'VIIRS · 375 m', h: 'The other sees in small ones.', p: 'S-NPP VIIRS pixels are about 375 m — seven times less area each. Small fires light up, so VIIRS typically records several times more hotspots over the same land.' },
   { k: 'Harmonized', h: 'We translate one into the other.', p: 'From 2012 to 2024 both flew together. We learn “when MODIS saw X here, VIIRS saw Y”, test it on unseen years and places, then turn 2003–2011 MODIS into VIIRS-scale estimates — each with an 80% band.' }
 ];
@@ -60,6 +60,11 @@ export function TwoCameras({ ctx }: { ctx: Ctx }) {
   const handle = useRef<PixelCompareHandle | null>(null);
   const near = useNear(ref, '600px');
   const [step, setStep] = useStep(3);
+  // Sensor look: pin the illustration to the MODIS or VIIRS view; pressing the active one hands control back to scroll.
+  const [look, setLook] = useState<'scroll' | 'modis' | 'viirs'>('scroll');
+  const lookRef = useRef(look);
+  lookRef.current = look;
+  useEffect(() => { if (look !== 'scroll') handle.current?.setProgress(look === 'modis' ? 0.1 : 0.55); }, [look]);
 
   useEffect(() => {
     if (flags.reduced || !near || (three === undefined && gl)) return;
@@ -80,7 +85,7 @@ export function TwoCameras({ ctx }: { ctx: Ctx }) {
       gsap.timeline({
         scrollTrigger: {
           trigger: ref.current!, start: 'top top', end: 'bottom bottom', scrub: 0.6,
-          onUpdate: (s) => { const p = s.progress; handle.current?.setProgress(Math.min(1, p * 1.08)); setStep(p, [0.36, 0.68]); }
+          onUpdate: (s) => { const p = s.progress; if (lookRef.current === 'scroll') handle.current?.setProgress(Math.min(1, p * 1.08)); setStep(p, [0.36, 0.68]); }
         }
       }).fromTo('.lx-cam__frame', { scale: 0.92, opacity: 0.4 }, { scale: 1, opacity: 1, duration: 0.15, ease: 'power2.out' }, 0).to({}, { duration: 0.85 });
     }, ref);
@@ -91,20 +96,25 @@ export function TwoCameras({ ctx }: { ctx: Ctx }) {
     <section id="how" ref={ref} className={'lx-scrolly lx-cam' + (flags.reduced ? ' is-static' : '')} aria-labelledby="lx-cam-h">
       <div className="lx-scrolly__sticky">
         <div className="lx-scrolly__text">
-          <p className="lx-eyebrow">How harmonization works</p>
-          <h2 id="lx-cam-h" className="lx-h2">Two cameras, <span className="lx-grad">one field of fire.</span></h2>
+          <p className="lx-eyebrow"><span className="lx-chap">01</span>How harmonization works</p>
+          <h2 id="lx-cam-h" className="lx-h2">Two cameras, <span className="lx-grad">one Earth.</span></h2>
           <Steps items={CAMERAS} step={step} reduced={flags.reduced} />
           {!flags.reduced && <Progress step={step} n={3} />}
         </div>
         {flags.reduced ? (
           <StaticPixels />
         ) : (
-          <div className="lx-cam__frame">
+          <div className="lx-cam__frame" data-look={look}>
             <div ref={host} className="lx-cam__host" aria-hidden="true" />
             <div className="lx-cam__legend" aria-hidden="true">
               <span className={step === 0 ? 'is-on' : ''}><i className="sw sw--aqua" />MODIS 1 km</span>
               <span className={step === 1 ? 'is-on' : ''}><i className="sw sw--viirs" />VIIRS 375 m</span>
               <span className={step === 2 ? 'is-on' : ''}><i className="sw sw--est" />Harmonized</span>
+            </div>
+            <div className="lx-cam__look" role="group" aria-label="Sensor look">
+              {(['modis', 'viirs'] as const).map((k) => (
+                <button key={k} type="button" aria-pressed={look === k} className={look === k ? 'is-on' : ''} onClick={() => setLook(look === k ? 'scroll' : k)}>{k === 'modis' ? 'MODIS look' : 'VIIRS look'}</button>
+              ))}
             </div>
             <IllustrativeNote />
             <p className="lx-sr">Illustration: the same fire field sampled by a coarse 1 km grid, a fine 375 m grid, then the harmonized estimate on the coarse grid.</p>
@@ -141,7 +151,7 @@ function StaticPixels() {
   );
 }
 
-const C = { aqua: '#00B4D8', viirs: '#8B5CF6', est: '#14B8A6' };
+const C = { aqua: 'var(--aqua)', viirs: 'var(--viirs)', est: 'var(--est)' };
 
 /** (c) The 2012 jump: annual mean monthly hotspots for the default region (Bangladesh), drawn on scroll. */
 export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
@@ -213,7 +223,7 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
   const r = ratio ? `×${ratio.toFixed(1)}` : 'several times';
   const items = [
     { k: '01 · MODIS alone', h: 'A record since 2003.', p: `Aqua MODIS, month by month, averaged per year for ${home}. One camera, one scale.` },
-    { k: '02 · Splice in VIIRS', h: `In 2012 the record leaps ${r}.`, p: 'Join the sharper VIIRS onto the end and the chart jumps. Nothing changed on the ground — the camera did.' },
+    { k: '02 · Splice in VIIRS', h: `In 2012 the record leaps ${r}.`, p: 'Join the sharper VIIRS onto the end and the chart jumps. The jump lines up with the instrument change — not necessarily with more fire on the ground.' },
     { k: '03 · Harmonized', h: 'Now the years are comparable.', p: 'MODIS years translated to the VIIRS scale (dashed), with the 80% band. 2005 and 2020 finally sit on the same axis.' }
   ];
   const full = flags.reduced;
@@ -222,8 +232,8 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
     <section id="jump" ref={ref} className={'lx-scrolly lx-jump' + (flags.reduced ? ' is-static' : '')} aria-labelledby="lx-jump-h">
       <div className="lx-scrolly__sticky">
         <div className="lx-scrolly__text">
-          <p className="lx-eyebrow">The 2012 jump {core?.manifest.synthetic && <span className="lx-demo lx-demo--inline"><Icon3D icon={FlaskConical} tone="red" size={12} />DEMO DATA</span>}</p>
-          <h2 id="lx-jump-h" className="lx-h2">The fire record <span className="lx-grad">didn’t change.</span> The camera did.</h2>
+          <p className="lx-eyebrow"><span className="lx-chap">02</span>The 2012 jump {core?.manifest.synthetic && <span className="lx-demo lx-demo--inline"><Icon3D icon={FlaskConical} tone="red" size={12} />DEMO DATA</span>}</p>
+          <h2 id="lx-jump-h" className="lx-h2">The record <span className="lx-grad">jumps in 2012.</span> The instrument changed.</h2>
           <Steps items={items} step={step} reduced={flags.reduced} />
           {!flags.reduced && <Progress step={step} n={3} />}
         </div>
@@ -245,8 +255,8 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
                 <clipPath id="lx-clip-aqua"><rect x={m.l - 2} y={0} width={full ? pw + 4 : 0} height={h} /></clipPath>
                 <clipPath id="lx-clip-viirs"><rect x={X(2011.5)} y={0} width={full ? X(y1) - X(2011.5) + 6 : 0} height={h} /></clipPath>
                 <clipPath id="lx-clip-est"><rect x={m.l - 2} y={0} width={full ? pw + 4 : 0} height={h} /></clipPath>
-                <linearGradient id="lx-bandfade" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#14B8A6" stopOpacity="0" /><stop offset="0.45" stopColor="#14B8A6" stopOpacity="0.1" /><stop offset="1" stopColor="#14B8A6" stopOpacity="0.24" /></linearGradient>
-                <linearGradient id="lx-vfade" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#8B5CF6" stopOpacity="0.28" /><stop offset="1" stopColor="#8B5CF6" stopOpacity="0" /></linearGradient>
+                <linearGradient id="lx-bandfade" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style={{ stopColor: "var(--est)", stopOpacity: 0 }} /><stop offset="0.45" style={{ stopColor: "var(--est)", stopOpacity: 0.1 }} /><stop offset="1" style={{ stopColor: "var(--est)", stopOpacity: 0.24 }} /></linearGradient>
+                <linearGradient id="lx-vfade" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style={{ stopColor: "var(--viirs)", stopOpacity: 0.28 }} /><stop offset="1" style={{ stopColor: "var(--viirs)", stopOpacity: 0 }} /></linearGradient>
               </defs>
               {ticks.map((t) => (
                 <g key={t} className="lx-axis">
@@ -256,7 +266,7 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
               ))}
               {xt.map((yr) => <text key={yr} className="lx-axis lx-axis--x" x={X(yr)} y={h - 8} textAnchor="middle">{yr}</text>)}
               <g className="lx-jump__mark">
-                <line x1={X(2012)} x2={X(2012)} y1={m.t} y2={m.t + ph} stroke="#F59E0B" strokeDasharray="3 4" strokeWidth="1.5" />
+                <line x1={X(2012)} x2={X(2012)} y1={m.t} y2={m.t + ph} stroke="var(--amber)" strokeDasharray="3 4" strokeWidth="1.5" />
                 <text x={X(2012) + 6} y={m.t + 12} className="lx-jump__marktext">VIIRS arrives · Jan 2012</text>
               </g>
               <g clipPath="url(#lx-clip-est)">
@@ -269,12 +279,70 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
               <g clipPath="url(#lx-clip-viirs)">
                 <path d={path('viirs') + (data.length ? `L${X(y1)},${m.t + ph}L${X(2012)},${m.t + ph}Z` : '')} fill="url(#lx-vfade)" stroke="none" />
                 <path d={path('viirs')} fill="none" stroke={C.viirs} strokeWidth="2.75" strokeLinejoin="round" />
-                {data.filter((d) => d.viirs != null).map((d) => <circle key={d.year} cx={X(d.year)} cy={Y(d.viirs!)} r={3} fill={C.viirs} stroke="#0B1220" strokeWidth="1.5" />)}
+                {data.filter((d) => d.viirs != null).map((d) => <circle key={d.year} cx={X(d.year)} cy={Y(d.viirs!)} r={3} fill={C.viirs} stroke="var(--panel)" strokeWidth="1.5" />)}
               </g>
               {!data.length && <text x={w / 2} y={h / 2} textAnchor="middle" className="lx-axis">{ctx.homeFailed ? unavailableText(`${home} activity`) : `Loading ${home} activity…`}</text>}
             </svg>
           </div>
           <figcaption className="lx-figcap">{home} · mean monthly hotspot detections per year · y-axis linear. Source: this snapshot’s <code>activity/{DEFAULT_AOI}/*.json</code>.</figcaption>
+        </figure>
+      </div>
+    </section>
+  );
+}
+
+/** (3) One fair scale: a labelled, data-free schematic of which years teach the estimate and what is shown separately. */
+export function FairScale({ ctx }: { ctx: Ctx }) {
+  const { flags } = ctx;
+  const ref = useRef<HTMLElement>(null);
+  const [step, setStep] = useStep(3);
+  const y0 = 2002, y1 = 2025, W = 640, L = 96, R = 16;
+  const X = (y: number) => L + ((y - y0) / (y1 - y0)) * (W - L - R);
+  useLayoutEffect(() => {
+    if (flags.reduced) return;
+    const c = gsap.context(() => {
+      gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: { trigger: ref.current!, start: 'top top', end: 'bottom bottom', scrub: 0.6, onUpdate: (s) => setStep(s.progress, [0.34, 0.68]) } })
+        .fromTo('.lx-fs__modis', { scaleX: 0 }, { scaleX: 1, duration: 0.2 }, 0.02)
+        .fromTo('.lx-fs__viirs', { scaleX: 0 }, { scaleX: 1, duration: 0.2 }, 0.1)
+        .fromTo('.lx-fs__overlap', { opacity: 0 }, { opacity: 1, duration: 0.1 }, 0.25)
+        .fromTo('.lx-fs__est', { scaleX: 0 }, { scaleX: 1, duration: 0.2 }, 0.38)
+        .fromTo('.lx-fs__band', { opacity: 0 }, { opacity: 1, duration: 0.15 }, 0.68)
+        .to({}, { duration: 0.1 }, 0.9);
+    }, ref);
+    return () => c.revert();
+  }, [flags.reduced]); // eslint-disable-line react-hooks/exhaustive-deps
+  const items = [
+    { k: '01 · Overlap only', h: 'Learn from years both cameras flew.', p: 'The translation “MODIS saw X, VIIRS saw Y” is learned only from the years when both satellites were in orbit, 2012 onward.' },
+    { k: '02 · Shown separately', h: 'An estimate is never passed off as an observation.', p: 'Years before VIIRS get a VIIRS-scale estimate from MODIS. It is drawn dashed, in its own colour, apart from observed counts.' },
+    { k: '03 · With a band', h: 'Every estimate carries an 80% band.', p: 'The band says how far off the estimate may be. It is checked on years and places the model never saw, and its coverage is reported, not assumed.' }
+  ];
+  const bar = (cls: string, a: number, b: number, y: number, fill: string, dashed = false) => (
+    <rect className={cls} x={X(a)} y={y} width={X(b) - X(a)} height={16} rx={2} fill={dashed ? 'none' : fill} stroke={fill} strokeWidth={dashed ? 2 : 0} strokeDasharray={dashed ? '6 4' : undefined} style={{ transformOrigin: `${X(a)}px ${y}px`, transformBox: 'view-box' as never }} />
+  );
+  return (
+    <section id="fair" ref={ref} className={'lx-scrolly lx-fair' + (flags.reduced ? ' is-static' : '')} aria-labelledby="lx-fair-h">
+      <div className="lx-scrolly__sticky">
+        <div className="lx-scrolly__text">
+          <p className="lx-eyebrow"><span className="lx-chap">03</span>Harmonization</p>
+          <h2 id="lx-fair-h" className="lx-h2">One <span className="lx-grad">fair scale.</span></h2>
+          <Steps items={items} step={step} reduced={flags.reduced} />
+          {!flags.reduced && <Progress step={step} n={3} />}
+        </div>
+        <figure className="lx-fs">
+          <svg viewBox={`0 0 ${W} 250`} role="img" aria-labelledby="lx-fs-desc">
+            <desc id="lx-fs-desc">Schematic timeline, 2002 to 2025. MODIS flies throughout; VIIRS from 2012. The estimate is learned from the overlap years and drawn dashed for the years before VIIRS, with an 80% band. Illustrative, not data.</desc>
+            <g className="lx-axis">{[2002, 2007, 2012, 2017, 2022].map((y) => <g key={y}><line x1={X(y)} x2={X(y)} y1={20} y2={200} /><text x={X(y)} y={222} textAnchor="middle">{y}</text></g>)}</g>
+            <text className="lx-fs__lab" x={L - 10} y={53} textAnchor="end">MODIS</text>
+            {bar('lx-fs__modis', 2002, 2025, 40, 'var(--aqua)')}
+            <text className="lx-fs__lab" x={L - 10} y={101} textAnchor="end">VIIRS</text>
+            {bar('lx-fs__viirs', 2012, 2025, 88, 'var(--viirs)')}
+            <rect className="lx-fs__overlap" x={X(2012)} y={32} width={X(2025) - X(2012)} height={80} rx={4} fill="none" stroke="var(--lx-accent)" strokeWidth={1.5} strokeDasharray="2 3" />
+            <text className="lx-fs__lab lx-fs__overlap" x={X(2018.5)} y={128} textAnchor="middle">overlap · where it learns</text>
+            <text className="lx-fs__lab" x={L - 10} y={165} textAnchor="end">Estimate</text>
+            <rect className="lx-fs__band" x={X(2002)} y={150} width={X(2012) - X(2002)} height={32} rx={3} fill="var(--est)" opacity={0.18} />
+            {bar('lx-fs__est', 2002, 2012, 158, 'var(--est)', true)}
+          </svg>
+          <figcaption className="lx-figcap">Illustrative schematic, not data. Bands show the idea of an 80% interval; real ones are in the app.</figcaption>
         </figure>
       </div>
     </section>

@@ -6,14 +6,15 @@ import type { ActivityRecord, SeriesKey, Selection } from '../types';
 import { SERIES_COLORS } from '../types';
 import { fmtCompact, fmtNum, monthLabel } from '../data/format';
 import { useSize } from './hooks';
+import { Tip } from './Tip';
 
 type Pt = { year: number; month: number; r: ActivityRecord | null };
 interface Props { flat: Pt[]; selection: Selection; onSelect: (y: number, m: number) => void; height?: number }
 
 const SERIES: { key: SeriesKey; label: string; title?: string; get: (r: ActivityRecord) => number | null }[] = [
-  { key: 'viirs', label: 'VIIRS (raw)', get: (r) => r.raw_viirs_reference_detections },
-  { key: 'aqua', label: 'Aqua (raw)', get: (r) => r.raw_modis_detections },
-  { key: 'estimate', label: 'Estimate · 80% band', title: 'VIIRS-scale estimate from Aqua MODIS with 80% interval', get: (r) => r.estimated_viirs_reference_detections },
+  { key: 'viirs', label: 'VIIRS (raw)', title: 'VIIRS 375 m (S-NPP): the newer sensor, flying since 2012. Raw counts, nothing adjusted.', get: (r) => r.raw_viirs_reference_detections },
+  { key: 'aqua', label: 'Aqua (raw)', title: 'Aqua MODIS: the older sensor, flying since 2002. Raw counts. It sees fire more coarsely than VIIRS, so numbers are not directly comparable.', get: (r) => r.raw_modis_detections },
+  { key: 'estimate', label: 'Estimate · 80% band', title: 'Dashed teal line: our estimate of what VIIRS would have counted, from Aqua MODIS. The shaded 80% band is the range we expect the true value to fall in about 8 times out of 10. It is learned only from years when both satellites flew. An estimate, not a measurement.', get: (r) => r.estimated_viirs_reference_detections },
   { key: 'terra', label: 'Terra', title: 'Terra MODIS — shown separately, never pooled into the estimate', get: (r) => r.raw_modis_terra_detections },
   { key: 'static', label: 'Static sources', title: 'VIIRS type-2 static land sources (e.g. kilns, industry)', get: (r) => r.static_source_detections_viirs }
 ];
@@ -85,15 +86,15 @@ export function CompareChart({ flat, selection, onSelect, height = 260 }: Props)
         <ul className="chart__legend" aria-label="Series (click to toggle)">
           {SERIES.map((s) => (
             <li key={s.key}>
-              <button className={'ser-tag' + (on[s.key] ? ' is-on' : '')} title={s.title} aria-pressed={on[s.key]} onClick={() => actions.toggleSeries(s.key)}>
+              <Tip text={s.title}><button className={'ser-tag' + (on[s.key] ? ' is-on' : '')} aria-pressed={on[s.key]} onClick={() => actions.toggleSeries(s.key)}>
                 <svg width="22" height="10" aria-hidden><SeriesSwatch k={s.key} /></svg>{s.label}
-              </button>
+              </button></Tip>
             </li>
           ))}
         </ul>
-        <div className="seg" role="group" aria-label="Y axis scale" title="Toggle between logarithmic and linear Y axis scale">
-          <button className={log ? 'is-on' : ''} aria-pressed={log} onClick={() => setLog(true)} title="Logarithmic Scale (better for comparing small and large values)">log</button>
-          <button className={!log ? 'is-on' : ''} aria-pressed={!log} onClick={() => setLog(false)} title="Linear Scale (better for absolute differences)">linear</button>
+        <div className="seg" role="group" aria-label="Y axis scale">
+          <Tip text="Log scale: each step up is ten times more. Good for seeing small and large months together."><button className={log ? 'is-on' : ''} aria-pressed={log} onClick={() => setLog(true)}>log</button></Tip>
+          <Tip text="Linear scale: equal steps are equal counts. Good for judging real size differences; small months look tiny."><button className={!log ? 'is-on' : ''} aria-pressed={!log} onClick={() => setLog(false)}>linear</button></Tip>
         </div>
       </div>
       <div className="chart__plot" ref={ref}>
@@ -148,7 +149,7 @@ export function CompareChart({ flat, selection, onSelect, height = 260 }: Props)
           </div>
         )}
       </div>
-      <p className="chart__note">Gaps = missing (never zero) · hollow points = partial months · shading = model splits · click to select a month</p>
+      <p className="chart__note"><Tip text="Shaded vertical bands mark how the model used each period: backcast (older years, estimated), train (learned from), val (used to pick a model), test (sealed, checked once)."><span className="chart__splits" tabIndex={0}>Splits?</span></Tip> Gaps = missing (never zero) · hollow points = partial months · shading = model splits · click to select a month</p>
     </div>
   );
 }

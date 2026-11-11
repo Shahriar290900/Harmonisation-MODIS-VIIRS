@@ -12,9 +12,12 @@ import type { Region } from '../../types';
 import { api, BASE_URL, offline, unavailableText, useCore, useSeriesStatus, workspaceHash, type AoiSeries, type Core } from './data';
 import { fallbackQuality, loadThree, webglOk, type ThreeModule } from './threeLoader';
 import { mountFallbackGlobe } from './fallbacks';
-import { band, Cursor, gsap, ScrollTrigger, scrollToId, scrollTriggerOff, scrollTriggerOn, SplitText, useFlags, useMagnetic, type Flags } from './motion';
+import { band, Cursor, gsap, sceneBus, ScrollTrigger, scrollToId, scrollTriggerOff, scrollTriggerOn, SplitText, useFlags, useMagnetic, type Flags } from './motion';
 import { consumeLandingScroll, onWorkspaceLink } from './transition';
-import { CalendarStory, Honesty, JumpChart, TwoCameras } from './Story';
+import { CalendarStory, FairScale, Honesty, JumpChart, TwoCameras } from './Story';
+import { Embers } from './Embers';
+import { Hud } from './Hud';
+import { ThemeToggle } from '../../ui/ThemeToggle';
 import { Gallery } from './Gallery';
 import { IndexList } from './IndexList';
 import { debugHook } from './debug';
@@ -98,20 +101,57 @@ export default function Landing() {
     return () => { live = false; if (timer) clearTimeout(timer); try { if (prev) history.scrollRestoration = prev; } catch { /* ignore */ } };
   }, []);
 
+  // Scene driver: publishes the on-screen chapter to the ember field and HUD, and flips the nav/HUD to night colours
+  // while the (always dark) globe stage is under them.
+  const rootRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const root = rootRef.current!;
+    sceneBus.reset();
+    const stage = root.querySelector<HTMLElement>('.lx-stage');
+    const c = gsap.context(() => {
+      if (stage) ScrollTrigger.create({ trigger: stage, start: 'top top', end: 'bottom 60px', onToggle: (self) => root.classList.toggle('lx--night', self.isActive) });
+      if (flags.reduced) return;
+      const secs: { sel: string | HTMLElement | null; label: string; from?: number; to?: number; quiet?: boolean }[] = [
+        { sel: stage, label: 'Overview', from: 0, to: 1 },
+        { sel: '#how', label: '01 · Two cameras', from: 1, to: 3 },
+        { sel: '#jump', label: '02 · The 2012 jump', from: 3, to: 4 },
+        { sel: '#fair', label: '03 · One fair scale', from: 4, to: 5 },
+        { sel: '#read', label: 'Read the calendar', quiet: true },
+        { sel: '#honest', label: 'Honesty', quiet: true },
+        { sel: '#regions', label: '04 · Pick a place', from: 5, to: 6 },
+        { sel: '#index', label: 'Index', quiet: true }
+      ];
+      for (const sc of secs) {
+        const el = typeof sc.sel === 'string' ? root.querySelector<HTMLElement>(sc.sel) : sc.sel;
+        if (!el) continue;
+        const ranged = sc.from !== undefined && sc.to !== undefined;
+        ScrollTrigger.create({
+          trigger: el, start: ranged ? 'top top' : 'top 70%', end: ranged ? 'bottom bottom' : 'bottom 30%',
+          onToggle: (self) => { if (self.isActive) sceneBus.set({ label: sc.label, quiet: !!sc.quiet }); },
+          onUpdate: ranged ? (self) => sceneBus.set({ scene: sc.from! + (sc.to! - sc.from!) * self.progress }) : undefined
+        });
+      }
+    }, root);
+    return () => { c.revert(); sceneBus.reset(); };
+  }, [flags.reduced]);
+
   const openHash = bgd ? workspaceHash(DEFAULT_AOI, bgd.bestYear, bgd.openMonth) : `#aoi=${DEFAULT_AOI}`;
 
   return (
-    <div className={'lx' + (flags.reduced ? ' lx--reduced' : '') + (flags.mobile ? ' lx--mobile' : '')}>
+    <div ref={rootRef} className={'lx lx--night' + (flags.reduced ? ' lx--reduced' : '') + (flags.mobile ? ' lx--mobile' : '')}>
       <a className="lx-skip" href="#lx-main" onClick={(e) => {
         // In-page skip (REVIEW L6): focus the main region without adding a history entry.
         const el = document.getElementById('lx-main'); if (!el) return;
         e.preventDefault(); el.focus({ preventScroll: true }); el.scrollIntoView({ block: 'start' });
       }}>Skip to main content</a>
+      {!flags.reduced && <Embers ctx={ctx} />}
+      <Hud />
       <Nav core={core} flags={flags} openHash={openHash} />
       <main id="lx-main" tabIndex={-1}>
         <GlobeStage ctx={ctx} bgd={bgd} others={others} openHash={openHash} error={error} />
         <TwoCameras ctx={ctx} />
         <JumpChart ctx={ctx} bgd={bgd} />
+        <FairScale ctx={ctx} />
         <CalendarStory ctx={ctx} bgd={bgd} />
         <Honesty ctx={ctx} />
         <Gallery ctx={ctx} />
@@ -148,12 +188,13 @@ function Nav({ core, flags, openHash }: { core: Core | null; flags: Flags; openH
   return (
     <header className={'lx-nav' + (solid ? ' is-solid' : '')}>
       <a className="lx-brand" href="#/" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: flags.reduced ? 'auto' : 'smooth' }); }} aria-label="Parallax Fire — top">
-        <Logo size={28} /><span>Parallax <b>Fire Calendar</b></span>
+        <Logo size={28} /><span>Parallax <b>Fire</b><em className="lx-brand__by">by Team Lumos</em></span>
       </a>
       {core?.manifest.synthetic && <span className="lx-demo" title="Synthetic fixture in the real bundle format — not real fire observations"><Icon3D icon={FlaskConical} tone="red" size={14} />DEMO DATA</span>}
       <nav aria-label="Sections" className="lx-nav__links">
         {links.map(([id, label]) => <button key={id} className="lx-link" onClick={() => scrollToId(id, flags.reduced)}>{label}</button>)}
       </nav>
+      <ThemeToggle className="lx-themebtn" />
       <a className="lx-btn lx-btn--sm" href={openHash} onClick={(e) => onWorkspaceLink(e, openHash, 'Opening the fire calendar')}>Open app <span className="lx-btn__arrow"><Icon3D icon={ArrowRight} tone="current" size={16} /></span></a>
     </header>
   );
@@ -289,13 +330,13 @@ function GlobeStage({ ctx, bgd, others, openHash, error }: { ctx: Ctx; bgd: AoiS
   ];
 
   return (
-    <section ref={stageRef} className={'lx-stage' + (flags.reduced ? ' is-static' : '')} aria-labelledby="lx-h1">
+    <section ref={stageRef} className={'lx-stage lx-night' + (flags.reduced ? ' is-static' : '')} aria-labelledby="lx-h1">
       <div className="lx-stage__sticky">
         <div ref={hostRef} className={'lx-globe lx-globe--' + mode} aria-hidden="true" />
         <div className="lx-stage__shade" aria-hidden="true" />
         <div className="lx-hero">
           <div className="lx-hero__copy">
-            <p className="lx-eyebrow" data-intro><span className="lx-pulse" aria-hidden /> NASA Space Apps 2026 · Harmonizing MODIS + VIIRS hotspots</p>
+            <p className="lx-eyebrow" data-intro><span className="lx-pulse" aria-hidden /> NASA Space Apps 2026 · Parallax Fire by Team Lumos</p>
             <h1 id="lx-h1" className="lx-h1" aria-label="Two satellites. One honest fire record.">
               <SplitText className="lx-line" text="Two satellites." />
               <span className="lx-line" aria-hidden="true">
@@ -305,7 +346,7 @@ function GlobeStage({ ctx, bgd, others, openHash, error }: { ctx: Ctx; bgd: AoiS
               </span>
             </h1>
             <p className="lx-lede" data-intro>
-              NASA’s MODIS has watched for fires since 2002. The sharper VIIRS joined in 2012 — and the record jumped, not because more land burned, but because the new camera sees smaller fires. Parallax puts both on one fair scale, with honest error bars.
+              NASA’s MODIS has watched for fires since 2002. The sharper VIIRS joined in 2012 — and the record jumped — most plausibly because the new camera sees smaller fires, not because more land burned. Parallax puts both on one fair scale, with honest error bars.
             </p>
             <div className="lx-ctas" data-intro>
               <a ref={primary} className="lx-btn lx-btn--primary" href={openHash} onClick={(e) => onWorkspaceLink(e, openHash, 'Opening the fire calendar for Bangladesh')}>
@@ -357,7 +398,7 @@ function Footer({ core, openHash }: { core: Core | null; openHash: string }) {
         </div>
         <div>
           <h2 className="lx-foot__h">Made by</h2>
-          <p><b>built by M Al Shahriar Hameem</b><br />shahriar.hameem@gmail.com 🇧🇩 Team Lumos</p>
+          <p className="lx-foot__credit"><b>Created by M Al Shahriar Hameem</b><br />Parallax Fire · by Team Lumos</p>
           <p>NASA Space Apps Challenge 2026 — <i>Harmonization of MODIS and VIIRS Hot Spots</i></p>
         </div>
         <div>

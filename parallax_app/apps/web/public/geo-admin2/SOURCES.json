@@ -1,0 +1,15 @@
+{
+  "BGD": {
+    "file": "BGD.geojson",
+    "level": "ADM2 (districts, 64)",
+    "provider": "geoBoundaries (gbOpen), William & Mary geoLab",
+    "api": "https://www.geoboundaries.org/api/current/gbOpen/BGD/ADM2/",
+    "download": "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/BGD/ADM2/geoBoundaries-BGD-ADM2_simplified.geojson",
+    "boundary_year": "2020",
+    "original_source": "Bangladesh Bureau of Statistics (BBS), OCHA ROAP",
+    "license": "Creative Commons Attribution 3.0 Intergovernmental Organisations (CC BY 3.0 IGO)",
+    "license_source": "data.humdata.org/dataset/administrative-boundaries-of-bangladesh-as-of-2015",
+    "attribution": "District boundaries: geoBoundaries (gbOpen, CC BY 3.0 IGO), source Bangladesh Bureau of Statistics (BBS) / OCHA ROAP.",
+    "processing": "Further simplified (Douglas-Peucker, 0.0013 deg tolerance), coordinates rounded to 4 decimals, properties reduced to {id, name}. Boundaries are indicative, not authoritative."
+  }
+}

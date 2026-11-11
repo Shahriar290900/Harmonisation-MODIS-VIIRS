@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Manifest } from '../types';
 import { api } from './useAppData';
+import { regionRelease, STAGE_INFO } from './TopBar';
+import { Tip } from './Tip';
 import { fmtNum, fmtPct, fmtSigned } from '../data/format';
 
 type Row = Record<string, string>;
@@ -27,19 +29,22 @@ export function ModelPanel({ manifest, snapshotPath, metrics, region }: { manife
   const qModels = [...new Set(qRows.map((r) => r.model_id))];
   const q2 = cards['Q2_qllm'];
 
-  const rel = metrics?.release as any;
-  const regGate = region ? (rel?.regions?.[region.aoi_id] ?? rel?.reported_separately?.[region.aoi_id]) : null;
-  const stage = regGate?.stage ?? manifest.release_stage;
+  // Per-region stage from manifest.release_regions (gated regions only); never a pooled number presented as the region's.
+  const rr = region ? regionRelease(manifest, region.aoi_id) : null;
+  const regGate = rr && rr.scope === 'region' ? rr : null;
+  const stage = rr?.stage ?? manifest.release_stage;
 
   return (
     <div className="models">
       {manifest.synthetic && <p className="notice small">These metrics come from a synthetic fixture — plumbing checks only, not scientific results.</p>}
       <h3>AOI-month error by model</h3>
       <p className="muted small">Mean absolute error (MAE) and mean bias in detections per AOI-month. Lower MAE is better. Selection uses validation only; test was opened once. No “accuracy %”.</p>
-      {regGate && (
-        <div className="region-gate-info" style={{marginBottom: '1rem'}}>
-          <strong>Release stage for {region?.name}: </strong> <span className="badge">{stage}</span>
-          {regGate.note && <p className="small muted">{regGate.note}</p>}
+      {rr && (
+        <div className="region-gate-info">
+          <strong>Release stage for {region?.name}: </strong>
+          <Tip text={STAGE_INFO[stage]?.text ?? ''}><span className="badge" tabIndex={0}>{STAGE_INFO[stage]?.label ?? stage}</span></Tip>
+          {regGate ? <p className="small muted">Checked on this region's own held-out test months{regGate.n ? ` (n = ${regGate.n} AOI-months)` : ''}{regGate.coverage != null ? `; 80% interval coverage ${fmtPct(regGate.coverage)}` : ''}. Small sample: coarse evidence.</p>
+            : <p className="small muted">This area is not gated on its own. The stage shown is the whole snapshot's (its weakest region). The table below pools all gated regions, so it is not this area's result.</p>}
         </div>
       )}
       <div className="table-wrap">
@@ -64,11 +69,11 @@ export function ModelPanel({ manifest, snapshotPath, metrics, region }: { manife
           </tbody>
         </table>
       </div>
-      {regGate?.reasons_not_validated ? (
+      {regGate && regGate.reasons.length ? (
         <details className="details">
           <summary>Why {stage}?</summary>
           <ul className="small">
-            {regGate.reasons_not_validated.map((r: string, i: number) => <li key={i}>{r}</li>)}
+            {regGate.reasons.map((r: string, i: number) => <li key={i}>{r}</li>)}
           </ul>
         </details>
       ) : manifest.release_reason ? (

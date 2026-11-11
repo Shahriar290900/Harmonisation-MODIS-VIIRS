@@ -1,0 +1,69 @@
+/* Onboarding tour, tooltips, mobile app shell. Colours come only from theme custom properties (light + dark). */
+
+/* ---- Radix tooltips ---- */
+.rtip { z-index: 1200; max-width: min(280px, calc(100vw - 24px)); background: var(--text); color: var(--bg); padding: 8px 10px; border-radius: var(--radius-sm); font-size: 12.5px; line-height: 1.4; box-shadow: 0 8px 24px var(--shadow-c); animation: rtip-in 120ms ease-out; }
+.rtip__arrow { fill: var(--text); }
+@keyframes rtip-in { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+.tipwrap { display: inline-flex; }
+.legend__st[tabindex], .chart__splits[tabindex], .badge[tabindex], .net[tabindex] { cursor: help; }
+.chart__splits { text-decoration: underline dotted; text-underline-offset: 2px; }
+.help-btn { min-width: 36px; }
+.topbar__tools { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ---- Guided tour ---- */
+.tour { position: relative; width: min(360px, calc(100vw - 24px)); background: var(--bg-2); color: var(--text); border: 1px solid var(--border-2); border-radius: var(--radius-md, 12px); padding: 14px 16px 12px; box-shadow: 0 16px 48px var(--shadow-lg); }
+.tour__x { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; display: grid; place-items: center; border: 0; background: transparent; color: var(--muted); border-radius: var(--radius-sm); cursor: pointer; }
+.tour__x:hover { color: var(--text); background: var(--row-hover); }
+.tour__count { margin: 0 0 6px; font-size: 11.5px; color: var(--muted); font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; }
+.tour__bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 10px; }
+.tour__bar i { display: block; height: 100%; background: var(--amber); transition: width 200ms ease; }
+.tour__title { margin: 0 24px 6px 0; font-size: 16px; line-height: 1.25; }
+.tour__body { font-size: 13.5px; line-height: 1.5; color: var(--text); }
+.tour__foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
+.tour__nav { display: inline-flex; gap: 8px; }
+.tour__skip { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12.5px; text-decoration: underline; cursor: pointer; min-height: 32px; padding: 0 4px; }
+.tour__skip:hover { color: var(--text); }
+@media (prefers-reduced-motion: reduce) { .tour__bar i, .rtip { transition: none; animation: none; } }
+
+/* ---- Install prompt ---- */
+.install { position: fixed; left: 8px; right: 8px; bottom: calc(68px + env(safe-area-inset-bottom)); z-index: 40; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-2); color: var(--text); border: 1px solid var(--border-2); border-radius: var(--radius-md, 12px); box-shadow: 0 10px 30px var(--shadow-c); font-size: 13px; }
+.install > span { flex: 1; min-width: 0; }
+.install__x { min-width: 44px; min-height: 44px; display: grid; place-items: center; }
+
+/* ---- Mobile app shell ---- */
+@media (max-width: 699px) {
+  /* compact top bar: brand + stage + help on one row, controls below */
+  .app--mobile .topbar { padding: calc(6px + env(safe-area-inset-top)) 10px 6px; gap: 6px 8px; }
+  .app--mobile .topbar__tag { display: none; }
+  .app--mobile .topbar__right { gap: 4px; }
+  .app--mobile .topbar__controls { width: 100%; gap: 8px; }
+  .app--mobile .topbar__controls .field { flex: 1; min-width: 0; }
+  .app--mobile .topbar select { min-height: 44px; }
+
+  /* touch targets >= 44px */
+  .app--mobile .btn, .app--mobile .btn--sm, .app--mobile .icon-btn, .app--mobile .seg button, .app--mobile .ser-tag,
+  .app--mobile .stage-tag, .app--mobile .tour__skip, .app--mobile .tour__x { min-height: 44px; }
+  .app--mobile .btn--icon, .app--mobile .icon-btn, .app--mobile .tour__x { min-width: 44px; }
+  .app--mobile .tour .btn { min-width: 64px; }
+  .app--mobile .scrub { min-height: 44px; }
+  .app--mobile .cal__cell { min-height: 40px; }
+
+  /* bottom tab bar */
+  .app--mobile .tabbar { background: color-mix(in srgb, var(--bg-2) 94%, transparent); border-top: 1px solid var(--border-2); padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -4px 16px var(--shadow-c); }
+  .app--mobile .tabbar button { min-height: 56px; min-width: 44px; font-size: 11.5px; -webkit-tap-highlight-color: transparent; position: relative; }
+  .app--mobile .tabbar button.is-on { color: var(--text); box-shadow: none; }
+  .app--mobile .tabbar button.is-on::before { content: ''; position: absolute; top: 0; left: 28%; right: 28%; height: 3px; border-radius: 0 0 3px 3px; background: var(--amber); }
+  .app--mobile .tabbar button:active { background: var(--row-hover); }
+  .app--mobile .main { padding-bottom: calc(80px + env(safe-area-inset-bottom)); overscroll-behavior-y: contain; }
+  .app--mobile .toast { bottom: calc(68px + env(safe-area-inset-bottom)); }
+  .app--mobile .install + .toast { bottom: calc(130px + env(safe-area-inset-bottom)); }
+}
+
+/* top bar: keep the status line on one row; drop it (and the text tour button) before it can wrap */
+.statusline { white-space: nowrap; flex-wrap: nowrap; }
+@media (max-width: 1700px) { .topbar .statusline { display: none; } }
+@media (max-width: 1500px) { .topbar .tour-btn-text { display: none; } }
+
+/* mobile: the brand must not be squeezed by the tools on its right */
+.app--mobile .topbar__brand { flex: none; }
+.app--mobile .topbar__title br { display: none; }

@@ -5,6 +5,8 @@ export { mountPixelCompare } from './pixelCompare';
 export type { PixelCompareOptions, PixelCompareStats } from './pixelCompare';
 export { mountTransition } from './transition';
 export type { TransitionOptions } from './transition';
+export { mountEmbers } from './embers';
+export type { EmbersHandle, EmbersOptions } from './embers';
 export { detectQuality } from './quality';
 export { loadHotPoints, loadCountries, defaultBasemapUrl } from './data';
 export { hasWebGL } from './util';

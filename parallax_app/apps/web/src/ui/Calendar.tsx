@@ -5,6 +5,7 @@ import { MONTHS_SHORT, fmtCompact, fmtNum, monthLabel } from '../data/format';
 import { RAMP_CSS, textOn, valueColor, ZERO_COLOR } from './scale';
 import { LEGEND_STATES, STATE_LABEL, SPLIT_LABEL, type CellState } from './glyphs';
 import { RotateCw } from 'lucide-react';
+import { Tip, STATE_TIP, SPLIT_TIP } from './Tip';
 import { Glyph } from './Glyph';
 import { Icon3D } from './icons/Icon3D';
 import type { YearStatus } from './useAppData';
@@ -106,7 +107,7 @@ export function Calendar({ years, map, status, selection, onSelect, onActivate, 
           {onRetry && <button className="btn btn--sm" onClick={onRetry}><Icon3D icon={RotateCw} tone="current" size={14} />Retry</button>}
         </div>
       )}
-      <div ref={scrollRef} className={'cal__scroll' + (compact ? ' cal__scroll--compact' : '')}>
+      <div ref={scrollRef} className={'tour-cal-grid cal__scroll' + (compact ? ' cal__scroll--compact' : '')}>
         <div className={'cal__grid' + (compact ? ' cal__grid--compact' : '')} role="grid" aria-label="Burning calendar: years by months. Use arrow keys to move." aria-rowcount={years.length + 1} ref={gridRef} onKeyDown={onKey}>
           <div className="cal__row cal__row--head" role="row">
             <div className="cal__yr" role="columnheader" aria-label="Year" />
@@ -145,7 +146,7 @@ export function Calendar({ years, map, status, selection, onSelect, onActivate, 
                     </div>
                   );
                 })}
-                <div className={'cal__split sp-' + split} role="gridcell" aria-label={`Split ${SPLIT_LABEL[split]}`}>{compact ? '' : SPLIT_SHORT[split] ?? ''}</div>
+                <Tip text={SPLIT_TIP[split]} side="left"><div className={'cal__split sp-' + split} role="gridcell" aria-label={`Split ${SPLIT_LABEL[split]}`}>{compact ? '' : SPLIT_SHORT[split] ?? ''}</div></Tip>
               </div>
             );
           })}
@@ -168,7 +169,7 @@ export function CalendarLegend({ max }: { max: number }) {
       </div>
       <ul className="legend__glyphs">
         {LEGEND_STATES.map((k) => (
-          <li key={k} className={'legend__st legend__st--' + k}><Glyph state={k} size={11} className="legend__g" />{k === 'unavailable' ? 'Unavailable (not cached / failed)' : STATE_LABEL[k].split(' (')[0]}</li>
+          <Tip key={k} text={STATE_TIP[k]}><li tabIndex={0} className={'legend__st legend__st--' + k}><Glyph state={k} size={11} className="legend__g" />{k === 'unavailable' ? 'Unavailable (not cached / failed)' : STATE_LABEL[k].split(' (')[0]}</li></Tip>
         ))}
         <li title="Not shown on partial or missing months"><span className="legend__tri legend__tri--high" aria-hidden />Unusually high</li>
         <li title="Not shown on partial or missing months"><span className="legend__tri legend__tri--low" aria-hidden />Unusually low</li>

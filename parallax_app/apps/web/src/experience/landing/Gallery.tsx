@@ -57,7 +57,7 @@ export function Gallery({ ctx }: { ctx: Ctx }) {
       <div className="lx-gal__sticky">
         <div className="lx-gal__head">
           <div>
-            <p className="lx-eyebrow">{areasWord}, one fair scale</p>
+            <p className="lx-eyebrow"><span className="lx-chap">04</span>{areasWord}, one fair scale</p>
             <h2 id="lx-gal-h" className="lx-h2">Pick a place. <span className="lx-grad">Open its calendar.</span></h2>
           </div>
           <p className="lx-gal__hint">{pinned ? 'Scroll to travel' : 'Swipe'} <Icon3D icon={ArrowRight} tone="amber" size={14} /> <span>{areaSummary(regions)}</span></p>

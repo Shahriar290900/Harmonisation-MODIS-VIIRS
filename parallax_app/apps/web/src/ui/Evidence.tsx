@@ -5,6 +5,7 @@ import { explainMonth, shownAnomalyFlag, terraOnlyIssue } from './bridge';
 import { fmtNum, fmtPct, fmtSigned, monthLabel, ordinal, utcRangeLabel } from '../data/format';
 import { STATE_LABEL, SPLIT_LABEL, type CellState } from './glyphs';
 import { Glyph } from './Glyph';
+import { Tip, STATE_TIP, SPLIT_TIP } from './Tip';
 import { SERIES_COLORS } from '../types';
 import type { SourceEntry } from './useAppData';
 import { Harmonize } from './Harmonize';
@@ -35,16 +36,16 @@ export function Evidence({ record: r, state: st, yearError, offline, onRetry, se
         <div className="evidence__title">
           <h2>{monthLabel(selection.year, selection.month, true)} <span className="muted">· {region?.name}</span></h2>
           <div className="badges">
-            <span className={'badge st-' + st}><Glyph state={st} size={11} /> {STATE_LABEL[st]}</span>
-            {r && r.split !== 'none' && <span className={'badge sp-' + r.split}>{SPLIT_LABEL[r.split]} split</span>}
+            <Tip text={STATE_TIP[st]}><span tabIndex={0} className={'badge st-' + st}><Glyph state={st} size={11} /> {STATE_LABEL[st]}</span></Tip>
+            {r && r.split !== 'none' && <Tip text={SPLIT_TIP[r.split]}><span tabIndex={0} className={'badge sp-' + r.split}>{SPLIT_LABEL[r.split]} split</span></Tip>}
             {flag === 'high' && <span className="badge anom-h"><Icon3D icon={TrendingUp} tone="red" size={13} />Unusually high</span>}
             {flag === 'low' && <span className="badge anom-l"><Icon3D icon={TrendingDown} tone="cyan" size={13} />Unusually low</span>}
             {r?.value_status === 'demo' && <span className="badge badge--demo"><Icon3D icon={FlaskConical} tone="red" size={13} />DEMO</span>}
           </div>
         </div>
-        <div className="evidence__actions">
-          <button className="btn" onClick={() => exportCsv(allRecords, region, manifest, sources)} disabled={!allRecords.length}><Icon3D icon={Download} tone="teal" size={15} />Export CSV</button>
-          <button className="btn" onClick={() => r && printBrief(r, region, manifest, sources, yearRecords)} disabled={!r}><Icon3D icon={Printer} tone="neutral" size={15} />Print brief</button>
+        <div className="evidence__actions tour-export">
+          <Tip text="Download every month in the years shown as a CSV spreadsheet, with status and estimate labels."><span className="tipwrap"><button className="btn" onClick={() => exportCsv(allRecords, region, manifest, sources)} disabled={!allRecords.length}><Icon3D icon={Download} tone="teal" size={15} />Export CSV</button></span></Tip>
+          <Tip text="Open a one-page printable brief for the selected month, with its sources."><span className="tipwrap"><button className="btn" onClick={() => r && printBrief(r, region, manifest, sources, yearRecords)} disabled={!r}><Icon3D icon={Printer} tone="neutral" size={15} />Print brief</button></span></Tip>
           {onToggle && <button className="btn btn--ghost" onClick={onToggle} aria-expanded={expanded}>{expanded ? 'Close' : 'All evidence'}<Icon3D icon={expanded ? ChevronDown : ChevronUp} tone="neutral" size={15} /></button>}
         </div>
       </div>

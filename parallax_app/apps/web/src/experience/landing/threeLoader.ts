@@ -1,6 +1,7 @@
 // Lazy, failure-tolerant loader for the THREE agent's module (src/experience/three/index.ts).
 // import.meta.glob keeps three.js in its own chunk and resolves to {} if the module does not exist,
 // so the landing still builds and degrades to static fallbacks.
+import type { EmbersHandle } from '../three/embers';
 import type { DetectQuality, HotPoint, MountGlobe, MountPixelCompare, MountTransition } from '../contract';
 
 export interface ThreeModule {
@@ -8,6 +9,8 @@ export interface ThreeModule {
   mountPixelCompare: MountPixelCompare;
   mountTransition: MountTransition;
   detectQuality: DetectQuality;
+  /** Optional (ember particle field); absent in older bundles. */
+  mountEmbers?: (host: HTMLElement, opts: { quality: 'high' | 'low' }) => EmbersHandle | null;
   loadHotPoints(baseUrl: string, snapshotId: string, aoiIds: string[], year: number, month?: number): Promise<HotPoint[]>;
 }
 

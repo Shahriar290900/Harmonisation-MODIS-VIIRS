@@ -11,7 +11,7 @@ import { Evidence } from './ui/Evidence';
 import { ModelPanel } from './ui/ModelPanel';
 import { Explainer } from './ui/Explainer';
 import { Dialog } from './ui/Dialog';
-import { PwaToast, StatusLine, snapshotAge, usePwa } from './ui/PwaStatus';
+import { PwaToast, StatusLine, InstallPrompt, snapshotAge, usePwa } from './ui/PwaStatus';
 import { STATE_LABEL, type CellState } from './ui/glyphs';
 import { Glyph } from './ui/Glyph';
 import { fmtNum, monthLabel } from './data/format';
@@ -20,7 +20,9 @@ import { ArrowRight, CalendarDays, FileText, FlaskConical, Info, Map as MapIcon,
 import { Icon3D } from './ui/icons/Icon3D';
 import NProgress from 'nprogress';
 import 'nprogress/nprogress.css';
-import { Joyride, type Step } from 'react-joyride';
+import { Tour } from './ui/Tour';
+import { Tip, TipProvider } from './ui/Tip';
+import './styles/onboarding.css';
 
 NProgress.configure({ showSpinner: false });
 
@@ -38,6 +40,8 @@ export function App() {
   const [dlg, setDlg] = useState<null | 'about' | 'models' | 'explain'>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [tourToken, setTourToken] = useState(0);
+  const startTour = useCallback(() => { setTab('calendar'); setTourToken((n) => n + 1); }, [setTab]);
 
   const allYears = core?.manifest.years ?? [];
   const region = core?.regions.find((r) => r.aoi_id === sel.aoiId);
@@ -118,14 +122,6 @@ export function App() {
     else NProgress.done();
   }, [act.loading, cells.loaded]);
 
-  const tourSteps: Step[] = [
-    { target: '.tour-topbar', content: 'Here you can select the region, year, and month to analyze.' },
-    { target: '.tour-calendar', content: 'This grid shows the fire activity across months. The color intensity represents the number of hotspots detected.' },
-    { target: '.tour-chart', content: 'Compare MODIS and VIIRS satellite detections over the years to spot the harmonization effect.' },
-    { target: '.tour-map', content: 'See the physical locations of the detected fires on this interactive map.' },
-    { target: '.tour-evidence', content: 'Review the mathematical evidence and confidence scores for the harmonization models.' }
-  ];
-
   if (error) return <div className="boot boot--err"><h1>Could not load the data snapshot</h1><p>{error}</p></div>;
   if (!core) return <div className="boot" aria-busy="true"><div className="boot__spin" /><p>Loading snapshot…</p></div>;
 
@@ -138,9 +134,9 @@ export function App() {
       <div className="panel__head">
         <h2 className="panel__title">Burning calendar <span className="muted">· {region?.name}</span></h2>
         <div className="replay">
-          <button className={'btn btn--sm' + (playing ? ' btn--primary' : '')} onClick={startReplay} aria-pressed={playing} aria-label={playing ? 'Pause replay' : 'Replay month by month'}>
+          <Tip text="Play the calendar like a movie, one month at a time. Pause any time, or drag the slider to scrub."><button className={'btn btn--sm' + (playing ? ' btn--primary' : '')} onClick={startReplay} aria-pressed={playing} aria-label={playing ? 'Pause replay' : 'Replay month by month'}>
             <Icon3D icon={playing ? Pause : Play} tone={playing ? 'current' : 'amber'} size={14} filled />{playing ? 'Pause' : 'Replay'}
-          </button>
+          </button></Tip>
           <input className="scrub" type="range" min={0} max={Math.max(0, flat.length - 1)} value={Math.max(0, idx)} aria-label="Scrub through months"
             aria-valuetext={monthLabel(sel.year, sel.month)}
             onChange={(e) => { const p = flat[+e.target.value]; if (p) onSelect(p.year, p.month); }} />
@@ -168,6 +164,7 @@ export function App() {
   );
 
   return (
+    <TipProvider>
     <div className={`app app--${mode}`}>
       <a className="skip" href="#main" onClick={(e) => {
         // Focus <main> without rewriting the hash (the hash carries the selection).
@@ -182,7 +179,7 @@ export function App() {
       )}
       <div className="tour-topbar">
         <TopBar regions={core.regions} aoiId={sel.aoiId} onAoi={(id) => setSelection({ aoiId: id })} years={allYears} from={from} to={to} onRange={onRange}
-          manifest={m} onAbout={() => setDlg('about')} onModels={() => setDlg('models')} onExplain={() => setDlg('explain')} compact={mobile}
+          manifest={m} onAbout={() => setDlg('about')} onModels={() => setDlg('models')} onExplain={() => setDlg('explain')} onTour={startTour} compact={mobile}
           status={desktop ? <StatusLine createdUtc={m.created_utc} snapshotId={m.snapshot_id} offlineReady={pwa.offlineReady} /> : null} />
       </div>
       {region?.note && <p className="region-note" role="note"><Icon3D icon={Info} tone="cyan" size={14} />{region.note}</p>}
@@ -222,17 +219,19 @@ export function App() {
       )}
 
       <Dialog open={dlg === 'about'} onClose={() => setDlg(null)} title="About this data">
-        <AboutData manifest={m} ageText={snapshotAge(m.created_utc)} />
+        <AboutData manifest={m} ageText={snapshotAge(m.created_utc)} aoiId={sel.aoiId} />
       </Dialog>
       <Dialog open={dlg === 'models'} onClose={() => setDlg(null)} title="Models & evidence of skill" wide>
-        <ModelPanel manifest={m} snapshotPath={core.snapshotPath} />
+        <ModelPanel manifest={m} snapshotPath={core.snapshotPath} region={region} />
       </Dialog>
       <Dialog open={dlg === 'explain'} onClose={() => setDlg(null)} title="What is harmonization?">
         <Explainer />
       </Dialog>
       <PwaToast pwa={pwa} />
-      <Joyride steps={tourSteps} run={true} continuous={true} />
+      {mobile && <InstallPrompt compact />}
+      <Tour ready={!!core && aoiOk && yearOk} mobile={mobile} reduced={reduced} setTab={setTab} runToken={tourToken} />
     </div>
+    </TipProvider>
   );
 }
 
