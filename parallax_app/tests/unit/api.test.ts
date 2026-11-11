@@ -7,7 +7,7 @@ describe('createDataApi', () => {
     const f = vi.fn(diskFetch);
     const api = createDataApi('/', { fetch: f });
     const idx = await api.loadIndex();
-    expect(idx.default).toBe(SNAP_ID);
+    expect(idx.snapshots.map((x) => x.snapshot_id)).toContain(SNAP_ID);
     const m = await api.loadManifest(SNAP_ID);
     expect(m.schema_version).toBe('1.0');
     const regions = await api.loadRegions(SNAP_ID);

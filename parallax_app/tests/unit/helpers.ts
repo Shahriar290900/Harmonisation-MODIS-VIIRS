@@ -4,8 +4,10 @@ import { fileURLToPath } from 'node:url';
 
 export const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const PUBLIC = path.join(REPO, 'apps', 'web', 'public');
-export const INDEX = JSON.parse(fs.readFileSync(path.join(PUBLIC, 'data', 'index.json'), 'utf8')) as { default: string };
-export const SNAP_ID = INDEX.default;
+export const INDEX = JSON.parse(fs.readFileSync(path.join(PUBLIC, 'data', 'index.json'), 'utf8')) as { default: string; snapshots: { snapshot_id: string; synthetic: boolean }[] };
+// The value/parity assertions in this suite were written against the deterministic synthetic fixture, so they
+// keep reading it even though the app's default snapshot is now the real Kaggle run.
+export const SNAP_ID = INDEX.snapshots.filter((s) => s.synthetic).at(-1)?.snapshot_id ?? INDEX.default;
 export const SNAP_DIR = path.join(PUBLIC, 'data', SNAP_ID);
 
 export function readJson<T = unknown>(rel: string): T {
