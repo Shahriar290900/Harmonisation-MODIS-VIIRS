@@ -16,3 +16,6 @@ parallax_app/docs/kaggle/heartbeat/
 parallax_app/docs/kaggle/messages/
 parallax_app/docs/kaggle/probes/*/output/
 parallax_app/docs/research/messages/
+
+# large local recordings
+for Chatgpt/assets/*.webm

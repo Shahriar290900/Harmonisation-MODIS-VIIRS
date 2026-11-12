@@ -1,3 +1,19 @@
+# STATUS (12 Nov 2026, late) — revamp deployed
+
+Live: https://parallaxfire.netlify.app · branch `feat/parallax-upgrade` · specs: `docs/REVAMP_SPEC.md`, `docs/UI_DESIGN_BRIEF.md`, `docs/LIVE_SOURCES.md`.
+
+- **Experience:** multi-page app with a left rail (bottom bar on phones): Home, Calendar, Map, Two satellites, Live, How it works, Data & sources. Plain-language labels; technical names only in closed Details. Dark space theme by default, light on the toggle.
+- **Data in the app:** the real Kaggle snapshot `parallax-20261010T190934Z-ce88f489` is the default (per-place stage: Bangladesh and California "checked on unseen years", New South Wales "raw comparison only"). Two synthetic snapshots still ship for the unit tests and are labelled demo.
+- **Maps:** OpenFreeMap basemap (Natural Earth outline fallback offline), NASA GIBS imagery layers, Bangladesh districts, display-only looks (heat view, night vision, old TV).
+- **Live page (real feeds):** NASA FIRMS hot spots of the true last 24 h worldwide per satellite (MODIS, NOAA-20, NOAA-21; Suomi NPP's feed is currently empty and is shown as such), satellite positions and next passes from CelesTrak orbit records (SGP4 in the browser), GOES 10-minute imagery with its real age. No ground cameras (their terms do not allow embedding).
+- **Functions (Netlify):** `/api/firms-live?scope=world&src=…`, `/api/sats`, `/api/gibs-times`; each enforces a 7 s budget, caches success and failure at the CDN, never retries. Measured on Netlify: 1.8–3.5 s cold, ~2 s page load when cached.
+- **Checks (12 Nov):** `npm run build` ok; unit tests 446/446 (they read the synthetic fixture); goal scripts `scripts/goals/goal_revamp.mjs` (all pages at 1440x760, 1280x680, 390x844), `goal_ui`, `goal_sensor`, `goal_embers` pass on the dev server; `goal_revamp` passes on production except an intermittent "still loading" on the Live page when the CDN cache is cold. Two Opus review rounds; all high findings fixed.
+- **Not done / not verified:** Playwright e2e specs in `tests/e2e` are stale (old dashboard selectors and strings) and were not run; nothing tested on a real phone; light theme not re-checked visually after the revamp; browser-side recalculation (Harmonize panel) verified on synthetic data only; California/NSW district maps not built; EONET / NIFC / weather layers not built; the Home page still uses some satellite names (MODIS, VIIRS) next to the plain ones; first visit to Live after a cache expiry shows "Loading" for several seconds.
+- **Host badge:** the site shows Netlify's "Powered by Netlify" badge; on phones it is lifted above the bottom bar (it used to block the right-hand tabs).
+
+---
+(older status below)
+
 # STATUS (10 Oct 2026)
 
 All numbers below come from runs on **synthetic data** in a headless sandbox, not from real FIRMS data and not from real devices. They are plumbing checks, not scientific results.
