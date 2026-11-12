@@ -34,14 +34,14 @@ export function Harmonize({ selection, region, manifest }: Props) {
         <label className="switch">
           <input type="checkbox" role="switch" checked={on} onChange={(e) => setOn(e.target.checked)} />
           <span className="switch__track" aria-hidden><span className="switch__thumb" /></span>
-          <span>Recompute from exported weights</span>
+          <span>Re-run the estimate in your browser</span>
         </label>
         <div className="seg seg--sm" role="group" aria-label="Model to recompute">
           {BROWSER_MODELS.map((m) => <button key={m} className={model === m ? 'is-on' : ''} aria-pressed={model === m} onClick={() => setModel(m)}>{m}</button>)}
         </div>
       </div>
-      {!on && <p className="muted small">Runs {model} in this browser from <code>weights.json</code> + per-cell inputs and checks parity (≤1e-3 relative) against the bundle — proof the published weights are live.</p>}
-      {on && !cur && <p className="muted small">Computing…</p>}
+      {!on && <p className="muted small">Runs {model} in this browser from the published weights and the per-square inputs, then compares the answer with the downloaded one. A match shows the published weights really produce the estimate.</p>}
+      {on && !cur && <p className="muted small">Working it out…</p>}
       {on && cur && !h && <p className="notice small">{cur.err ?? `${model} inputs are not exported for ${region?.name ?? selection.aoiId} ${selection.year} (B1 per-cell features are exported only for the detailed regions, those with features_exported in regions.json).`}</p>}
       {on && h && (
         <>

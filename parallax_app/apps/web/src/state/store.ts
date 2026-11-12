@@ -28,6 +28,28 @@ export const DEFAULT_STATE: AppState = {
 
 const LS_KEY = 'parallax.selection.v1';
 
+/** App pages. 'live' is reserved: the Router renders it only once src/pages/LivePage.tsx exists (track RV-B). */
+export type Route = 'home' | 'calendar' | 'map' | 'sensors' | 'method' | 'data' | 'live';
+export const PAGE_ROUTES: Route[] = ['calendar', 'map', 'sensors', 'method', 'data', 'live'];
+const ROUTE_RE = /^\/(calendar|map|sensors|method|data|live)(?:$|[?&/])/;
+
+/**
+ * Which page a hash opens. '#/calendar?aoi=..' and friends; the legacy '#aoi=..&y=..' and '#/app..' open the Calendar;
+ * '', '#/', in-page anchors and unknown hashes belong to the Home story.
+ */
+export function routeOfHash(hash: string): Route {
+  const h = hash.replace(/^#/, '');
+  const m = ROUTE_RE.exec(h);
+  if (m) return m[1] as Route;
+  return isWorkspaceHash(hash) ? 'calendar' : 'home';
+}
+
+/** '#/map?aoi=BGD&y=2016&m=3': a page link that carries the shared selection. */
+export function routeHash(route: Route, s: Pick<AppState, 'aoiId' | 'year' | 'month' | 'snapshotId'>): string {
+  if (route === 'home') return '#/';
+  return `#/${route}?${toHash(s).slice(1)}`;
+}
+
 /**
  * Routing rule shared with the experience Router (see experience/contract.ts "Routing"): the workspace owns '#/app…'
  * and any hash carrying selection keys (aoi=, y=, m=, …). Everything else — '', '#/', in-page anchors such as
@@ -35,14 +57,14 @@ const LS_KEY = 'parallax.selection.v1';
  */
 export function isWorkspaceHash(hash: string): boolean {
   const h = hash.replace(/^#/, '');
-  if (/^\/app(?:$|[?&/])/.test(h)) return true;
+  if (/^\/app(?:$|[?&/])/.test(h) || ROUTE_RE.test(h)) return true;
   return /(?:^|[?&/])(?:aoi|y|m|snap|scale|tab)=/.test(h);
 }
 const MOBILE_TABS: MobileTab[] = ['calendar', 'map', 'evidence'];
 
 /** Parse '#aoi=BGD&y=2016&m=3' → partial state (invalid values dropped). */
 export function parseHash(hash: string): Partial<AppState> {
-  const p = new URLSearchParams(hash.replace(/^#\/?/, ''));
+  const p = new URLSearchParams(hash.replace(/^#\/?/, '').replace(/^[a-z]+(?=\?|$)/i, '').replace(/^\?/, ''));
   const out: Partial<AppState> = {};
   const aoi = p.get('aoi');
   if (aoi && /^[A-Za-z0-9_-]{1,32}$/.test(aoi)) out.aoiId = aoi;
@@ -115,8 +137,9 @@ export interface Store {
 
 export const HELD_SYNC_INTERVAL_MS = 1000;
 
-export function createStore(initial: Partial<AppState> = {}, opts: { persist?: boolean } = {}): Store {
+export function createStore(initial: Partial<AppState> = {}, opts: { persist?: boolean; routed?: boolean } = {}): Store {
   const persist = opts.persist ?? true;
+  const routed = opts.routed ?? false; // routed: the hash is '#/<page>?aoi=..' and the Home page ('#/') is never rewritten
   let state: AppState = { ...DEFAULT_STATE, ...initial, series: { ...DEFAULT_STATE.series, ...(initial.series ?? {}) } };
   const listeners = new Set<Listener>();
   let attached: (() => void) | null = null;
@@ -140,7 +163,7 @@ export function createStore(initial: Partial<AppState> = {}, opts: { persist?: b
     try {
       // REVIEW H1: never write '#aoi=…' over a landing entry (e.g. a flush/throttled write after Back).
       if (typeof location !== 'undefined' && typeof history !== 'undefined' && (force || isWorkspaceHash(location.hash))) {
-        const h = toHash(state);
+        const h = routed ? routeHash(routeOfHash(location.hash), state) : toHash(state);
         if (location.hash !== h) history.replaceState(history.state, '', `${location.pathname}${location.search}${h}`);
       }
     } catch {
@@ -169,9 +192,9 @@ export function createStore(initial: Partial<AppState> = {}, opts: { persist?: b
       if (persist) {
         const fromHash = typeof location !== 'undefined' ? parseHash(location.hash) : {};
         store.set({ ...readLocal(), ...fromHash });
-        syncOut(true); // attach() only runs when the workspace mounts, so the first write may replace any hash
+        syncOut(!routed); // classic store: attach() only runs when the workspace mounts, so the first write may replace any hash
       }
-      const onHash = () => store.set(parseHash(location.hash));
+      const onHash = () => { store.set(parseHash(location.hash)); if (routed) syncOut(); };
       if (typeof window !== 'undefined') window.addEventListener('hashchange', onHash);
       attached = () => {
         if (typeof window !== 'undefined') window.removeEventListener('hashchange', onHash);
@@ -194,7 +217,7 @@ export function createStore(initial: Partial<AppState> = {}, opts: { persist?: b
 }
 
 /** App-wide singleton. Call `selectionStore.attach()` once at startup (main.tsx / App). */
-export const selectionStore = createStore();
+export const selectionStore = createStore({}, { routed: true });
 
 /** React hook: whole state or a selected slice (selector must return a stable/primitive value). */
 export function useAppState(): AppState;

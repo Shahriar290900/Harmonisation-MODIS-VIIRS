@@ -347,12 +347,12 @@ function GlobeStage({ ctx, bgd, others, openHash, error }: { ctx: Ctx; bgd: AoiS
               <a ref={primary} className="lx-btn lx-btn--primary" href={openHash} onClick={(e) => onWorkspaceLink(e, openHash, 'Opening the fire calendar for Bangladesh')}>
                 Open the fire calendar <span className="lx-btn__arrow"><Icon3D icon={ArrowRight} tone="current" size={19} strokeWidth={2.4} /></span>
               </a>
-              <button ref={secondary} className="lx-btn lx-btn--ghost" onClick={() => scrollToId('how', flags.reduced)}><Icon3D icon={Layers} tone="cyan" size={18} />How harmonization works</button>
+              <button ref={secondary} className="lx-btn lx-btn--ghost" onClick={() => scrollToId('how', flags.reduced)}><Icon3D icon={Layers} tone="cyan" size={18} />How the two satellites line up</button>
             </div>
             <ul className="lx-sensors" data-intro aria-label="Series colours">
               <li><i className="sw sw--aqua" />Aqua MODIS <span>1 km · since 2002</span></li>
               <li><i className="sw sw--viirs" />S-NPP VIIRS <span>375 m · since 2012</span></li>
-              <li><i className="sw sw--est" />Harmonized <span>VIIRS-scale estimate</span></li>
+              <li><i className="sw sw--est" />Estimate <span>on the sharper satellite’s scale</span></li>
             </ul>
           </div>
           <aside className="lx-hero__aside" data-intro aria-label="What the globe shows">
@@ -390,6 +390,9 @@ function Footer({ core, openHash }: { core: Core | null; openHash: string }) {
           <p className="lx-foot__name">Parallax Fire</p>
           <p>Pick a place. See its burning seasons over 20+ years on one fair scale. Tell real change apart from satellite change.</p>
           <a className="lx-btn lx-btn--primary lx-btn--sm" href={openHash} onClick={(e) => onWorkspaceLink(e, openHash)}>Open the fire calendar <span className="lx-btn__arrow"><Icon3D icon={ArrowRight} tone="current" size={16} /></span></a>
+          <nav aria-label="Pages" className="lx-foot__small">
+            <a href="#/calendar">Calendar</a> · <a href="#/map">Map</a> · <a href="#/sensors">Two satellites</a> · <a href="#/method">How it works</a> · <a href="#/data">Data &amp; sources</a>
+          </nav>
         </div>
         <div>
           <h2 className="lx-foot__h">Made by</h2>
@@ -414,7 +417,7 @@ function Footer({ core, openHash }: { core: Core | null; openHash: string }) {
           ) : <p className="lx-foot__small">Loading snapshot…</p>}
         </div>
       </div>
-      <p className="lx-foot__base">A hotspot is a hot pixel, not a fire incident. No “AI accuracy” badges here — skill is reported as MAE against the ratio baseline inside the app.</p>
+      <p className="lx-foot__base">A hotspot is a hot pixel, not a fire incident. No “AI accuracy” badges here. How well the estimate holds up is measured on years it never saw and shown, place by place, on the How it works page.</p>
     </footer>
   );
 }

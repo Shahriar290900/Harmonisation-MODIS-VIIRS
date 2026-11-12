@@ -3,9 +3,10 @@ import type { ActivityRecord, Selection } from '../types';
 import { deriveDisplayState, headlineValue, shownAnomalyFlag } from './bridge';
 import { MONTHS_SHORT, fmtCompact, fmtNum, monthLabel } from '../data/format';
 import { RAMP_CSS, textOn, valueColor, ZERO_COLOR } from './scale';
-import { LEGEND_STATES, STATE_LABEL, SPLIT_LABEL, type CellState } from './glyphs';
+import { STATE_LABEL, SPLIT_LABEL, type CellState } from './glyphs';
 import { RotateCw } from 'lucide-react';
 import { Tip, STATE_TIP, SPLIT_TIP } from './Tip';
+import '../styles/charts.css';
 import { Glyph } from './Glyph';
 import { Icon3D } from './icons/Icon3D';
 import type { YearStatus } from './useAppData';
@@ -26,7 +27,6 @@ interface Props {
   onRetry?: () => void;
 }
 
-const SPLIT_SHORT: Record<string, string> = { train: 'train', val: 'val', test: 'test', backcast: 'back' };
 const recFor = (map: Props['map'], y: number, m: number) => map?.get(y)?.find((r) => +r.period_start_utc.slice(5, 7) === m) ?? null;
 
 /** Calendar-cell text: '<1' for estimates between 0 and 1, '≈0' for an estimated exact zero; '0' only for observed zero (E2E B3). */
@@ -55,18 +55,23 @@ export function Calendar({ years, map, status, selection, onSelect, onActivate, 
     gridRef.current?.querySelector<HTMLElement>('[data-sel="true"]')?.focus();
   }, [selection.year, selection.month]);
 
-  // Compact layout scrolls horizontally: keep the selected month in view.
+  // The grid scrolls inside its own area: keep the selected month in view (below the sticky header, right of the year column).
   useLayoutEffect(() => {
     const sc = scrollRef.current;
-    if (!compact || !sc) return;
+    if (!sc) return;
     const el = sc.querySelector<HTMLElement>('[data-sel="true"]');
     if (!el) return;
-    const yr = sc.querySelector<HTMLElement>('.cal__row:not(.cal__row--head) .cal__yr');
+    const yr = sc.querySelector<HTMLElement>('.cg-yr');
     const pad = (yr?.offsetWidth ?? 40) + 8;
-    const left = el.offsetLeft, right = left + el.offsetWidth;
+    const sr = sc.getBoundingClientRect(), er = el.getBoundingClientRect();
+    const left = er.left - sr.left + sc.scrollLeft, right = left + er.width;
     if (left - pad < sc.scrollLeft) sc.scrollLeft = Math.max(0, left - pad);
     else if (right + 8 > sc.scrollLeft + sc.clientWidth) sc.scrollLeft = right + 8 - sc.clientWidth;
-  }, [compact, selection.year, selection.month, map]);
+    const head = sc.querySelector<HTMLElement>('.cg-row--head')?.offsetHeight ?? 28;
+    const top = er.top - sr.top + sc.scrollTop, bottom = top + er.height;
+    if (top - head < sc.scrollTop) sc.scrollTop = Math.max(0, top - head - 4);
+    else if (bottom + 8 > sc.scrollTop + sc.clientHeight) sc.scrollTop = bottom + 8 - sc.clientHeight;
+  }, [selection.year, selection.month, map]);
 
   const onKey = (e: KeyboardEvent) => {
     const yi = years.indexOf(selection.year);
@@ -95,33 +100,31 @@ export function Calendar({ years, map, status, selection, onSelect, onActivate, 
   const unavailYears = unavailable?.years.filter((y) => years.includes(y)) ?? [];
 
   return (
-    <div className="cal">
+    <div className="cg" data-chart="calendar">
       {unavailYears.length > 0 && (
         <div className="cal__unavail" role="status">
           <Glyph state="unavailable" size={14} />
           <span>
-            <b>{unavailYears.length === years.length ? 'This area is unavailable' : `${unavailYears.length} year${unavailYears.length > 1 ? 's' : ''} unavailable`}</b>
-            {' — '}{unavailable?.offline ? 'not cached for offline use. Reconnect to load it.' : `failed to load${unavailable?.message ? ` (${unavailable.message})` : ''}.`}
+            <b>{unavailYears.length === years.length ? 'This place is unavailable' : `${unavailYears.length} year${unavailYears.length > 1 ? 's' : ''} unavailable`}</b>
+            {' — '}{unavailable?.offline ? 'not saved for offline use. Reconnect to load it.' : `could not load${unavailable?.message ? ` (${unavailable.message})` : ''}.`}
             {' '}This is not missing data.
           </span>
           {onRetry && <button className="btn btn--sm" onClick={onRetry}><Icon3D icon={RotateCw} tone="current" size={14} />Retry</button>}
         </div>
       )}
-      <div ref={scrollRef} className={'tour-cal-grid cal__scroll' + (compact ? ' cal__scroll--compact' : '')}>
-        <div className={'cal__grid' + (compact ? ' cal__grid--compact' : '')} role="grid" aria-label="Burning calendar: years by months. Use arrow keys to move." aria-rowcount={years.length + 1} ref={gridRef} onKeyDown={onKey}>
-          <div className="cal__row cal__row--head" role="row">
-            <div className="cal__yr" role="columnheader" aria-label="Year" />
-            {MONTHS_SHORT.map((m, i) => <div key={m} className={'cal__mh' + (selection.month === i + 1 ? ' is-on' : '')} role="columnheader">{m}</div>)}
-            <div className="cal__split" role="columnheader" aria-label="Split">{compact ? '' : 'split'}</div>
+      <div ref={scrollRef} className="tour-cal-grid cg-scroll" data-cal-grid>
+        <div className="cg-grid" role="grid" aria-label="Burning calendar: years by months. Use arrow keys to move." aria-rowcount={years.length + 1} ref={gridRef} onKeyDown={onKey}>
+          <div className="cg-row cg-row--head" role="row">
+            <div className="cg-yr cg-yr--head" role="columnheader"><span className="cg-sr">Year</span></div>
+            {MONTHS_SHORT.map((m, i) => <div key={m} className={'cg-mh' + (selection.month === i + 1 ? ' is-on' : '')} role="columnheader">{m}</div>)}
           </div>
           {years.map((y, yi) => {
-            const recs = map?.get(y) ?? null;
             const ys = status?.get(y) ?? 'ok';
+            const recs = map?.get(y) ?? null;
             const split = recs?.find((r) => r.split !== 'none')?.split ?? 'none';
-            const boundary = y === 2012 && yi > 0;
             return (
-              <div key={y} className={'cal__row' + (boundary ? ' cal__row--viirs' : '')} role="row">
-                <div className={'cal__yr' + (selection.year === y ? ' is-on' : '')} role="rowheader">{y}</div>
+              <div key={y} className={'cg-row' + (y === 2012 && yi > 0 ? ' cg-row--viirs' : '')} role="row">
+                <Tip text={SPLIT_TIP[split]} side="right"><div className={'cg-yr sp-' + split + (selection.year === y ? ' is-on' : '')} role="rowheader" aria-label={`${y}${split !== 'none' ? ', ' + SPLIT_LABEL[split] : ''}`}>{y}</div></Tip>
                 {MONTHS_SHORT.map((_, mi) => {
                   const m = mi + 1;
                   const r = recFor(map, y, m);
@@ -137,16 +140,15 @@ export function Calendar({ years, map, status, selection, onSelect, onActivate, 
                   return (
                     <div key={m} role="gridcell" aria-selected={sel} aria-label={label} title={label} aria-busy={st === 'loading' || undefined}
                       tabIndex={tabbable ? 0 : -1} data-sel={sel}
-                      className={`cal__cell st-${st}${sel ? ' is-sel' : ''}${observedZero ? ' is-zero' : ''}`}
+                      className={`cg-cell st-${st}${sel ? ' is-sel' : ''}${observedZero ? ' is-zero' : ''}`}
                       style={bg ? { background: bg, color: textOn(v, max) } : undefined}
                       onClick={() => onSelect(y, m)}>
-                      <Glyph state={st} size={compact ? 9 : 8} className="cal__glyph" />
-                      {v != null && <span className="cal__val" aria-hidden>{cellText(v, hv.kind)}</span>}
-                      {flag && <span className={'cal__anom cal__anom--' + flag} aria-hidden />}
+                      <Glyph state={st} size={8} className="cg-glyph" />
+                      {v != null && <span className="cg-val" aria-hidden>{cellText(v, hv.kind)}</span>}
+                      {flag && <span className={'cg-anom cg-anom--' + flag} aria-hidden />}
                     </div>
                   );
                 })}
-                <Tip text={SPLIT_TIP[split]} side="left"><div className={'cal__split sp-' + split} role="gridcell" aria-label={`Split ${SPLIT_LABEL[split]}`}>{compact ? '' : SPLIT_SHORT[split] ?? ''}</div></Tip>
               </div>
             );
           })}
@@ -158,22 +160,31 @@ export function Calendar({ years, map, status, selection, onSelect, onActivate, 
 }
 
 export function CalendarLegend({ max }: { max: number }) {
+  const items: { st: CellState; text: string }[] = [
+    { st: 'observed', text: 'measured by the sharper satellite' },
+    { st: 'estimated', text: 'estimate' },
+    { st: 'partial', text: 'part of the month only' },
+    { st: 'missing', text: 'no data' },
+    { st: 'unsupported', text: 'no trustworthy estimate' },
+    { st: 'unavailable', text: 'could not load' }
+  ];
   return (
-    <div className="legend" aria-label="Calendar legend">
-      <div className="legend__ramp">
-        <span className="legend__sw" style={{ background: ZERO_COLOR }} title="Observed zero" />
-        <span className="legend__lab">0</span>
-        <span className="legend__bar" style={{ background: RAMP_CSS }} />
-        <span className="legend__lab">{fmtCompact(max)}</span>
-        <span className="legend__unit">VIIRS-scale detections / month · log scale · “&lt;1” = estimate below 1</span>
+    <div className="cg-legend" data-cal-legend aria-label="Calendar legend">
+      <div className="cg-legend__ramp">
+        <span className="cg-legend__sw" style={{ background: ZERO_COLOR }} title="Measured zero" />
+        <span>0</span>
+        <span className="cg-legend__bar" style={{ background: RAMP_CSS }} />
+        <span>{fmtCompact(max)}</span>
+        <span className="cg-legend__unit">detections per month, sharper-satellite scale (squeezed scale)</span>
       </div>
-      <ul className="legend__glyphs">
-        {LEGEND_STATES.map((k) => (
-          <Tip key={k} text={STATE_TIP[k]}><li tabIndex={0} className={'legend__st legend__st--' + k}><Glyph state={k} size={11} className="legend__g" />{k === 'unavailable' ? 'Unavailable (not cached / failed)' : STATE_LABEL[k].split(' (')[0]}</li></Tip>
+      <ul className="cg-legend__items">
+        {items.map((it) => (
+          <Tip key={it.st} text={STATE_TIP[it.st]}><li tabIndex={0} className={'cg-legend__st cg-legend__st--' + it.st}>
+            <span className={'cg-legend__chip st-' + it.st}><Glyph state={it.st} size={10} /></span>{it.text}</li></Tip>
         ))}
-        <li title="Not shown on partial or missing months"><span className="legend__tri legend__tri--high" aria-hidden />Unusually high</li>
-        <li title="Not shown on partial or missing months"><span className="legend__tri legend__tri--low" aria-hidden />Unusually low</li>
-        <li><span className="legend__viirs" aria-hidden />VIIRS era (since 2012)</li>
+        <li><span className="cg-legend__tri cg-legend__tri--high" aria-hidden />unusually high for the season</li>
+        <li><span className="cg-legend__tri cg-legend__tri--low" aria-hidden />unusually low for the season</li>
+        <li><span className="cg-legend__viirs" aria-hidden />sharper satellite flies from 2012</li>
       </ul>
     </div>
   );

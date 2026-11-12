@@ -48,16 +48,16 @@ export function Explainer() {
 
   return (
     <div className="explainer">
-      <svg viewBox="0 0 400 220" className="explainer__art" role="img" aria-label="Two cameras photograph the same field of fires. The coarse MODIS camera finds 3 hot pixels; the sharp VIIRS camera finds 10.">
+      <svg viewBox="0 0 400 220" className="explainer__art" role="img" aria-label="Illustration, not data: two cameras photograph the same field of fires. The coarse MODIS camera finds 3 hot pixels; the sharp VIIRS camera finds 10.">
         <g transform="translate(20,6)"><Camera color={C.aqua} x={80} /><Camera color={C.viirs} x={280} /></g>
         <g transform="translate(20,56)"><Field cell={40} detects={(s) => s >= 3} color={C.aqua} label="MODIS (2000–)" sub="~1 km pixels" /></g>
         <g transform="translate(220,56)"><Field cell={16} detects={() => true} color={C.viirs} label="VIIRS (2012–)" sub="375 m pixels" /></g>
       </svg>
 
       <ol className="explainer__steps">
-        <li><b>Two cameras, one field.</b> MODIS is an older heat camera with big pixels — it sees the large fires. VIIRS is sharper and also catches the small ones, so for the same place it usually counts <b>several times more</b> hot pixels.</li>
+        <li><b>Two cameras, one field.</b> MODIS is an older heat camera with big pixels — it sees the large fires. VIIRS is sharper and also catches the small ones, so for the same place it usually counts <b>several times more</b> hot pixels. (Drawing for illustration only.)</li>
         <li><b>Joining them naively fakes a jump.</b> Glue the MODIS years to the VIIRS years and the chart leaps upward in 2012 — even if burning never changed.
-          <svg viewBox="0 0 250 84" className="explainer__mini" role="img" aria-label="Naive join jumps at 2012; harmonized line stays on one scale.">
+          <svg viewBox="0 0 250 84" className="explainer__mini" role="img" aria-label="Naive join jumps at 2012; the lined-up estimate stays on one scale.">
             <line x1="127" x2="127" y1="4" y2="80" stroke="#93A4C3" strokeDasharray="2 3" />
             <text x="130" y="12" fill="#93A4C3" fontSize="9">2012</text>
             <path d={naive} fill="none" stroke="#EF4444" strokeWidth="1" opacity="0.35" />
@@ -65,17 +65,17 @@ export function Explainer() {
             <path d={viirsPart} fill="none" stroke={C.viirs} strokeWidth="2" />
             <path d={harm} fill="none" stroke={C.estimate} strokeWidth="2" strokeDasharray="5 3" />
             <text x="8" y="80" fill={C.aqua} fontSize="9">raw MODIS</text>
-            <text x="8" y="14" fill={C.estimate} fontSize="9">harmonized (VIIRS scale)</text>
+            <text x="8" y="14" fill={C.estimate} fontSize="9">lined up (sharper scale)</text>
             <text x="180" y="80" fill={C.viirs} fontSize="9">raw VIIRS</text>
           </svg>
         </li>
         <li><b>Learn the translation.</b> Both cameras flew together from 2012 to 2024. In every 5 km square and month we learn “when Aqua-MODIS saw <i>X</i>, VIIRS saw <i>Y</i>” — then test it on years and places it never saw.</li>
-        <li><b>Back-translate the past.</b> We turn 2003–2011 MODIS counts into <b>VIIRS-scale estimates</b>, each with an 80% error band, so 20+ years sit on one fair scale.</li>
+        <li><b>Fill in the past.</b> We turn the 2003–2011 counts into <b>estimates on the sharper satellite&rsquo;s scale</b>, each with a likely range (8 in 10), so 20+ years sit on one fair scale.</li>
       </ol>
       <p className="explainer__cant">
-        <b>What it can’t do:</b> recover individual small fires MODIS missed, see through clouds, or count wildfires. A hotspot is a hot pixel, not a fire incident.
+        <b>What it can’t do:</b> recover individual small fires the older satellite missed, see through clouds, or count wildfires. A fire detection is a hot pixel, not a fire incident.
         <br/><br/>
-        <b>United States caveats:</b> USA regions include Alaska and Hawaii. FIRMS types 1, 2, and 3 (prescribed, agricultural, and other non-wildfire) are excluded from the main count. The 5 km grid is unmeasured at the USA national scale. California inherits national B0_month_ratio coefficients.
+        <b>United States:</b> includes Alaska and Hawaii, and leaves out prescribed, agricultural and other non-wildfire burning. The 5 km squares are not measured at the whole-country scale, and California uses the national ratios.
       </p>
     </div>
   );

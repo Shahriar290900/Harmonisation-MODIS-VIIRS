@@ -64,3 +64,65 @@ export function fmtUtc(iso: string): { utc: string; local: string } {
   if (Number.isNaN(d.getTime())) return { utc: iso, local: '' };
   return { utc: d.toISOString().slice(0, 16).replace('T', ' ') + ' UTC', local: d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) };
 }
+
+/* ---------- Worldwide last 24 h (Live page): /api/firms-live?scope=world, packed binary rows (see netlify/functions/lib/world.mts) ---------- */
+export type WorldKey = 'modis' | 'noaa20' | 'noaa21' | 'snpp';
+export type WorldState = 'loading' | 'ok' | 'empty' | 'failed';
+export interface WorldSource {
+  key: WorldKey; label: string; state: WorldState; count: number; newest_utc: string | null; oldest_utc: string | null; error?: string;
+  /** 4 Int16 per detection: lon x100, lat x100, heat output x10 (-1 = not given), minute | daysBack << 11 | isDay << 13. */
+  raw: Int16Array | null;
+}
+export const WORLD_LABEL: Record<WorldKey, string> = { modis: 'MODIS (Terra and Aqua)', noaa20: 'NOAA-20 VIIRS', noaa21: 'NOAA-21 VIIRS', snpp: 'Suomi NPP VIIRS' };
+export const WORLD_KEYS: WorldKey[] = ['modis', 'noaa20', 'noaa21', 'snpp'];
+
+function decodeB64(b64: string): Int16Array {
+  const bin = atob(b64);
+  const u = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return new Int16Array(u.buffer, 0, Math.floor(u.length / 8) * 4);
+}
+
+const worldCache = new Map<string, { at: number; fetched: string; sources: WorldSource[] }>();
+/** One request for some of the sources. Never throws: a source that cannot be read comes back as state "failed" with the reason. */
+export async function fetchWorld(keys: WorldKey[], timeoutMs = 90_000): Promise<{ fetched_utc: string | null; sources: WorldSource[] }> {
+  const ck = keys.join(',');
+  const hit = worldCache.get(ck);
+  if (hit && Date.now() - hit.at < 10 * 60_000) return { fetched_utc: hit.fetched, sources: hit.sources };
+  const failed = (why: string): WorldSource[] => keys.map((key) => ({ key, label: WORLD_LABEL[key], state: 'failed', count: 0, newest_utc: null, oldest_utc: null, error: why, raw: null }));
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const r = await fetch(`/api/firms-live?scope=world&src=${ck}`, { signal: ctl.signal, headers: { accept: 'application/json' } });
+    if (!r.ok) return { fetched_utc: null, sources: failed(r.status === 404 ? 'feed is not available on this site' : 'the feed answered with an error') };
+    const j = await r.json() as { fetched_utc?: string; sources?: Record<string, { state: WorldState; count: number; newest_utc: string | null; oldest_utc: string | null; data: string; error?: string }> };
+    if (!j?.sources || typeof j.fetched_utc !== 'string') return { fetched_utc: null, sources: failed('unexpected answer from the feed') };
+    const sources = keys.map((key): WorldSource => {
+      const s = j.sources![key];
+      if (!s) return failed('missing from the answer')[0];
+      return { key, label: WORLD_LABEL[key], state: s.state, count: s.count, newest_utc: s.newest_utc, oldest_utc: s.oldest_utc, error: s.error, raw: s.state === 'ok' && s.data ? decodeB64(s.data) : null };
+    });
+    if (sources.every((s) => s.state !== 'failed')) worldCache.set(ck, { at: Date.now(), fetched: j.fetched_utc, sources });
+    return { fetched_utc: j.fetched_utc, sources };
+  } catch (e) {
+    return { fetched_utc: null, sources: failed((e as Error)?.name === 'AbortError' ? 'the feed took too long' : 'the feed could not be reached') };
+  } finally { clearTimeout(t); }
+}
+
+/** TLE records for the satellites (/api/sats). Null when unavailable. */
+export interface SatTle { key: string; name: string; norad: number; line1: string; line2: string; epoch_utc: string | null }
+export interface SatsFile { fetched_utc: string; tles: SatTle[]; failed: { name: string; error: string }[] }
+let satsCache: { at: number; v: SatsFile } | null = null;
+export async function fetchSats(): Promise<SatsFile | null> {
+  if (satsCache && Date.now() - satsCache.at < 30 * 60_000) return satsCache.v;
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 45_000);
+  try {
+    const r = await fetch('/api/sats', { signal: ctl.signal });
+    if (!r.ok) return null;
+    const j = await r.json() as SatsFile;
+    if (!Array.isArray(j?.tles) || !j.tles.length) return null;
+    satsCache = { at: Date.now(), v: j };
+    return j;
+  } catch { return null; } finally { clearTimeout(t); }
+}

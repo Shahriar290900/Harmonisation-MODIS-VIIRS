@@ -2,9 +2,9 @@ import { BadgeCheck, Eye, FlaskConical, type LucideIcon } from 'lucide-react';
 import { Icon3D, type IconTone } from '../../ui/icons/Icon3D';
 
 export const STAGE_LABEL: Record<string, string> = {
-  ui_prototype: 'UI prototype',
-  observed_comparison: 'Observed comparison',
-  validated_calibration: 'Validated calibration'
+  ui_prototype: 'Demo data',
+  observed_comparison: 'Raw comparison only',
+  validated_calibration: 'Checked on unseen years'
 };
 
 const STAGE_ICON: Record<string, [LucideIcon, IconTone]> = { ui_prototype: [FlaskConical, 'red'], observed_comparison: [Eye, 'cyan'], validated_calibration: [BadgeCheck, 'teal'] };

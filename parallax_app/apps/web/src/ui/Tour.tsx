@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Joyride, EVENTS, STATUS, type EventData, type Step, type TooltipRenderProps } from 'react-joyride';
 import { X } from 'lucide-react';
-import type { MobileTab } from '../state/store';
+import { routeHash, routeOfHash, selectionStore, type Route } from '../state/store';
 
 const LS_KEY = 'parallax.tour.v1';
 
@@ -18,28 +18,32 @@ function markSeen() { try { localStorage.setItem(LS_KEY, 'done'); } catch { /* p
 
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-interface Def { id: string; target: string; title: string; body: string; tab?: MobileTab; placement?: Step['placement'] }
+interface Def { id: string; target: string; title: string; body: string; route?: Route; placement?: Step['placement'] }
 
-// CSS targets: .tour-welcome (centered, no target element), .tour-area (TopBar area picker), .tour-calendar, .tour-cal-grid,
-// .tour-chart, .tour-map, .tour-evidence, .tour-export (evidence actions), .tour-theme (theme + help cluster in the top bar).
+// CSS targets: [data-nav] (page navigation), .tour-area (place picker), .tour-calendar, .tour-cal-grid, .tour-evidence
+// (month summary), .tour-map, .tour-chart, .tour-method, .tour-export (downloads), .tour-theme (theme + help in the top bar).
 const DEFS: Def[] = [
-  { id: 'welcome', target: 'body', placement: 'center', title: 'Welcome to Parallax Fire',
-    body: 'Two satellites, MODIS and VIIRS, both spot hot pixels from space, but they count them differently. Parallax Fire puts them on one fair scale so you can read one honest fire record. This quick tour takes about a minute.' },
-  { id: 'area', target: '.tour-area', title: 'Pick an area',
-    body: 'Choose Bangladesh, California or New South Wales. You can also narrow the years you look at.' },
-  { id: 'calendar', target: '.tour-calendar', tab: 'calendar', placement: 'auto', title: 'The burning calendar',
-    body: 'Each row is a year and each column is a month. The colour shows how much burning the satellites detected. A hatched square means there is no data. Missing is never zero.' },
-  { id: 'month', target: '.tour-cal-grid', tab: 'calendar', placement: 'auto', title: 'Click any month',
-    body: 'Tap a square to pick that month. The map, chart and evidence all update to match. Arrow keys work too, and Replay plays the months like a movie.' },
-  { id: 'map', target: '.tour-map', tab: 'map', placement: 'auto', title: 'Where it burned',
-    body: 'The map splits the area into 5 km cells. Brighter cells had more hotspots in the month you picked.' },
-  { id: 'chart', target: '.tour-chart', tab: 'calendar', placement: 'auto', title: 'Compare the satellites',
-    body: 'Solid lines are what MODIS and VIIRS really counted. The dashed teal line is our estimate of what VIIRS would have counted, with a shaded 80% band. It is learned only from years when both satellites flew, so treat it as an estimate.' },
-  { id: 'evidence', target: '.tour-evidence', tab: 'evidence', placement: 'auto', title: 'The evidence drawer',
-    body: 'This shows what was observed and what was estimated for the chosen month, plus the sources behind every number.' },
-  { id: 'export', target: '.tour-export', tab: 'evidence', placement: 'auto', title: 'Take it with you',
-    body: 'Export the data as a CSV file, or print a one-page brief. Estimates stay labelled as estimates.' },
-  { id: 'theme', target: '.tour-theme', tab: 'calendar', title: 'Light, dark and help',
+  { id: 'welcome', target: 'body', placement: 'center', route: 'calendar', title: 'Welcome to Parallax Fire',
+    body: 'Two satellites spot hot pixels from space, but they count them differently. Parallax Fire puts them on one fair scale so you can read one honest fire record. This quick tour takes about a minute.' },
+  { id: 'nav', target: '[data-nav]', placement: 'auto', title: 'Pages, one place',
+    body: 'Use the menu to move between pages. The place, year and month you pick follow you from page to page.' },
+  { id: 'area', target: '.tour-area', route: 'calendar', title: 'Pick a place',
+    body: 'Search for a country, division or state. You can also narrow the years you look at.' },
+  { id: 'calendar', target: '.tour-calendar', route: 'calendar', placement: 'auto', title: 'The burning calendar',
+    body: 'Each row is a year and each column is a month. The colour shows how many fire detections the satellites recorded. A hatched square means there is no data. No data is never shown as zero.' },
+  { id: 'month', target: '.tour-cal-grid', route: 'calendar', placement: 'auto', title: 'Click any month',
+    body: 'Tap a square to pick that month. The summary below, the map and the chart all follow it. Arrow keys work too, and Replay plays the months like a movie.' },
+  { id: 'summary', target: '.tour-evidence', route: 'calendar', placement: 'auto', title: 'What happened that month',
+    body: 'A short plain-words summary of what was counted and what was estimated for the month you picked.' },
+  { id: 'map', target: '.tour-map', route: 'map', placement: 'auto', title: 'Where it burned',
+    body: 'The map splits the place into 5 km squares. Brighter squares had more fire detections in the month you picked.' },
+  { id: 'chart', target: '.tour-chart', route: 'sensors', placement: 'auto', title: 'The two satellites',
+    body: 'Solid lines are what each satellite really counted. The dashed teal line is our estimate of what the sharper satellite would have counted, with a shaded likely range. It is learned only from years when both satellites flew.' },
+  { id: 'method', target: '.tour-method', route: 'method', placement: 'auto', title: 'How good is the estimate?',
+    body: 'This page shows, place by place, how far off the estimate was on years it had never seen, compared with simple rules.' },
+  { id: 'export', target: '.tour-export', route: 'data', placement: 'auto', title: 'Take it with you',
+    body: 'Download the data as a spreadsheet (CSV), or print a one-page brief. Estimates stay labelled as estimates.' },
+  { id: 'theme', target: '.tour-theme', route: 'data', title: 'Light, dark and help',
     body: 'Switch between light and dark here. The ? button replays this tour any time.' }
 ];
 
@@ -63,10 +67,10 @@ function TourTooltip(p: TooltipRenderProps) {
   );
 }
 
-interface Props { ready: boolean; mobile: boolean; reduced: boolean; setTab: (t: MobileTab) => void; runToken: number }
+interface Props { ready: boolean; reduced: boolean; runToken: number }
 
 /** First-visit tour + replay (runToken increments when the user presses "Take the tour"). */
-export function Tour({ ready, mobile, reduced, setTab, runToken }: Props) {
+export function Tour({ ready, reduced, runToken }: Props) {
   const [run, setRun] = useState(false);
   const [first] = useState(() => !SUPPRESSED && !seen());
   useEffect(() => { if (ready && first) { const t = window.setTimeout(() => setRun(true), 900); return () => clearTimeout(t); } }, [ready, first]);
@@ -79,9 +83,11 @@ export function Tour({ ready, mobile, reduced, setTab, runToken }: Props) {
     content: d.body,
     placement: d.placement ?? 'bottom',
     skipBeacon: true,
-    // On phones each panel lives in its own tab, so switch tab first and let it render before highlighting.
-    before: async () => { if (mobile && d.tab) { setTab(d.tab); await wait(120); } }
-  })), [mobile, setTab]);
+    // Each step lives on its own page: open that page first (keeping the selection) and let it render.
+    before: async () => {
+      if (d.route && routeOfHash(location.hash) !== d.route) { location.hash = routeHash(d.route, selectionStore.get()); await wait(700); }
+    }
+  })), []);
 
   const onEvent = useCallback((data: EventData) => {
     if (data.type === EVENTS.TOUR_END || (data.type === EVENTS.TOUR_STATUS && (data.status === STATUS.FINISHED || data.status === STATUS.SKIPPED))) {
