@@ -406,7 +406,7 @@ function Footer({ core, openHash }: { core: Core | null; openHash: string }) {
         <div>
           <h2 className="lx-foot__h">Data & credits</h2>
           <p>Active-fire detections: <a href="https://firms.modaps.eosdis.nasa.gov/" rel="noopener" target="_blank">NASA FIRMS</a> — MODIS C6.1 (Aqua, Terra) and VIIRS 375 m (S-NPP).</p>
-          <p>Live layer: NASA FIRMS near-real-time detections from the last 24 hours (MODIS; VIIRS from S-NPP or NOAA-20). Not quality-controlled, and not used in the calendar or the model.</p>
+          <p>Live layer: NASA FIRMS near-real-time detections from the last 24 hours (MODIS, and VIIRS on NOAA-20 and NOAA-21). Not quality-controlled, and not used in the calendar or the model.</p>
           <p>Boundaries: <a href="https://www.naturalearthdata.com/" rel="noopener" target="_blank">Natural Earth</a> (public domain). Bangladesh districts: <a href="https://www.geoboundaries.org/" rel="noopener" target="_blank">geoBoundaries</a> (gbOpen, CC BY 3.0 IGO), source BBS / OCHA ROAP.</p>
           <p className="lx-foot__small">We acknowledge the use of data and imagery from LANCE FIRMS operated by NASA’s Earth Science Data and Information System (ESDIS).</p>
         </div>

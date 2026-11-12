@@ -32,7 +32,7 @@ export default async (req: Request): Promise<Response> => {
   const total = all.reduce((n, s) => n + s.count, 0);
   const anyFailed = all.some((s) => s.state === 'failed');
   if (!all.length) return json({ error: 'no such source' }, 400, { 'cache-control': 'no-store' });
-  if (anyFailed && !all.some((s) => s.state === 'ok')) return json({ error: 'NASA FIRMS feed unavailable', sources, note: NOTE }, 502, cdnFail(180));
+  if (anyFailed && !all.some((s) => s.state === 'ok')) return json({ scope: 'world', fetched_utc: new Date().toISOString(), error: 'NASA FIRMS feed unavailable', note: NOTE, layout: WORLD_LAYOUT, sources, total: 0 }, 200, cdnFail(180));   // 200 so the CDN caches the failure and visitors do not re-hit NASA
   return json({ scope: 'world', fetched_utc: new Date().toISOString(), note: NOTE, layout: WORLD_LAYOUT, sources, total },
     200, anyFailed ? cdnFail(180) : cdn(1800, 3600));
 };

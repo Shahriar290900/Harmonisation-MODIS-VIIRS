@@ -15,7 +15,7 @@ export default async (_req: Request): Promise<Response> => {
   }));
   const tles = results.flatMap((r) => ('t' in r && r.t ? [r.t] : []));
   const failed = results.flatMap((r) => ('f' in r && r.f ? [r.f] : []));
-  if (!tles.length) return json({ error: 'CelesTrak unavailable', failed }, 502, cdnFail(7200));
+  if (!tles.length) return json({ fetched_utc: new Date().toISOString(), error: 'CelesTrak unavailable', tles: [], failed }, 200, cdnFail(7200));   // 200 so the CDN caches the failure (CelesTrak: never re-ask within 2 hours)
   return json({ fetched_utc: new Date().toISOString(), source: 'CelesTrak (celestrak.org), orbit records refreshed every 2 hours', tles, failed },
     200, failed.length ? cdnFail(7200) : cdn(7200, 86400, 600));
 };

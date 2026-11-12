@@ -71,11 +71,19 @@ export function LiveLegend({ status, data, covered, nModis, nViirs, regionName, 
     );
   } else {
     const t = data?.fetched_utc ? fmtUtc(data.fetched_utc) : null;
+    // a satellite group whose feeds all failed has no number (never 0); a partly failed group says so
+    const src = data?.sources ?? [];
+    const modisFailed = !src.some((s) => s.key === 'modis' && s.state !== 'failed');
+    const viirs = src.filter((s) => s.key !== 'modis');
+    const viirsSomeFailed = viirs.some((s) => s.state === 'failed'), viirsSomeOk = viirs.some((s) => s.state === 'ok');
+    const viirsFailed = viirsSomeFailed && !viirsSomeOk;      // an empty Suomi NPP file does not stand in for the failed feeds
+    const viirsPartial = viirsSomeFailed && viirsSomeOk;
+    const anyFailed = src.some((s) => s.state === 'failed');
     body = (
       <>
-        <span className="live__key"><svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill={LIVE_COLORS.modis} stroke="currentColor" strokeWidth="1" /></svg>older satellite (MODIS) {nModis}</span>
-        <span className="live__key"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1 11 6 6 11 1 6Z" fill={LIVE_COLORS.viirs} stroke="currentColor" strokeWidth="1" /></svg>sharper satellite (VIIRS) {nViirs}</span>
-        {nModis + nViirs === 0 ? <span>No detections in the last 24 hours in {regionName || 'this area'} (the feed answered).</span> : null}
+        <span className="live__key"><svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill={LIVE_COLORS.modis} stroke="currentColor" strokeWidth="1" /></svg>older satellite (MODIS) {modisFailed ? '— no data (feed unavailable)' : nModis}</span>
+        <span className="live__key"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1 11 6 6 11 1 6Z" fill={LIVE_COLORS.viirs} stroke="currentColor" strokeWidth="1" /></svg>sharper satellite (VIIRS) {viirsFailed ? '— no data (feed unavailable)' : viirsPartial ? `${nViirs} or more (one feed unavailable)` : nViirs}</span>
+        {!anyFailed && nModis + nViirs === 0 ? <span>No detections in the last 24 hours in {regionName || 'this area'} (the feed answered).</span> : null}
         {t && <span className="muted">read {t.utc}</span>}
         <span className="muted">near-real-time · not confirmed wildfires</span>
       </>
