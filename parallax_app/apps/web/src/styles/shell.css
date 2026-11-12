@@ -181,3 +181,9 @@ html[data-route]:not([data-route="home"]) { scroll-behavior: auto; }
   .shell__top .topbar .stage-tag { order: 10; flex: 1 0 100%; height: 30px; justify-content: flex-start; }
   .shell__top .topbar .stage-tag__lab { max-width: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
+
+/* The host's "Powered by Netlify" badge is fixed bottom-right. On phones that is exactly where our bottom bar is,
+   and it swallowed taps on the right-hand tabs. Keep the badge visible but lift it above the bar. */
+@media (max-width: 699px) {
+  html[data-route]:not([data-route="home"]) #nl-badge-frame { bottom: calc(64px + env(safe-area-inset-bottom)) !important; }
+}
