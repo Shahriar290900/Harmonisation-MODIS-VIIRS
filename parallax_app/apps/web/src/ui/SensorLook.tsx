@@ -6,9 +6,9 @@ export type Look = 'normal' | 'thermal' | 'nvg' | 'crt';
 
 const LOOKS: { k: Look; key: string; label: string; icon: typeof Eye; tip: string }[] = [
   { k: 'normal', key: '1', label: 'Normal', icon: Eye, tip: 'Normal view (key 1)' },
-  { k: 'thermal', key: '2', label: 'Thermal', icon: Flame, tip: 'Thermal look: ironbow-style colours, display only (key 2)' },
-  { k: 'nvg', key: '3', label: 'NVG', icon: Binoculars, tip: 'Night-vision look: green phosphor with grain, display only (key 3)' },
-  { k: 'crt', key: '4', label: 'CRT', icon: Tv, tip: 'CRT look: scanlines and colour fringe, display only (key 4)' }
+  { k: 'thermal', key: '2', label: 'Heat view', icon: Flame, tip: 'Heat-view look: colours like a heat camera, display only (key 2)' },
+  { k: 'nvg', key: '3', label: 'Night vision', icon: Binoculars, tip: 'Night-vision look: green phosphor with grain, display only (key 3)' },
+  { k: 'crt', key: '4', label: 'Old TV', icon: Tv, tip: 'Old-TV look: scan lines and colour fringe, display only (key 4)' }
 ];
 
 export const lookForKey = (key: string): Look | null => LOOKS.find((l) => l.key === key)?.k ?? null;
@@ -53,7 +53,7 @@ export function SensorControl({ look, onLook }: { look: Look; onLook: (l: Look) 
     <div className="seg seg--sm look__seg" role="group" aria-label="Sensor look (display style)">
       {LOOKS.map((l) => (
         <Tip key={l.k} text={l.tip}>
-          <button type="button" data-look={l.k} className={look === l.k ? 'is-on' : ''} aria-label={`${l.label} look`} aria-pressed={look === l.k} aria-keyshortcuts={l.key} onClick={() => onLook(l.k)}>
+          <button type="button" data-look={l.k} className={look === l.k ? 'is-on' : ''} aria-label={`${l.label} look`} title={l.label} aria-pressed={look === l.k} aria-keyshortcuts={l.key} onClick={() => onLook(l.k)}>
             <l.icon size={13} aria-hidden="true" /><span className="look__lab">{l.label}</span>
           </button>
         </Tip>

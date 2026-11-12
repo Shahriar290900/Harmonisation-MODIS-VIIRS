@@ -4,7 +4,7 @@ import { Icon3D } from './icons/Icon3D';
 import type { Map as MlMap, GeoJSONSource, Marker, Popup, StyleSpecification } from 'maplibre-gl';
 import '../styles/live.css';
 import { admin2KeyFor, districtsInRegion, featureBbox, useAdmin2, useAdmin2Year } from '../data/admin2';
-import { clipRows, liveKeyFor, useLive } from '../data/live';
+import { rowsInBbox, useLive } from '../data/live';
 import { LIVE_COLORS, LIVE_ICON, LiveLegend, LiveTag, type LiveTagData, liveFeatures, livePopup, makeLiveImages } from './LiveLayer';
 import { SensorControl, SensorCaption, SensorFilters, lookForKey, type Look } from './SensorLook';
 import { buildDistricts, districtPopup, labelPoint } from './DistrictLayer';
@@ -14,13 +14,13 @@ import { fmtCompact, fmtNum, monthLabel } from '../data/format';
 import { noCellsHint } from '../data/regions';
 import { RAMP_CSS, valueColor } from './scale';
 import type { CellState } from './glyphs';
-import { BASEMAP_ATTRIBUTION, MAP_THEME, isDarkTheme, OFFLINE_NOTE, composeStyle, firstLabelLayer, loadBaseStyle, useDarkTheme, watchBasemapHealth, type Overlay } from './basemap';
+import { MAP_THEME, isDarkTheme, OFFLINE_NOTE, composeStyle, firstLabelLayer, loadBaseStyle, useDarkTheme, watchBasemapHealth, type Overlay } from './basemap';
 import { DAILY, GIBS_CREDIT, NIGHT, dailyDate, gibsUrl, useGibsTimes } from '../live/gibs';
 
 export type MapSeries = 'auto' | 'viirs' | 'aqua' | 'est';
 const SERIES_OPTS: { k: MapSeries; label: string; color?: string }[] = [
-  { k: 'auto', label: 'Headline' }, { k: 'viirs', label: 'VIIRS', color: SERIES_COLORS.viirs },
-  { k: 'aqua', label: 'Aqua', color: SERIES_COLORS.aqua }, { k: 'est', label: 'Estimate', color: SERIES_COLORS.estimate }
+  { k: 'auto', label: 'Best available' }, { k: 'viirs', label: 'Sharper satellite', color: SERIES_COLORS.viirs },
+  { k: 'aqua', label: 'Older satellite', color: SERIES_COLORS.aqua }, { k: 'est', label: 'Estimate', color: SERIES_COLORS.estimate }
 ];
 
 interface Props {
@@ -28,7 +28,7 @@ interface Props {
   /** All regions of the snapshot: lets the no-cells message name the exported sub-regions (from `cells_exported`). */
   regions?: Region[];
   cells: { loaded: boolean; file: CellsFile | null; error?: string | null; retry?: () => void }; selection: Selection; visible?: boolean;
-  /** Display state of the AOI-month record (REVIEW M5): a missing month is never shown as '0 active cells'. */
+  /** Display state of the month record for the place (REVIEW M5): a missing month is never shown as '0 active cells'. */
   monthState?: CellState;
 }
 
@@ -55,9 +55,11 @@ function overlayFor(dark: boolean, hasBase: boolean): Overlay {
   return {
     sources: { aoi: empty(), cells: empty(), districts: empty(), 'live-modis': empty(), 'live-viirs': empty() },
     layers: [
-      { id: 'aoi-fill', type: 'fill', source: 'aoi', paint: { 'fill-color': T.aoi, 'fill-opacity': 0.05 } },
-      { id: 'aoi-glow', type: 'line', source: 'aoi', paint: { 'line-color': T.halo, 'line-width': 5, 'line-opacity': hasBase ? 0.6 : 0.08, 'line-blur': hasBase ? 1 : 4 } },
-      { id: 'aoi-line', type: 'line', source: 'aoi', paint: { 'line-color': T.aoi, 'line-width': 1.4, 'line-opacity': 0.9 } },
+      // Over the detailed basemap the place outline is only a coarse guide: thin, faint, and gone from zoom 6 so the basemap's own border shows.
+      // On the offline outline map it stays strong.
+      { id: 'aoi-fill', type: 'fill', source: 'aoi', paint: { 'fill-color': T.aoi, 'fill-opacity': hasBase ? ['interpolate', ['linear'], ['zoom'], 4, 0.03, 6, 0] : 0.05 } },
+      ...(hasBase ? [] : [{ id: 'aoi-glow', type: 'line', source: 'aoi', paint: { 'line-color': T.aoi, 'line-width': 6, 'line-opacity': 0.08, 'line-blur': 4 } }]),
+      { id: 'aoi-line', type: 'line', source: 'aoi', paint: { 'line-color': T.aoi, 'line-width': hasBase ? 1 : 1.4, 'line-opacity': hasBase ? ['interpolate', ['linear'], ['zoom'], 4, 0.5, 6, 0] : 0.9 } },
       { id: 'd-fill', type: 'fill', source: 'districts', layout: { visibility: 'none' }, paint: { 'fill-color': ['case', ['has', 'c'], ['get', 'c'], T.land], 'fill-opacity': ['case', ['has', 'c'], hasBase ? 0.72 : 0.85, hasBase ? 0.12 : 0.35] } },
       { id: 'd-line', type: 'line', source: 'districts', layout: { visibility: 'none' }, paint: { 'line-color': T.district, 'line-width': ['interpolate', ['linear'], ['zoom'], 5, 0.5, 9, 1.2], 'line-opacity': 0.9 } },
       {
@@ -108,7 +110,6 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
   const districtsOn = view === 'districts' && admin2.available && !!admin2Key;
   const distYear = useAdmin2Year(admin2Key, selection.year, districtsOn);
   const live = useLive(liveOn);
-  const liveKey = liveKeyFor(region?.aoi_id);
 
   // Resolve per-cell values for the selected month and series.
   const { pts, max, seriesUsed } = useMemo(() => {
@@ -142,9 +143,8 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
     [admin2.geo, distYear.file, selection.month, series, allowed]
   );
   const liveRows = useMemo(() => {
-    const r = liveKey ? live.data?.regions?.[liveKey] : undefined;
-    return { modis: clipRows(r?.modis ?? [], region?.bbox), viirs: clipRows(r?.viirs ?? [], region?.bbox) };
-  }, [live.data, liveKey, region]);
+    return rowsInBbox(live.data?.sources ?? [], region?.bbox);
+  }, [live.data, region]);
 
   // Create map once.
   useEffect(() => {
@@ -174,7 +174,7 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
         });
         map.touchZoomRotate.disableRotation();
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-        map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: (baseStyle ? BASEMAP_ATTRIBUTION : 'Natural Earth') + ' · NASA FIRMS' }));
+        map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: (baseStyle ? '' : 'Natural Earth · ') + 'NASA FIRMS' }));
         const addIcons = () => {
           const imgs = makeLiveImages();
           if (imgs && !map.hasImage(LIVE_ICON.modis)) { map.addImage(LIVE_ICON.modis, imgs.modis, { pixelRatio: 2 }); map.addImage(LIVE_ICON.viirs, imgs.viirs, { pixelRatio: 2 }); }
@@ -241,7 +241,7 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
     return () => { disposed = true; stopHealth?.(); markersRef.current.forEach((m) => m.remove()); markersRef.current = []; hoverRef.current?.remove(); mapRef.current?.remove(); mapRef.current = null; };
   }, [failed]);
 
-  // AOI outline + fit.
+  // Place outline + fit.
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || !region) return;
@@ -401,12 +401,12 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
         <div className="map__notes">
           {offline && <p className="notice map__offline" role="status">{OFFLINE_NOTE}</p>}
           {imagery === 'day' && <p className="muted map__imgnote" role="status">Satellite image of {imgDate} (Terra, true colour){gibs?.state === 'unavailable' ? ' - latest date could not be checked, showing yesterday' : ''}. {GIBS_CREDIT}.</p>}
-          {imagery === 'night' && <p className="muted map__imgnote" role="status">Night lights, a fixed picture from 2016 (VIIRS Black Marble). {GIBS_CREDIT}.</p>}
+          {imagery === 'night' && <p className="muted map__imgnote" role="status">Night lights, a fixed picture from 2016 (from NASA's Black Marble). {GIBS_CREDIT}.</p>}
         </div>
       )}
       {!tableMode && liveOn && (
         <div className="map__notes">
-          {liveOn && <LiveLegend status={live.status} data={live.data} covered={!!liveKey} nModis={liveRows.modis.length} nViirs={liveRows.viirs.length} regionName={region?.name ?? ''} retry={live.retry} />}
+          {liveOn && <LiveLegend status={live.status} data={live.data} covered={!!region} nModis={liveRows.modis.length} nViirs={liveRows.viirs.length} regionName={region?.name ?? ''} retry={live.retry} />}
         </div>
       )}
       <div className="map__stage" data-look={look}>
@@ -417,7 +417,7 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
         {!tableMode && (
           <div className="map__overlay">
             <div className="map__legend">
-              <div className="map__legend-title">{seriesName} detections / {districtsOn ? 'district' : '5 km cell'}</div>
+              <div className="map__legend-title">{seriesName}: detections per {districtsOn ? 'district' : '5 km square'}</div>
               <div className="legend__ramp"><span className="legend__lab">1</span><span className="legend__bar" style={{ background: RAMP_CSS }} /><span className="legend__lab">{fmtCompact(districtsOn ? dist?.max ?? 0 : max)}</span></div>
               {districtsOn
                 ? <div className="map__legend-sub">{districtSub}</div>
@@ -448,10 +448,10 @@ function subIcon(cells: Props['cells'], monthState?: CellState) {
 export function legendSub(cells: Props['cells'], n: number, monthState?: CellState): string {
   if (cells.error) return `Cell grid unavailable (not cached / failed to load) — not missing data`;
   if (!cells.loaded || monthState === 'loading') return 'Loading cells…';
-  if (!cells.file) return 'No cell grid exported for this AOI';
+  if (!cells.file) return 'No 5 km grid was made for this place';
   if (monthState === 'missing') return 'No data this month (missing, not zero)';
   if (monthState === 'unavailable') return 'Month unavailable (not cached / failed to load)';
-  if (monthState === 'unsupported') return `${n} active cells · no harmonized estimate this month`;
+  if (monthState === 'unsupported') return `${n} active cells · no estimate this month`;
   if (monthState === 'partial') return `${n} active cells · partial month (counts may be incomplete)`;
   return `${n} active cells this month`;
 }
@@ -461,17 +461,17 @@ function popupNode(p: Record<string, unknown>): HTMLElement {
   const title = document.createElement('b');
   title.textContent = `Cell ${String(p.id ?? '')}`;
   const l1 = document.createElement('div');
-  l1.textContent = `Aqua ${fmtNum(p.aqua as number)} · VIIRS ${fmtNum(p.viirs as number)}`;
+  l1.textContent = `Older satellite ${fmtNum(p.aqua as number)} · sharper satellite ${fmtNum(p.viirs as number)}`;
   const l2 = document.createElement('div');
   l2.textContent = `Estimate ${fmtNum(p.est as number)}`;
   root.append(title, l1, l2);
   return root;
 }
 
-/** Why there is no cell grid: not exported for this AOI (e.g. whole-country AUS / USA) vs. exported but absent for this year. */
+/** Why there is no cell grid: not made for this place (e.g. whole-country AUS / USA) vs. exported but absent for this year. */
 export function noFileText(region: Region | undefined, regions: Region[] = []): string {
   if (region?.cells_exported === true) return 'No 5 km cell grid file for this year (missing, not zero).';
-  return `No 5 km cell grid is exported for this AOI (${noCellsHint(region, regions)}).`;
+  return `No 5 km grid was made for this place (${noCellsHint(region, regions)}).`;
 }
 
 function CellTable({ pts, loaded, hasFile, noFileText: noFile }: { pts: CellPt[]; loaded: boolean; hasFile: boolean; noFileText: string }) {
@@ -482,7 +482,7 @@ function CellTable({ pts, loaded, hasFile, noFileText: noFile }: { pts: CellPt[]
     <div className="table-wrap">
       <table className="tbl">
         <caption>Most active 5 km cells this month ({pts.length} total)</caption>
-        <thead><tr><th>Cell</th><th>Lat</th><th>Lon</th><th>Aqua</th><th>VIIRS</th><th>Estimate</th></tr></thead>
+        <thead><tr><th>Square</th><th>North</th><th>East</th><th>Older satellite</th><th>Sharper satellite</th><th>Estimate</th></tr></thead>
         <tbody>{top.map((p) => <tr key={p.id}><td>{p.id}</td><td>{p.lat.toFixed(3)}</td><td>{p.lon.toFixed(3)}</td><td>{fmtNum(p.aqua)}</td><td>{fmtNum(p.viirs)}</td><td>{fmtNum(p.est)}</td></tr>)}</tbody>
       </table>
     </div>

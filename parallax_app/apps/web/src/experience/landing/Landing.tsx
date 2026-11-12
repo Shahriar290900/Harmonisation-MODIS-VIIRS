@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import '../../styles/landing.css';
 import type { GlobeHandle, HotPoint } from '../contract';
 import { Logo } from '../../ui/Logo';
-import { ArrowRight, FlaskConical, Layers, TriangleAlert, X } from 'lucide-react';
+import { ArrowRight, FlaskConical, Layers, Radio, TriangleAlert, X } from 'lucide-react';
 import { Icon3D } from '../../ui/icons/Icon3D';
 import { STAGE_LABEL, StageTagLx } from './StageTag';
 import { MONTHS_LONG } from '../../data/format';
@@ -195,6 +195,9 @@ function Nav({ core, flags, openHash }: { core: Core | null; flags: Flags; openH
   );
 }
 
+// The Live page (track RV-B) is linked only once its file exists.
+const HAS_LIVE = Object.keys(import.meta.glob('../../pages/LivePage.tsx')).length > 0;
+
 type Detail = { region: Region; series: AoiSeries };
 
 async function hotPoints(three: ThreeModule | null | undefined, core: Core, aoi: string, year: number, month: number): Promise<HotPoint[]> {
@@ -341,23 +344,24 @@ function GlobeStage({ ctx, bgd, others, openHash, error }: { ctx: Ctx; bgd: AoiS
               </span>
             </h1>
             <p className="lx-lede" data-intro>
-              NASA’s MODIS has watched for fires since 2002. The sharper VIIRS joined in 2012 — and the record jumped — most plausibly because the new camera sees smaller fires, not because more land burned. Parallax puts both on one fair scale, with honest error bars.
+              NASA’s MODIS has watched for fires since 2001 (Terra from 2001, Aqua from mid-2002). The sharper VIIRS joined in 2012 — and the record jumped — most plausibly because the new camera sees smaller fires, not because more land burned. Parallax puts both on one fair scale, with honest error bars.
             </p>
             <div className="lx-ctas" data-intro>
               <a ref={primary} className="lx-btn lx-btn--primary" href={openHash} onClick={(e) => onWorkspaceLink(e, openHash, 'Opening the fire calendar for Bangladesh')}>
                 Open the fire calendar <span className="lx-btn__arrow"><Icon3D icon={ArrowRight} tone="current" size={19} strokeWidth={2.4} /></span>
               </a>
               <button ref={secondary} className="lx-btn lx-btn--ghost" onClick={() => scrollToId('how', flags.reduced)}><Icon3D icon={Layers} tone="cyan" size={18} />How the two satellites line up</button>
+              {HAS_LIVE && <a className="lx-btn lx-btn--ghost" href="#/live"><Icon3D icon={Radio} tone="amber" size={18} />See today’s detections</a>}
             </div>
             <ul className="lx-sensors" data-intro aria-label="Series colours">
-              <li><i className="sw sw--aqua" />Aqua MODIS <span>1 km · since 2002</span></li>
-              <li><i className="sw sw--viirs" />S-NPP VIIRS <span>375 m · since 2012</span></li>
+              <li><i className="sw sw--aqua" />Older satellite (MODIS, 1 km) <span>since 2001</span></li>
+              <li><i className="sw sw--viirs" />Sharper satellite (VIIRS, 375 m) <span>since 2012</span></li>
               <li><i className="sw sw--est" />Estimate <span>on the sharper satellite’s scale</span></li>
             </ul>
           </div>
           <aside className="lx-hero__aside" data-intro aria-label="What the globe shows">
             {synthetic && <span className="lx-demo lx-demo--live"><Icon3D icon={TriangleAlert} tone="red" size={14} />DEMO DATA · synthetic fixture</span>}
-            <p className="lx-aside__t">{mode === 'fallback' ? 'Static globe (WebGL unavailable)' : 'Live from the snapshot'}</p>
+            <p className="lx-aside__t">{mode === 'fallback' ? 'Static globe (WebGL unavailable)' : 'From the data'}</p>
             <p className="lx-aside__v">{pointsInfo ?? (error ? (offline() ? 'Snapshot unavailable offline.' : 'Snapshot unavailable.') : ctx.homeFailed ? unavailableText('Hotspot cells') : 'Loading hotspot cells…')}</p>
             {core && <p className="lx-aside__s">{core.manifest.years.length} years · {core.regions.length} areas · {core.manifest.snapshot_id}</p>}
           </aside>
@@ -391,7 +395,7 @@ function Footer({ core, openHash }: { core: Core | null; openHash: string }) {
           <p>Pick a place. See its burning seasons over 20+ years on one fair scale. Tell real change apart from satellite change.</p>
           <a className="lx-btn lx-btn--primary lx-btn--sm" href={openHash} onClick={(e) => onWorkspaceLink(e, openHash)}>Open the fire calendar <span className="lx-btn__arrow"><Icon3D icon={ArrowRight} tone="current" size={16} /></span></a>
           <nav aria-label="Pages" className="lx-foot__small">
-            <a href="#/calendar">Calendar</a> · <a href="#/map">Map</a> · <a href="#/sensors">Two satellites</a> · <a href="#/method">How it works</a> · <a href="#/data">Data &amp; sources</a>
+            {HAS_LIVE && <><a href="#/live">Live</a> · </>}<a href="#/calendar">Calendar</a> · <a href="#/map">Map</a> · <a href="#/sensors">Two satellites</a> · <a href="#/method">How it works</a> · <a href="#/data">Data &amp; sources</a>
           </nav>
         </div>
         <div>

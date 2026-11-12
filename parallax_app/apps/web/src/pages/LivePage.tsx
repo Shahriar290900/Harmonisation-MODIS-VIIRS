@@ -6,7 +6,7 @@ import { Page, PageHead, NextSteps } from '../shell/PageParts';
 import { useSelection } from '../ui/bridge';
 import { SensorCaption, SensorControl, SensorFilters, lookForKey, type Look } from '../ui/SensorLook';
 import { LIVE_COLORS, LIVE_ICON, makeLiveImages } from '../ui/LiveLayer';
-import { BASEMAP_ATTRIBUTION, MAP_THEME, OFFLINE_NOTE, composeStyle, firstLabelLayer, isDarkTheme, loadBaseStyle, useDarkTheme, watchBasemapHealth, type Overlay } from '../ui/basemap';
+import { MAP_THEME, OFFLINE_NOTE, composeStyle, firstLabelLayer, isDarkTheme, loadBaseStyle, useDarkTheme, watchBasemapHealth, type Overlay } from '../ui/basemap';
 import { fetchSats, fetchWorld, liveKeyFor, WORLD_KEYS, WORLD_LABEL, type SatsFile, type WorldKey, type WorldSource } from '../data/live';
 import { fmtNum } from '../data/format';
 import { DAILY, GEO, GIBS_CREDIT, NIGHT, dailyDate, gibsUrl, useGibsTimes } from '../live/gibs';
@@ -80,7 +80,6 @@ export default function LivePage() {
     return () => { off = true; };
   }, []);
   const okSources = WORLD_KEYS.map((k) => sources[k]).filter((s) => s.state === 'ok');
-  const total = okSources.reduce((n, s) => n + s.count, 0);
   const loadingAny = WORLD_KEYS.some((k) => sources[k].state === 'loading');
   const strong = useMemo(() => (loadingAny ? [] : strongest(okSources)), [loadingAny, sources]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -149,7 +148,7 @@ export default function LivePage() {
         map.setPadding(viewPad());
         map.touchZoomRotate.disableRotation();
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-        map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: (baseStyle ? BASEMAP_ATTRIBUTION : 'Natural Earth') + ' · NASA FIRMS · CelesTrak' }));
+        map.addControl(new maplibregl.AttributionControl({ compact: true, customAttribution: (baseStyle ? '' : 'Natural Earth · ') + 'NASA FIRMS · CelesTrak' }));
         const prep = () => {
           const imgs = makeLiveImages();
           if (imgs && !map.hasImage(LIVE_ICON.modis)) { map.addImage(LIVE_ICON.modis, imgs.modis, { pixelRatio: 2 }); map.addImage(LIVE_ICON.viirs, imgs.viirs, { pixelRatio: 2 }); }
@@ -173,8 +172,8 @@ export default function LivePage() {
           if (key === tagKey.current) return; tagKey.current = key;
           const sensor = SENSOR_NAME[k] ?? (k === ('viirs' as string) ? 'VIIRS (NOAA-20 and NOAA-21)' : 'MODIS (Terra or Aqua)');
           setTag(n > 1
-            ? { x: e.point.x, y: e.point.y, head: `${fmtNum(n)} hot spots grouped here`, line: `${sensor}${frp != null ? `, strongest ${fmtNum(frp, 1)} MW` : ''}. Zoom in to see each one.` }
-            : { x: e.point.x, y: e.point.y, head: `Detected by ${sensor}`, line: `${p.d} ${p.t} UTC, ${p.dn === 1 || p.dn === '1' ? 'daytime' : 'night'}, heat output ${frp == null ? 'not given' : fmtNum(frp, 1) + ' MW'}` });
+            ? { x: e.point.x, y: e.point.y, head: `${fmtNum(n)} hot spots grouped here`, line: `${sensor}${frp != null ? `, strongest heat output ${fmtNum(frp, 1)} megawatts` : ''}. Zoom in to see each one.` }
+            : { x: e.point.x, y: e.point.y, head: `Detected by ${sensor}`, line: `${p.d} ${p.t} UTC, ${p.dn === 1 || p.dn === '1' ? 'daytime' : 'night'}, heat output ${frp == null ? 'not given' : fmtNum(frp, 1) + ' megawatts'}` });
         };
         for (const id of ['hs-modis', 'hs-viirs']) {
           map.on('mousemove', id, (e) => { map.getCanvas().style.cursor = 'pointer'; showTag(e); });
@@ -271,7 +270,7 @@ export default function LivePage() {
     const map = mapRef.current; if (!map) return;
     const put = () => {
       const pt = map.project([s.lon, s.lat]);
-      setTag({ x: pt.x, y: pt.y, head: `Detected by ${SENSOR_NAME[s.key]}`, line: `${s.date} ${s.hhmm} UTC, heat output ${fmtNum(s.frp, 1)} MW` });
+      setTag({ x: pt.x, y: pt.y, head: `Detected by ${SENSOR_NAME[s.key]}`, line: `${s.date} ${s.hhmm} UTC, heat output ${fmtNum(s.frp, 1)} megawatts` });
     };
     map.once('moveend', () => window.setTimeout(put, 160));
     if (reduced()) map.jumpTo({ center: [s.lon, s.lat], zoom: 7, padding: viewPad() }); else map.flyTo({ center: [s.lon, s.lat], zoom: 7, padding: viewPad(), duration: 1800, easing: easeInOut });
@@ -282,7 +281,20 @@ export default function LivePage() {
     const l = lookForKey(e.key); if (l) setLook(l);
   };
 
-  const hotLine = loadingAny ? (total ? 'so far, still loading' : 'loading') : okSources.length ? 'in the last 24 hours' : 'feed unavailable';
+  // Per satellite, never one sum. Missing is shown as a dash, "none" only when that feed answered with no detections.
+  const liveRows = (['modis', 'noaa20', 'noaa21'] as WorldKey[]).map((k) => {
+    const s = sources[k];
+    const name = k === 'modis' ? 'Older satellite' : k === 'noaa20' ? 'NOAA-20' : 'NOAA-21';
+    const text = s.state === 'ok' ? fmtNum(s.count) : s.state === 'loading' ? '...' : s.state === 'empty' ? 'none reported' : '— no data';
+    return { key: k, name, state: s.state, text };
+  });
+  const anyAnswer = WORLD_KEYS.some((k) => sources[k].state === 'ok' || sources[k].state === 'empty');
+  const hotLine = loadingAny ? 'Hot spots in the last 24 hours, still loading' : anyAnswer ? 'Hot spots in the last 24 hours' : 'Hot spots: feed unavailable right now';
+  const pictureState: 'loading' | 'ok' | 'partial' | 'unavailable' | 'off' =
+    imagery === 'none' ? 'off' : imagery === 'night' ? 'ok'
+    : gibs === null ? 'loading'
+    : imagery === 'goes_east' || imagery === 'goes_west' ? (gibs.geo[imagery]?.time ? 'ok' : 'unavailable')
+    : gibs.state === 'unavailable' ? 'partial' : 'ok';
   return (
     <Page route="live" className="live-page">
       <PageHead title="Live" lead="See where satellites saw fire-like heat in the last 24 hours, the latest satellite pictures of Earth, and where the satellites are right now." />
@@ -303,20 +315,22 @@ export default function LivePage() {
               <i className="lv-br lv-br--tl" /><i className="lv-br lv-br--tr" /><i className="lv-br lv-br--bl" /><i className="lv-br lv-br--br" />
               <div className="lv-hud__tl"><b>PARALLAX FIRE · LIVE</b><span id="lv-clock">--:--:-- UTC</span></div>
               <div className="lv-hud__count">
-                <span className="lv-hud__num" data-live-count>{total ? fmtNum(total) : loadingAny ? '...' : 'none'}</span>
-                <span className="lv-hud__lab">hot spots {hotLine}</span>
+                <span className="lv-hud__num" data-live-count>
+                  {liveRows.map((r) => <span key={r.key} className="lv-hud__row" data-state={r.state}><b>{r.name}</b> {r.text}</span>)}
+                </span>
+                <span className="lv-hud__lab">{hotLine}. The same fire can be seen by several satellites and on several passes, so these numbers are not added up.</span>
               </div>
               <div className="lv-hud__bl"><span id="lv-cursor">Move over the map</span></div>
               <div className="lv-hud__badges" role="status">
                 <span className="lv-badge" data-state={!hotOn ? 'off' : loadingAny ? 'loading' : okSources.length ? 'ok' : 'unavailable'}>Hot spots</span>
                 <span className="lv-badge" data-state={!satsOn ? 'off' : satsState}>Satellites</span>
-                <span className="lv-badge" data-state={imagery === 'none' ? 'off' : 'ok'}>Picture</span>
+                <span className="lv-badge" data-state={pictureState}>Picture</span>
               </div>
               {offline && <p className="lv-hud__offline" role="status">{OFFLINE_NOTE}</p>}
             </div>
           )}
           {tag && !failed && (
-            <div className="live__tag lv-tag" style={{ left: tag.x, top: tag.y }} role="status">
+            <div className="live__tag lv-tag" style={{ left: tag.x, top: tag.y }} aria-hidden="true">
               <i className="live__tag-c live__tag-c--tl" /><i className="live__tag-c live__tag-c--tr" /><i className="live__tag-c live__tag-c--bl" /><i className="live__tag-c live__tag-c--br" />
               <b>{tag.head}</b><br />{tag.line}
             </div>
@@ -324,11 +338,11 @@ export default function LivePage() {
           <LayerPanel
             open={panelOpen} onOpen={setPanelOpen} hotOn={hotOn} onHot={setHotOn} sources={sources} fetchedUtc={fetchedUtc} strong={strong} onStrong={showStrong}
             imagery={imagery} onImagery={setImagery} gibs={gibs} satsOn={satsOn} onSats={setSatsOn} sats={sats} satsState={satsState} satsFetched={satFile?.fetched_utc ?? null}
-            satRef={satRef} passes={passes} placeLabel={place.id === 'world' ? 'a place' : place.label}
+            pictureState={pictureState} satRef={satRef} passes={passes} placeLabel={place.id === 'world' ? 'a place' : place.label}
           />
         </div>
       </section>
-      <p className="page__note small muted">Hot spots come from NASA FIRMS (near-real-time, may be revised). We acknowledge the use of data and/or imagery from NASA's Fire Information for Resource Management System (FIRMS), part of NASA's Earth Observing System Data and Information System (EOSDIS). Orbit records: CelesTrak. Satellite pictures: NASA GIBS. Map: OpenFreeMap, OpenMapTiles, OpenStreetMap. The looks 1 to 4 only change how the map is drawn.</p>
+      <p className="page__note small muted">Hot spots come from NASA FIRMS (near-real-time, may be revised). We acknowledge the use of data and/or imagery from NASA's Fire Information for Resource Management System (FIRMS), part of NASA's Earth Observing System Data and Information System (EOSDIS). Orbit records: CelesTrak. Satellite pictures: NASA GIBS. Map: OpenFreeMap, OpenMapTiles, OpenStreetMap. The map looks (heat view, night vision, old TV) only change how the map is drawn, never the data.</p>
       <NextSteps to={['map', 'calendar', 'method']} />
     </Page>
   );

@@ -12,7 +12,7 @@ export interface ExplainContext {
 }
 
 export const SPLIT_MEANING: Record<string, string> = {
-  train: 'This year was used to fit the harmonization model (training period 2013–2020), so the estimate is not an independent test here.',
+  train: 'This year was one of the years the estimate learned from (2013–2020), so it cannot be used to check the estimate.',
   val: 'This year was in the validation period (2021–2022), used only to choose the model and its interval.',
   test: 'This year is in the held-out test period (2023–2024), opened once at the end to measure accuracy.',
   backcast: 'This is a backcast: VIIRS did not exist yet, so the value is estimated from Aqua MODIS and mapped to the VIIRS S-NPP scale.',
@@ -34,10 +34,10 @@ export function splitMeaning(rec: Pick<ActivityRecord, 'split' | 'raw_viirs_refe
 
 export const STATE_MEANING: Record<string, string> = {
   observed: 'Observed: S-NPP VIIRS detections were recorded for the full month.',
-  estimated: 'Estimated: no complete VIIRS observation, so the harmonized estimate from Aqua MODIS is shown.',
+  estimated: 'Estimated: no complete VIIRS observation, so the estimate built from the older satellite (Aqua MODIS) is shown.',
   partial: 'Partial: at least one source file covers only part of this month, so counts may be incomplete.',
   missing: 'Missing: no usable source data. This is shown as missing, not as zero.',
-  unsupported: 'Unsupported: no harmonized estimate is possible for this month (e.g. 2001–2002, before a full Aqua MODIS year).'
+  unsupported: 'Unsupported: no estimate is possible for this month (e.g. 2001–2002, before a full Aqua MODIS year).'
 };
 
 /** Pull "Platform status: note" fragments out of the record's reason string (written by Notebook B). */
@@ -88,7 +88,7 @@ export function explainMonth(rec: ActivityRecord | null | undefined, ctx: Explai
 
   // Estimate
   if (isNum(est)) {
-    let t = `The harmonized estimate is ${fmtNum(est, 1)} VIIRS-equivalent detections`;
+    let t = `The estimate is ${fmtNum(est, 1)} detections on the sharper satellite's (VIIRS) scale`;
     if (isNum(lo) && isNum(hi)) {
       t += ` (${isNum(rec.interval_nominal_level) ? fmtPct(rec.interval_nominal_level) + ' ' : ''}interval ${fmtNum(lo, 1)}–${fmtNum(hi, 1)}`;
       if (isNum(rec.interval_empirical_holdout_coverage)) t += `; empirical holdout coverage ${fmtPct(rec.interval_empirical_holdout_coverage)} for test years in ${ctx.aoiName ?? 'this region'}`;

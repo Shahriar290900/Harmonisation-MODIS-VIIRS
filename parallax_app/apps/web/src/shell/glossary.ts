@@ -39,4 +39,4 @@ export const STAGE_PLAIN: Record<StageKey, { label: string; short: string; tone:
   validated_calibration: { label: 'Checked on unseen years', short: 'Checked', tone: 'val', text: 'On years it never saw, the estimate beat both simple baselines and its likely range (8 in 10) was about right.' }
 };
 
-export const SPLIT_PLAIN: Record<string, string> = { train: 'learned from', val: 'chosen on', test: 'checked on', backcast: 'estimated past', none: 'not used' };
+export const SPLIT_PLAIN: Record<string, string> = { train: 'Year used to learn', val: 'Year used to choose', test: 'Year used to check', backcast: 'Estimated past', none: 'not used' };

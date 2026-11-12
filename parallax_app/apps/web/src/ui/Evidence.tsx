@@ -137,7 +137,7 @@ export function Evidence({ record: r, state: st, yearError, offline, onRetry, se
               <Group title="Notes for the United States" wide>
                 <ul className="prov">
                   <li>Includes Alaska and Hawaii.</li>
-                  <li>Leaves out prescribed, agricultural and other non-wildfire burning (FIRMS types 1, 2 and 3).</li>
+                  <li>Leaves out fixed heat sources such as volcanoes, industry and offshore flares (FIRMS types 1, 2 and 3). Crop and prescribed burning cannot be told apart from other vegetation fires and are included.</li>
                   <li>The 5 km square grid is not measured at the whole-country scale.</li>
                   {region.aoi_id === 'USA-CA' && <li>California uses the national ratios for its estimate.</li>}
                 </ul>

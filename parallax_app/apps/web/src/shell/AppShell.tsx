@@ -40,7 +40,7 @@ export function AppShell({ route, liveAvailable, children }: { route: Route; liv
               <button className="linkish" onClick={() => setAbout(true)}>Details</button>
             </div>
           )}
-          <TopBar regions={core.regions} aoiId={sel.aoiId} manifest={m} onAbout={() => setAbout(true)} onTour={() => setTourToken((n) => n + 1)} compact={phone}
+          <TopBar regions={core.regions} aoiId={sel.aoiId} showStage={route !== 'live' && route !== 'data' && route !== 'home'} manifest={m} onAbout={() => setAbout(true)} onTour={() => setTourToken((n) => n + 1)} compact={phone}
             status={wide ? <StatusLine createdUtc={m.created_utc} snapshotId={m.snapshot_id} offlineReady={pwa.offlineReady} /> : null} />
         </div>
         <Nav route={route} liveAvailable={liveAvailable} />

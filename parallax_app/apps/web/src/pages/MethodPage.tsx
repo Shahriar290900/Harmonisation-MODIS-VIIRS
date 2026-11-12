@@ -36,7 +36,7 @@ export default function MethodPage() {
       <section className="panel prose">
         <h2 className="panel__title">The idea in seven steps</h2>
         <ol className="steps">
-          <li><b>Count the hot pixels.</b> NASA satellites spot pixels that are hotter than their surroundings. For each place and month we count them. The older satellite (<Term k="modis">MODIS</Term>) has done this since 2002 and the sharper one (<Term k="viirs">VIIRS</Term>) since 2012.</li>
+          <li><b>Count the hot pixels.</b> NASA satellites spot pixels that are hotter than their surroundings. For each place and month we count them. The older satellite (<Term k="modis">MODIS</Term>) has done this since 2001 in this data (Terra from 2001, Aqua from mid-2002) and the sharper one (<Term k="viirs">VIIRS</Term>) since 2012.</li>
           <li><b>Notice the jump.</b> The sharper satellite sees smaller fires, so when it joins in 2012 the counts leap up, even if no more land burned.</li>
           <li><b>Learn the translation.</b> {learn ? <>In the years {learn}</> : <>In the years</>} both satellites were flying. We study how many detections the sharper one made whenever the older one saw a certain number. These are the <Term k="learn">years used to learn</Term>.</li>
           <li><b>Try several methods and pick one.</b> We tried a simple ratio, a statistical model, a tree model and a neural net. {choose ? <>Each was compared on {choose}</> : <>Each was compared</>}, years held back for this (<Term k="choose">years used to choose</Term>). The winner is the <b>{selectedPlain.toLowerCase()}</b>.</li>

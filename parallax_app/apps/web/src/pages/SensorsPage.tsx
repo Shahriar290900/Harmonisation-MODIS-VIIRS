@@ -9,11 +9,11 @@ import type { SeriesKey } from '../types';
 import { SERIES_COLORS } from '../types';
 
 const LINES: { key: SeriesKey; name: string; what: string }[] = [
-  { key: 'aqua', name: 'Older satellite (MODIS)', what: 'What the older satellite counted, since 2002. Its squares are about 1 km wide, so it misses small fires.' },
+  { key: 'aqua', name: 'Older satellite (MODIS)', what: 'What the older satellite counted (Terra from 2001, Aqua from mid-2002). Its squares are about 1 km wide, so it misses small fires.' },
   { key: 'viirs', name: 'Sharper satellite (VIIRS)', what: 'What the sharper satellite counted, since 2012. Its squares are about 375 m wide, so it notices smaller fires.' },
   { key: 'estimate', name: 'Estimate (dashed)', what: 'What the sharper satellite would probably have counted. Worked out from the older one, with a shaded likely range (8 in 10). An estimate, never a measurement.' },
   { key: 'terra', name: 'Terra (older satellite, second unit)', what: 'A second copy of the older satellite, shown on its own and never mixed into the estimate.' },
-  { key: 'static', name: 'Static sources', what: 'Heat that does not move, such as industry or kilns. Counted separately.' }
+  { key: 'static', name: 'Fixed heat sources', what: 'Heat that does not move, such as industry or kilns. Counted separately.' }
 ];
 
 export default function SensorsPage() {
@@ -53,8 +53,8 @@ export default function SensorsPage() {
         </section>
       </div>
       <section className="panel">
-        <h2 className="panel__title">Log or linear scale</h2>
-        <p>The chart is on a <b>{scale === 'log' ? 'log' : 'linear'}</b> scale. A log scale gives each doubling the same height, so small months and huge months are both readable. A linear scale is honest about size, but busy months can hide quiet ones. Use the switch on the chart to change it.</p>
+        <h2 className="panel__title">Squeezed or even scale</h2>
+        <p>The chart is on the <b>{scale === 'log' ? 'squeezed' : 'even'}</b> scale. <b>Squeezed</b> gives every tripling the same height, so quiet months and huge months can be read together, and zero stays at the bottom. <b>Even</b> gives equal steps equal counts, which is honest about size but makes quiet months look tiny. Use the switch above the chart to change it.</p>
       </section>
       <section className="panel">
         <details className="details">

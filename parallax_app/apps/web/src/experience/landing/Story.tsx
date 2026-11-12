@@ -6,7 +6,7 @@ import { textOn, valueColor } from '../../ui/scale';
 import { Glyph } from '../../ui/Glyph';
 import { CircleCheck, CircleX, FlaskConical, Info } from 'lucide-react';
 import { Icon3D } from '../../ui/icons/Icon3D';
-import { annualMeans, countWord, unavailableText, useNear, type AoiSeries } from './data';
+import { annualMeans, api, countWord, unavailableText, useNear, type AoiSeries } from './data';
 import { mountFallbackPixels } from './fallbacks';
 import { gsap, Reveal } from './motion';
 import type { Ctx } from './Landing';
@@ -46,10 +46,27 @@ function Progress({ step, n }: { step: number; n: number }) {
   return <div className="lx-prog" aria-hidden="true">{Array.from({ length: n }, (_, i) => <i key={i} className={i <= step ? 'is-on' : ''} />)}</div>;
 }
 
-const CAMERAS = [
+/** The real learn / choose / check / estimated-past year ranges, read from the snapshot's metrics.json (null while unknown). */
+interface SplitYears { learn: string | null; past: string | null }
+const spanOf = (a: unknown): string | null => (Array.isArray(a) && a.length && a.every((x) => typeof x === 'number') ? (a[0] === a[a.length - 1] ? `${a[0]}` : `${a[0]}\u2013${a[a.length - 1]}`) : null);
+function useSplitYears(snapshotId: string | undefined): SplitYears {
+  const [s, setS] = useState<SplitYears>({ learn: null, past: null });
+  useEffect(() => {
+    if (!snapshotId) return;
+    let alive = true;
+    api.loadMetrics(snapshotId).then((m) => {
+      const sp = (m as { split_manifest?: { train_years?: unknown; backcast_years?: unknown } } | null)?.split_manifest;
+      if (alive) setS({ learn: spanOf(sp?.train_years), past: spanOf(sp?.backcast_years) });
+    }).catch(() => { /* years simply stay unstated */ });
+    return () => { alive = false; };
+  }, [snapshotId]);
+  return s;
+}
+
+const cameras = (sy: SplitYears) => [
   { k: 'MODIS · 1 km', h: 'One camera sees in big squares.', p: 'Aqua MODIS reads the ground in pixels about 1 km wide (try the MODIS look). A small fire inside a big pixel often stays below the detection threshold — so it is never counted.' },
   { k: 'VIIRS · 375 m', h: 'The other sees in small ones.', p: 'S-NPP VIIRS pixels are about 375 m — seven times less area each. Small fires light up, so VIIRS typically records several times more hotspots over the same land.' },
-  { k: 'One fair scale', h: 'We translate one into the other.', p: 'From 2012 to 2024 both flew together. We learn “when the older satellite saw X here, the sharper one saw Y”, check it on years and places it never saw, then turn the 2003–2011 counts into estimates on the sharper satellite’s scale, each with a likely range (8 in 10).' }
+  { k: 'One fair scale', h: 'We translate one into the other.', p: `Both flew together from 2012. We learn “when the older satellite saw X here, the sharper one saw Y”${sy.learn ? ` from the years ${sy.learn}` : ''}, check it on years and places it never saw, then turn the older counts${sy.past ? ` of ${sy.past}` : ''} into estimates on the sharper satellite’s scale, each with a likely range (8 in 10).` }
 ];
 
 /** (b) Two cameras: 3-D pixel compare (or a 2-D canvas), scrubbed 0→1. */
@@ -60,6 +77,7 @@ export function TwoCameras({ ctx }: { ctx: Ctx }) {
   const handle = useRef<PixelCompareHandle | null>(null);
   const near = useNear(ref, '600px');
   const [step, setStep] = useStep(3);
+  const splitYears = useSplitYears(ctx.core?.snapshotId);
   // Sensor look: pin the illustration to the MODIS or VIIRS view; pressing the active one hands control back to scroll.
   const [look, setLook] = useState<'scroll' | 'modis' | 'viirs'>('scroll');
   const lookRef = useRef(look);
@@ -98,7 +116,7 @@ export function TwoCameras({ ctx }: { ctx: Ctx }) {
         <div className="lx-scrolly__text">
           <p className="lx-eyebrow"><span className="lx-chap">01</span>How the two satellites line up</p>
           <h2 id="lx-cam-h" className="lx-h2">Two cameras, <span className="lx-grad">one Earth.</span></h2>
-          <Steps items={CAMERAS} step={step} reduced={flags.reduced} />
+          <Steps items={cameras(splitYears)} step={step} reduced={flags.reduced} />
           {!flags.reduced && <Progress step={step} n={3} />}
         </div>
         {flags.reduced ? (
@@ -109,7 +127,7 @@ export function TwoCameras({ ctx }: { ctx: Ctx }) {
             <div className="lx-cam__legend" aria-hidden="true">
               <span className={step === 0 ? 'is-on' : ''}><i className="sw sw--aqua" />MODIS 1 km</span>
               <span className={step === 1 ? 'is-on' : ''}><i className="sw sw--viirs" />VIIRS 375 m</span>
-              <span className={step === 2 ? 'is-on' : ''}><i className="sw sw--est" />Harmonized</span>
+              <span className={step === 2 ? 'is-on' : ''}><i className="sw sw--est" />One scale</span>
             </div>
             <div className="lx-cam__look" role="group" aria-label="Sensor look">
               {(['modis', 'viirs'] as const).map((k) => (
@@ -143,7 +161,7 @@ function StaticPixels() {
   }, [near]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div ref={box} className="lx-cam__static">
-      {['MODIS 1 km', 'VIIRS 375 m', 'Harmonized'].map((t, i) => (
+      {['MODIS 1 km', 'VIIRS 375 m', 'One scale'].map((t, i) => (
         <figure key={t}><div ref={refs[i]} className="lx-cam__host" aria-hidden="true" /><figcaption>{t}</figcaption></figure>
       ))}
       <IllustrativeNote />
@@ -224,7 +242,7 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
   const items = [
     { k: '01 · MODIS alone', h: 'A record since 2003.', p: `Aqua MODIS, month by month, averaged per year for ${home}. One camera, one scale.` },
     { k: '02 · Splice in VIIRS', h: `In 2012 the record leaps ${r}.`, p: 'Join the sharper VIIRS onto the end and the chart jumps. The jump lines up with the instrument change — not necessarily with more fire on the ground.' },
-    { k: '03 · Harmonized', h: 'Now the years are comparable.', p: 'The older years translated to the sharper satellite’s scale (dashed), with the likely range (8 in 10). 2005 and 2020 finally sit on the same axis.' }
+    { k: '03 · One scale', h: 'Now the years are comparable.', p: 'The older years translated to the sharper satellite’s scale (dashed), with the likely range (8 in 10). 2005 and 2020 finally sit on the same axis.' }
   ];
   const full = flags.reduced;
 
@@ -319,8 +337,9 @@ export function FairScale({ ctx }: { ctx: Ctx }) {
     }, ref);
     return () => c.revert();
   }, [flags.reduced]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sy = useSplitYears(ctx.core?.snapshotId);
   const items = [
-    { k: '01 · Overlap only', h: 'Learn from years both cameras flew.', p: 'The translation “MODIS saw X, VIIRS saw Y” is learned only from the years when both satellites were in orbit, 2012 onward.' },
+    { k: '01 · Overlap only', h: 'Learn from years both cameras flew.', p: `The translation “MODIS saw X, VIIRS saw Y” is learned only from years when both satellites were in orbit${sy.learn ? ` (${sy.learn})` : ''}, never from the years it is later checked on.` },
     { k: '02 · Shown separately', h: 'An estimate is never passed off as an observation.', p: 'Years before VIIRS get a VIIRS-scale estimate from MODIS. It is drawn dashed, in its own colour, apart from observed counts.' },
     { k: '03 · With a band', h: 'Every estimate carries a likely range.', p: 'The band says how far off the estimate may be. It is checked on years and places the model never saw, and its coverage is reported, not assumed.' }
   ];
@@ -331,7 +350,7 @@ export function FairScale({ ctx }: { ctx: Ctx }) {
     <section id="fair" ref={ref} className={'lx-scrolly lx-fair' + (flags.reduced ? ' is-static' : '')} aria-labelledby="lx-fair-h">
       <div className="lx-scrolly__sticky">
         <div className="lx-scrolly__text">
-          <p className="lx-eyebrow"><span className="lx-chap">03</span>Harmonization</p>
+          <p className="lx-eyebrow"><span className="lx-chap">03</span>Putting both on one scale</p>
           <h2 id="lx-fair-h" className="lx-h2">One <span className="lx-grad">fair scale.</span></h2>
           <Steps items={items} step={step} reduced={flags.reduced} />
           {!flags.reduced && <Progress step={step} n={3} />}
@@ -463,9 +482,9 @@ export function Honesty({ ctx }: { ctx: Ctx }) {
           <h3><span className="lx-honest__ico"><Icon3D icon={CircleX} tone="red" size={22} /></span>We can’t claim</h3>
           <ul>
             <li><b>The small fires MODIS missed.</b> We estimate counts, not individual fires.</li>
-            <li><b>Anything under cloud.</b> FIRMS gives no cloud-free denominator, so coverage stays “unknown”.</li>
-            <li><b>Wildfire incidents.</b> A hotspot is a hot pixel; a kiln or flare can be one too (shown separately).</li>
-            <li><b>Any quantum or “AI accuracy” advantage.</b> Simulated QML is a labelled research panel, not the estimator.</li>
+            <li><b>Anything under cloud.</b> The data does not say how much of the month was hidden by cloud.</li>
+            <li><b>Wildfire incidents.</b> A hotspot is a hot pixel; a kiln or flare can be one too (fixed heat sources are counted separately).</li>
+            <li><b>Any quantum or “AI accuracy” advantage.</b> Our estimate comes from a trained method, and how well it holds up is measured, not claimed.</li>
           </ul>
         </div>
         <div className="lx-honest__card lx-honest__card--stage">
@@ -482,7 +501,7 @@ export function Honesty({ ctx }: { ctx: Ctx }) {
           <h3><span className="lx-honest__ico"><Icon3D icon={Info} tone="cyan" size={22} /></span>United States caveats</h3>
           <ul>
             <li><b>Alaska and Hawaii included.</b> The US national boundary includes these states.</li>
-            <li><b>Non-wildfire burning excluded.</b> FIRMS types 1, 2, and 3 (prescribed, agricultural) are excluded from the main count.</li>
+            <li><b>Planned burns are included.</b> Crop and prescribed burning cannot be told apart from other vegetation fires in this data, so they are counted. Fixed heat sources such as industry are counted separately.</li>
             <li><b>Grid scale limits.</b> The 5 km grid is unmeasured at the USA scale.</li>
             <li><b>California.</b> California uses the national ratios for its estimate.</li>
           </ul>

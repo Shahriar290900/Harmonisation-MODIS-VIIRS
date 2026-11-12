@@ -7,6 +7,8 @@ import { SAT_COLORS, type Sat } from './orbits';
 import type { Strongest } from './world';
 
 export type ImageryMode = 'none' | DailyKey | 'goes_east' | 'goes_west' | 'night';
+const DAILY_NAME: Record<DailyKey, string> = { terra: 'Older satellite, morning pass (Terra)', aqua: 'Older satellite, afternoon pass (Aqua)', noaa20: 'Sharper satellite (NOAA-20)', noaa21: 'Sharper satellite (NOAA-21)' };
+const SENSOR_PLAIN: Record<WorldKey, string> = { modis: 'Older satellite (MODIS: Terra and Aqua)', noaa20: 'Sharper satellite (VIIRS: NOAA-20)', noaa21: 'Sharper satellite (VIIRS: NOAA-21)', snpp: 'Sharper satellite (VIIRS: Suomi NPP)' };
 const utcShort = (iso: string | null) => (iso ? iso.slice(0, 16).replace('T', ' ') + ' UTC' : 'unknown');
 const hh = (ms: number) => new Date(ms).toISOString().slice(11, 16) + ' UTC';
 
@@ -20,7 +22,7 @@ interface Props {
   hotOn: boolean; onHot: (v: boolean) => void; sources: Record<WorldKey, WorldSource>; fetchedUtc: string | null; strong: Strongest[]; onStrong: (s: Strongest) => void;
   imagery: ImageryMode; onImagery: (m: ImageryMode) => void; gibs: GibsTimes | null;
   satsOn: boolean; onSats: (v: boolean) => void; sats: Sat[] | null; satsState: 'loading' | 'ok' | 'unavailable'; satsFetched: string | null;
-  satRef: (key: string, el: HTMLElement | null) => void; passes: { key: string; text: string }[]; placeLabel: string;
+  pictureState: 'loading' | 'ok' | 'partial' | 'unavailable' | 'off'; satRef: (key: string, el: HTMLElement | null) => void; passes: { key: string; text: string }[]; placeLabel: string;
 }
 
 function Badge({ state }: { state: 'loading' | 'ok' | 'partial' | 'unavailable' | 'off' }) {
@@ -35,10 +37,10 @@ export function LayerPanel(p: Props) {
   const goesAge = (k: 'goes_east' | 'goes_west') => minutesOld(p.gibs?.geo[k]?.time ?? null);
   const imageryRows: { m: ImageryMode; label: string; sub: string }[] = [
     { m: 'none', label: 'No picture', sub: 'Just the map' },
-    ...(Object.keys(DAILY) as DailyKey[]).map((k) => ({ m: k as ImageryMode, label: `${DAILY[k].label}, yesterday`, sub: `True colour, ${dailyDate(p.gibs, k)} (UTC day)` })),
+    ...(Object.keys(DAILY) as DailyKey[]).map((k) => ({ m: k as ImageryMode, label: `${DAILY_NAME[k]}, yesterday`, sub: `Natural colours, day of ${dailyDate(p.gibs, k)} (UTC)` })),
     ...(['goes_east', 'goes_west'] as const).map((k) => {
       const t = p.gibs?.geo[k]?.time ?? null, age = goesAge(k);
-      return { m: k as ImageryMode, label: `${GEO[k].label}, latest`, sub: p.gibs === null ? 'Checking the latest time...' : t ? `Americas, updated every 10 minutes, about ${age ?? '?'} minutes old (${utcShort(t)})` : 'Latest time could not be checked' };
+      return { m: k as ImageryMode, label: `Americas from above (${GEO[k].label}), newest picture`, sub: p.gibs === null ? (p.imagery === 'goes_east' || p.imagery === 'goes_west' ? 'Checking the newest picture time...' : 'Not checked yet: choose it to see its time') : t ? `A new picture about every 10 minutes. This one is about ${age ?? '?'} minutes old (${utcShort(t)})` : 'The newest picture time could not be checked' };
     }),
     { m: 'night', label: 'Night lights', sub: `A fixed picture from ${NIGHT.date.slice(0, 4)}, not live` }
   ];
@@ -53,7 +55,7 @@ export function LayerPanel(p: Props) {
           <ul className="lv-list">
             {list.map((s) => (
               <li key={s.key}>
-                <b>{WORLD_LABEL[s.key]}</b>
+                <b>{SENSOR_PLAIN[s.key]}</b>
                 <span data-state={s.state}>
                   {s.state === 'loading' ? 'loading...' : s.state === 'ok' ? `${fmtNum(s.count)} hot spots${s.newest_utc ? `, newest ${utcShort(s.newest_utc)}` : ''}` : s.state === 'empty' ? 'no detections in this feed right now' : `not available (${s.error ?? 'feed problem'})`}
                 </span>
@@ -61,17 +63,17 @@ export function LayerPanel(p: Props) {
             ))}
           </ul>
           <ul className="lv-legend" aria-label="Legend">
-            <li><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden><circle cx="7" cy="7" r="5.5" fill={LIVE_COLORS.modis} stroke="currentColor" /></svg> Circle: MODIS, older satellite (1 km)</li>
-            <li><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden><path d="M7 1 13 7 7 13 1 7Z" fill={LIVE_COLORS.viirs} stroke="currentColor" /></svg> Diamond: VIIRS, sharper satellite (375 m)</li>
+            <li><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden><circle cx="7" cy="7" r="5.5" fill={LIVE_COLORS.modis} stroke="currentColor" /></svg> Circle: older satellite (MODIS, 1 km)</li>
+            <li><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden><path d="M7 1 13 7 7 13 1 7Z" fill={LIVE_COLORS.viirs} stroke="currentColor" /></svg> Diamond: sharper satellite (VIIRS, 375 m)</li>
             <li>Bigger symbol: more hot spots grouped there. Zoom in to see single ones.</li>
           </ul>
           <p className="lv-note">A hot spot is not a confirmed wildfire: it is a place a satellite saw as unusually hot. Near-real-time, may be revised.</p>
           {p.strong.length > 0 && (
             <>
-              <h3 className="lv-h3">Strongest heat in the last 24 hours</h3>
+              <h3 className="lv-h3">Strongest heat output in the last 24 hours</h3>
               <ul className="lv-strong">
                 {p.strong.map((s, i) => (
-                  <li key={i}><button type="button" onClick={() => p.onStrong(s)}>{fmtNum(s.frp, 0)} MW at {Math.abs(s.lat).toFixed(1)}°{s.lat >= 0 ? 'N' : 'S'} {Math.abs(s.lon).toFixed(1)}°{s.lon >= 0 ? 'E' : 'W'}<small>{WORLD_LABEL[s.key]}, {s.hhmm} UTC</small></button></li>
+                  <li key={i}><button type="button" onClick={() => p.onStrong(s)}>{fmtNum(s.frp, 0)} megawatts at {Math.abs(s.lat).toFixed(1)}°{s.lat >= 0 ? 'N' : 'S'} {Math.abs(s.lon).toFixed(1)}°{s.lon >= 0 ? 'E' : 'W'}<small>{SENSOR_PLAIN[s.key]}, {s.date} {s.hhmm} UTC</small></button></li>
                 ))}
               </ul>
             </>
@@ -79,7 +81,7 @@ export function LayerPanel(p: Props) {
         </section>
 
         <section className="lv-layer" aria-labelledby="lv-h-img">
-          <header><h2 id="lv-h-img"><Globe2 size={15} aria-hidden /> Satellite pictures</h2><Badge state={p.imagery === 'none' ? 'off' : p.gibs === null && p.imagery !== 'night' ? 'loading' : p.gibs?.state === 'unavailable' && p.imagery !== 'night' ? 'partial' : 'ok'} /></header>
+          <header><h2 id="lv-h-img"><Globe2 size={15} aria-hidden /> Satellite pictures</h2><Badge state={p.pictureState} /></header>
           <p className="lv-src">Source: NASA GIBS. {p.gibs?.state === 'unavailable' ? 'The latest-time check is not reachable, so daily pictures use yesterday and the geostationary view has no time.' : null}</p>
           <div className="lv-radios" role="radiogroup" aria-label="Satellite picture">
             {imageryRows.map((r) => (
@@ -109,7 +111,7 @@ export function LayerPanel(p: Props) {
             </ul>
           )}
           <h3 className="lv-h3">Next pass over {p.placeLabel}</h3>
-          {p.passes.length ? <ul className="lv-pass">{p.passes.map((x) => <li key={x.key}>{x.text}</li>)}</ul> : <p className="lv-note">Choose Bangladesh, California or New South Wales above to see when each satellite next passes over.</p>}
+          {p.passes.length ? <ul className="lv-pass">{p.passes.map((x) => <li key={x.key}>{x.text}</li>)}</ul> : p.satsState === 'unavailable' ? <p className="lv-note">Pass times need the orbit records, which could not be loaded.</p> : p.satsState === 'loading' ? <p className="lv-note">Loading the orbit records...</p> : <p className="lv-note">Choose Bangladesh, California or New South Wales above to see when each satellite next passes over.</p>}
           <p className="lv-note">A pass is counted when the place is inside the strip the satellite's camera can see.</p>
         </section>
 

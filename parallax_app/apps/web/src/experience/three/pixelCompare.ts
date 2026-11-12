@@ -394,7 +394,7 @@ export function mountPixelCompare(host: HTMLElement, opts: PixelCompareOptions):
     mesh.renderOrder = 5;
     mesh.frustumCulled = false;
     root.add(mesh);
-    const lab = makeLabel(['MODIS', 'VIIRS', 'Harmonized'][i], ['raw', 'raw', 'MODIS → VIIRS scale'][i], ['#22D3EE', '#A78BFA', '#2DD4BF'][i], true);
+    const lab = makeLabel(['MODIS', 'VIIRS', 'One scale'][i], ['raw', 'raw', 'MODIS → VIIRS scale'][i], ['#22D3EE', '#A78BFA', '#2DD4BF'][i], true);
     lab.position.copy(mesh.position).add(new THREE.Vector3(0.3, -0.35, 0.3));
     spriteList.push({ s: lab, w: lab.scale.x, h: lab.scale.y });
     lab.center.set(0, 1);

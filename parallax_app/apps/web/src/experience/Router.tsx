@@ -19,6 +19,8 @@ export function routeOf(hash: string, current?: Route): Route {
   return r;
 }
 
+const TITLES: Partial<Record<Route, string>> = { calendar: 'Burning calendar', map: 'Map', sensors: 'Two satellites', method: 'How it works', data: 'Data & sources', live: 'Live' };
+
 let attached = false;
 function ensureStore() { if (attached) return; attached = true; selectionStore.attach(); }
 
@@ -33,7 +35,7 @@ export function Router() {
   useEffect(() => {
     document.documentElement.dataset.route = route;
     if (route !== 'home') window.scrollTo(0, 0);
-    document.title = route === 'home' ? 'Parallax Fire — two satellites, one honest fire record' : 'Parallax Fire';
+    document.title = route === 'home' ? 'Parallax Fire — two satellites, one honest fire record' : `${TITLES[route] ?? 'Parallax Fire'} · Parallax Fire`;
   }, [route]);
   if (route === 'home') return <HomePage />;
   return <App route={route} />;

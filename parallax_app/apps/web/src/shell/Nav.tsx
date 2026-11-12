@@ -3,15 +3,15 @@ import { BookOpen, CalendarDays, Database, House, Map as MapIcon, MoreHorizontal
 import { routeHash, type Route } from '../state/store';
 import { useSelection } from '../ui/bridge';
 
-interface Item { route: Route; label: string; icon: LucideIcon; phone: boolean }
+interface Item { route: Route; label: string; icon: LucideIcon }
 const ITEMS: Item[] = [
-  { route: 'home', label: 'Home', icon: House, phone: false },
-  { route: 'live', label: 'Live', icon: Radio, phone: false },
-  { route: 'calendar', label: 'Calendar', icon: CalendarDays, phone: true },
-  { route: 'map', label: 'Map', icon: MapIcon, phone: true },
-  { route: 'sensors', label: 'Two satellites', icon: Satellite, phone: true },
-  { route: 'method', label: 'How it works', icon: BookOpen, phone: true },
-  { route: 'data', label: 'Data & sources', icon: Database, phone: false }
+  { route: 'home', label: 'Home', icon: House },
+  { route: 'calendar', label: 'Calendar', icon: CalendarDays },
+  { route: 'map', label: 'Map', icon: MapIcon },
+  { route: 'sensors', label: 'Two satellites', icon: Satellite },
+  { route: 'live', label: 'Live', icon: Radio },
+  { route: 'method', label: 'How it works', icon: BookOpen },
+  { route: 'data', label: 'Data & sources', icon: Database }
 ];
 
 /**
@@ -28,6 +28,9 @@ export function Nav({ route, liveAvailable }: { route: Route; liveAvailable: boo
     document.addEventListener('keydown', key); return () => document.removeEventListener('keydown', key);
   }, [more]);
   const items = ITEMS.filter((i) => i.route !== 'live' || liveAvailable);
+  // Phone bottom bar: four pages + "More". Live takes the fourth slot once it exists, which moves How it works under More.
+  const onBar: Route[] = liveAvailable ? ['calendar', 'map', 'sensors', 'live'] : ['calendar', 'map', 'sensors', 'method'];
+  const moreActive = !onBar.includes(route);
   let extra = 0;
   return (
     <nav className="nav" data-nav aria-label="Pages" data-more={more ? 'open' : 'closed'}>
@@ -35,9 +38,10 @@ export function Nav({ route, liveAvailable }: { route: Route; liveAvailable: boo
       <ul className="nav__list">
         {items.map((i) => {
           const Icon = i.icon;
-          const style = i.phone ? undefined : ({ '--i': extra++ } as React.CSSProperties);
+          const phone = onBar.includes(i.route);
+          const style = phone ? undefined : ({ '--i': extra++ } as React.CSSProperties);
           return (
-            <li key={i.route} className={'nav__item' + (i.phone ? '' : ' nav__item--extra')} style={style}>
+            <li key={i.route} className={'nav__item' + (phone ? '' : ' nav__item--extra')} style={style}>
               <a href={routeHash(i.route, sel)} data-route={i.route} aria-current={route === i.route ? 'page' : undefined} className={route === i.route ? 'is-on' : ''}>
                 <Icon size={20} aria-hidden /><span>{i.label}</span>
               </a>
@@ -45,7 +49,7 @@ export function Nav({ route, liveAvailable }: { route: Route; liveAvailable: boo
           );
         })}
         <li className="nav__item nav__more">
-          <button type="button" aria-expanded={more} aria-haspopup="true" onClick={() => setMore(!more)}><MoreHorizontal size={20} aria-hidden /><span>More</span></button>
+          <button type="button" className={moreActive ? 'is-on' : ''} aria-expanded={more} aria-haspopup="true" onClick={() => setMore(!more)}><MoreHorizontal size={20} aria-hidden /><span>More</span></button>
         </li>
       </ul>
     </nav>

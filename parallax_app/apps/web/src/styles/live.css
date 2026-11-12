@@ -26,7 +26,6 @@
 /* Sensor looks (inspired by gods-eye-view, MIT): display-only filters on the map canvas. */
 .look__defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 .look__lab { white-space: nowrap; }
-.app--mobile .look__lab { display: none; }
 .map__stage[data-look="thermal"] .map__canvas { filter: url(#sensor-ironbow) contrast(1.15); }
 .map__stage[data-look="nvg"] .map__canvas { filter: url(#sensor-nvg) brightness(1.15) contrast(1.1); }
 .map__stage[data-look="crt"] .map__canvas { filter: url(#sensor-fringe) saturate(1.1) contrast(1.05); }
@@ -154,6 +153,16 @@
   .lv-hud__offline { bottom: 96px; }
   .lv-stage .maplibregl-ctrl-top-right { top: 8px; }
   .lv-stage .maplibregl-ctrl-bottom-right { top: auto !important; left: auto !important; right: 0 !important; bottom: 54px !important; }
-  .look__lab { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .lv-panel { transition: none; } }
+
+.look__seg { flex-wrap: wrap; }
+
+.lv-hud__num { display: flex; flex-direction: column; gap: 1px; font-size: 13px; letter-spacing: .02em; }
+.lv-hud__row b { font-weight: 600; color: var(--muted); font-size: 10.5px; letter-spacing: .1em; margin-right: 4px; }
+.lv-hud__row[data-state="failed"] { color: var(--static); }
+.lv-hud__count { max-width: 300px; }
+.lv-hud__lab { text-transform: none; letter-spacing: 0; font-family: var(--font); line-height: 1.35; }
+@media (max-width: 760px) {
+  .map__stage .maplibregl-ctrl-bottom-right { top: auto !important; left: auto !important; right: 0 !important; bottom: 0 !important; }
+}

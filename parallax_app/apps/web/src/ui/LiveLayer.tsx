@@ -42,12 +42,12 @@ export function liveFeatures(rows: LiveRow[], kind: 'modis' | 'viirs'): GeoJSON.
 export function livePopup(p: Record<string, unknown>): HTMLElement {
   const root = document.createElement('div');
   const t = document.createElement('b');
-  t.textContent = p.kind === 'viirs' ? 'VIIRS detection (live)' : 'MODIS detection (live)';
+  t.textContent = p.kind === 'viirs' ? 'Sharper satellite (VIIRS), live' : 'Older satellite (MODIS), live';
   const l1 = document.createElement('div');
   const time = String(p.time ?? '').padStart(4, '0');
   l1.textContent = `${String(p.date ?? '')} ${time.slice(0, 2)}:${time.slice(2)} UTC · ${p.dn === 'D' ? 'day' : p.dn === 'N' ? 'night' : ''}`;
   const l2 = document.createElement('div');
-  l2.textContent = `FRP ${p.frp == null || p.frp === '' ? '—' : fmtNum(Number(p.frp), 1) + ' MW'} · confidence ${String(p.conf || '—')}`;
+  l2.textContent = `Heat output ${p.frp == null || p.frp === '' ? 'not given' : fmtNum(Number(p.frp), 1) + ' megawatts'}`;
   const l3 = document.createElement('div'); l3.className = 'muted';
   l3.textContent = 'Near-real-time; not a confirmed wildfire.';
   root.append(t, l1, l2, l3);
@@ -62,21 +62,21 @@ interface LegendProps {
  *  the longer caveat sits behind an info tip and is also in visually-hidden text for screen readers. */
 export function LiveLegend({ status, data, covered, nModis, nViirs, regionName, retry }: LegendProps) {
   let body: React.ReactNode;
-  if (!covered) body = <>Live feed covers Bangladesh, California and New South Wales only; nothing to show for {regionName || 'this area'}.</>;
+  if (!covered) body = <>Choose a place to see its live detections.</>;
   else if (status === 'loading' || status === 'idle') body = <>Loading live detections…</>;
   else if (status === 'unavailable') {
     body = (
-      <><span className="live__warn">Live feed unavailable here (runs on the deployed site). Not the same as zero detections.</span>
+      <><span className="live__warn">Live feed unavailable right now. That is not the same as zero detections.</span>
         <button className="btn btn--sm live__retry" onClick={retry}>Retry</button></>
     );
   } else {
-    const t = data ? fmtUtc(data.fetched_utc) : null;
+    const t = data?.fetched_utc ? fmtUtc(data.fetched_utc) : null;
     body = (
       <>
-        <span className="live__key"><svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill={LIVE_COLORS.modis} stroke="currentColor" strokeWidth="1" /></svg>MODIS {nModis}</span>
-        <span className="live__key"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1 11 6 6 11 1 6Z" fill={LIVE_COLORS.viirs} stroke="currentColor" strokeWidth="1" /></svg>VIIRS {data?.viirs_source ? `(${data.viirs_source}) ` : ''}{nViirs}</span>
-        {nModis + nViirs === 0 ? <span>No detections in the last 24 h in this area (feed reachable).</span> : null}
-        {t && <span className="muted">{t.utc} UTC</span>}
+        <span className="live__key"><svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill={LIVE_COLORS.modis} stroke="currentColor" strokeWidth="1" /></svg>older satellite (MODIS) {nModis}</span>
+        <span className="live__key"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1 11 6 6 11 1 6Z" fill={LIVE_COLORS.viirs} stroke="currentColor" strokeWidth="1" /></svg>sharper satellite (VIIRS) {nViirs}</span>
+        {nModis + nViirs === 0 ? <span>No detections in the last 24 hours in {regionName || 'this area'} (the feed answered).</span> : null}
+        {t && <span className="muted">read {t.utc}</span>}
         <span className="muted">near-real-time · not confirmed wildfires</span>
       </>
     );
@@ -101,7 +101,7 @@ export function LiveTag({ tag }: { tag: LiveTagData }) {
   return (
     <div className="live__tag" style={{ left: tag.x, top: tag.y }} aria-hidden="true">
       <i className="live__tag-c live__tag-c--tl" /><i className="live__tag-c live__tag-c--tr" /><i className="live__tag-c live__tag-c--bl" /><i className="live__tag-c live__tag-c--br" />
-      <b>{tag.kind === 'viirs' ? 'VIIRS' : 'MODIS'}</b> {tag.date} {t.slice(0, 2)}:{t.slice(2)} UTC · FRP {tag.frp == null ? '—' : fmtNum(tag.frp, 1) + ' MW'}
+      <b>{tag.kind === 'viirs' ? 'Sharper satellite' : 'Older satellite'}</b> {tag.date} {t.slice(0, 2)}:{t.slice(2)} UTC · heat output {tag.frp == null ? 'not given' : fmtNum(tag.frp, 1) + ' megawatts'}
     </div>
   );
 }

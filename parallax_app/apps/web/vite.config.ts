@@ -15,7 +15,6 @@ const base = process.env.BASE_PATH ?? './';
 // policy says: no retries after an error, at most one request per 2 hours), so reloads never hammer NASA or CelesTrak.
 const FUNCTIONS = ['firms-live', 'sats', 'gibs-times'];
 function apiDevMiddleware(): Plugin {
-  process.env.PARALLAX_FETCH_TIMEOUT_MS = '90000';
   const cache = new Map<string, { until: number; status: number; headers: [string, string][]; body: Buffer }>();
   const fnDir = fileURLToPath(new URL('../../netlify/functions/', import.meta.url));
   const diskDir = fileURLToPath(new URL('../../node_modules/.cache/parallax-api/', import.meta.url));

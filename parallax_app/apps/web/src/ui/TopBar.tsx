@@ -36,11 +36,11 @@ export function regionRelease(manifest: Manifest, aoiId: string): RegionRelease 
 }
 
 interface Props {
-  regions: Region[]; aoiId: string; manifest: Manifest; onAbout: () => void; onTour?: () => void; compact?: boolean; status?: ReactNode;
+  regions: Region[]; aoiId: string; /** The stage tag is about a place's estimate: shown only on the pages that show one. */ showStage?: boolean; manifest: Manifest; onAbout: () => void; onTour?: () => void; compact?: boolean; status?: ReactNode;
 }
 
 /** Brand on the left; place status tag, snapshot status, tour, theme and help on the right. Navigation lives in the shell. */
-export function TopBar({ regions, aoiId, manifest, onAbout, onTour, compact, status }: Props) {
+export function TopBar({ regions, aoiId, showStage = true, manifest, onAbout, onTour, compact, status }: Props) {
   const rel = regionRelease(manifest, aoiId);
   const stage = STAGE_INFO[rel.stage] ?? { label: rel.stage, short: rel.stage, tone: 'demo', text: '' };
   const regName = regions.find((r) => r.aoi_id === aoiId)?.name ?? aoiId;
@@ -57,11 +57,11 @@ export function TopBar({ regions, aoiId, manifest, onAbout, onTour, compact, sta
       </a>
       <div className="topbar__right">
         {status}
-        <Tip text={stageTip} side="bottom" align="end">
+        {showStage && <Tip text={stageTip} side="bottom" align="end">
           <button className={'stage-tag stage-tag--' + stage.tone} onClick={onAbout} aria-haspopup="dialog" aria-label={`${regName}: ${stage.label}${rel.scope === 'snapshot' ? ' (whole snapshot)' : ''}. What does this mean?`}>
-            <StageTag tone={stage.tone} label={compact ? stage.short : stage.label} help />
+            <StageTag tone={stage.tone} label={`${compact ? (rel.scope === 'region' ? regName : 'All') : (rel.scope === 'region' ? regName : 'Whole snapshot')}: ${compact ? stage.short : stage.label}`} help />
           </button>
-        </Tip>
+        </Tip>}
         {!compact && onTour && <Tip text="A one-minute guided tour of the pages." side="bottom"><button className="btn btn--ghost tour-btn-text" onClick={onTour}><Icon3D icon={Compass} tone="teal" size={16} />Take the tour</button></Tip>}
         <span className="tour-theme topbar__tools">
           <ThemeToggle />

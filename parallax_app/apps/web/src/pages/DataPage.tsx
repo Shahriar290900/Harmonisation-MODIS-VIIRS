@@ -55,7 +55,7 @@ export default function DataPage() {
                 {groups.map(([k, e]) => {
                   const p = SENSOR_PLAIN[k] ?? { name: k, what: 'Source file.' };
                   const ys = e.years.length ? `${Math.min(...e.years)}–${Math.max(...e.years)}` : 'not applicable';
-                  return <tr key={k}><th scope="row">{p.name}</th><td>{p.what}{e.countries.size ? ` Countries: ${[...e.countries].join(', ')}.` : ''}</td><td>{e.files}</td><td>{ys}</td><td>{e.first ? (e.first === e.last ? e.first : `${e.first} to ${e.last}`) : 'not stated'}</td></tr>;
+                  return <tr key={k}><th scope="row">{p.name}</th><td>{p.what}{e.countries.size ? ` Countries: ${[...e.countries].map((c) => c.replace(/_/g, ' ')).join(', ')}.` : ''}</td><td>{e.files}</td><td>{ys}</td><td>{e.first ? (e.first === e.last ? e.first : `${e.first} to ${e.last}`) : 'not stated'}</td></tr>;
                 })}
               </tbody>
             </table>
@@ -101,7 +101,7 @@ export default function DataPage() {
           <li>Anything about the future. The numbers describe the past and the present only.</li>
           <li>Confirmed wildfires. A detection is a hot pixel seen from space.</li>
           <li>How cloudy it was. FIRMS gives no count of cloud-free looks, so we cannot say how many fires were hidden.</li>
-          <li>Fires burned on purpose or heat from industry. These are counted separately, not as wildfire.</li>
+          <li>Fixed heat sources such as industry are counted separately. Planned burns such as crop burning cannot be told apart from other vegetation fires and are included.</li>
           <li>Some months. They are shown hatched on the calendar, never as zero.</li>
         </ul>
         {avail.length > 0 && (

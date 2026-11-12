@@ -75,7 +75,7 @@ export function Explainer() {
       <p className="explainer__cant">
         <b>What it can’t do:</b> recover individual small fires the older satellite missed, see through clouds, or count wildfires. A fire detection is a hot pixel, not a fire incident.
         <br/><br/>
-        <b>United States:</b> includes Alaska and Hawaii, and leaves out prescribed, agricultural and other non-wildfire burning. The 5 km squares are not measured at the whole-country scale, and California uses the national ratios.
+        <b>United States:</b> includes Alaska and Hawaii, and leaves out fixed heat sources such as volcanoes, industry and offshore flares. Crop and prescribed burning cannot be told apart from other vegetation fires and are included. The 5 km squares are not measured at the whole-country scale, and California uses the national ratios.
       </p>
     </div>
   );
