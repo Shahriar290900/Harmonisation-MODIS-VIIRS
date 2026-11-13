@@ -1,8 +1,7 @@
 name: Deploy to GitHub Pages
 
+# The site is hosted on Netlify (https://parallaxfire.netlify.app). This GitHub Pages workflow now only runs by hand.
 on:
-  push:
-    branches: ["wip/three-regions", "main"]
   workflow_dispatch:
 
 permissions:

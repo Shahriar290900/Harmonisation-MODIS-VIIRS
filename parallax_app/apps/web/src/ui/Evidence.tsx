@@ -23,32 +23,29 @@ interface Props {
 }
 
 const STATE_PLAIN: Record<string, string> = {
-  observed: 'The sharper satellite (VIIRS) counted this month directly. Nothing was guessed.',
-  estimated: 'The sharper satellite has no complete record for this month, so the number shown is an estimate worked out from the older satellite (MODIS).',
-  partial: 'Part of this month is missing from the satellite record, so the count may be too low. Do not compare it with full months.',
-  missing: 'No data exists for this month. That is not the same as zero.',
-  unsupported: 'There is some data, but not enough to make a trustworthy estimate, so none is shown.'
+  observed: 'Counted directly by the sharper satellite.',
+  estimated: 'Estimate: the sharper satellite has no full record here.',
+  partial: 'Part of the month only; the count may be low.',
+  missing: 'No data. Not zero.',
+  unsupported: 'Not enough data for an estimate.'
 };
 
-/** Plain-words sentences for one month, built only from the record's own fields. */
+/** Two short lines for one month, built only from the record's own fields. */
 function plainMonth(r: ActivityRecord | null, st: CellState, place: string, when: string, synthetic?: boolean): string[] {
-  const out: string[] = [];
-  if (!r) return [`${place}, ${when}: no record exists for this month. It is shown as missing, never as zero.`];
-  out.push(`${place}, ${when}. ${STATE_PLAIN[st] ?? ''}`.trim());
+  if (!r) return [`${place}, ${when}: no record. Shown as missing, never as zero.`];
+  const out = [`${place}, ${when}. ${STATE_PLAIN[st] ?? ''}`.trim()];
   const a = r.raw_modis_detections, v = r.raw_viirs_reference_detections, e = r.estimated_viirs_reference_detections;
   const has = (x: number | null) => x != null && Number.isFinite(x);
-  if (has(a) && has(v)) out.push(`The older satellite counted ${fmtNum(a)} fire detections and the sharper one ${fmtNum(v)}. The sharper satellite usually counts more because it sees smaller fires, not necessarily because more burned.`);
-  else if (has(a)) out.push(`The older satellite counted ${fmtNum(a)} fire detections. The sharper satellite has no count for this month.`);
-  else if (has(v)) out.push(`The sharper satellite counted ${fmtNum(v)} fire detections. The older satellite has no count for this month.`);
+  const bits: string[] = [];
+  if (has(a)) bits.push(`older satellite ${fmtNum(a)}`);
+  if (has(v)) bits.push(`sharper satellite ${fmtNum(v)}`);
   if (has(e)) {
     const lo = r.estimate_interval_low, hi = r.estimate_interval_high;
     const n = r.interval_nominal_level, chance = n != null && Number.isFinite(n) ? Math.round(n * 10) : 8;
-    out.push(`Estimate: about ${fmtCount(e)} detections${has(lo) && has(hi) ? `, likely between ${fmtCount(lo)} and ${fmtCount(hi)} (${chance} in 10 chance)` : ''}. It is an estimate on the sharper satellite's scale, never a measurement.`);
+    bits.push(`estimate about ${fmtCount(e)}${has(lo) && has(hi) ? `, likely between ${fmtCount(lo)} and ${fmtCount(hi)} (${chance} in 10)` : ''}`);
   }
-  const flag = st === 'unavailable' || st === 'loading' ? null : shownAnomalyFlag(r, st);
-  if (flag === 'high') out.push('Compared with the same month in other years, this month is unusually high.');
-  if (flag === 'low') out.push('Compared with the same month in other years, this month is unusually low.');
-  if (r.value_status === 'demo' || synthetic) out.push('Demo data: these numbers are made up to test the app.');
+  if (bits.length) out.push(`${bits.join(' · ')}.`);
+  if (r.value_status === 'demo' || synthetic) out.push('Demo data: made up to test the app.');
   return out;
 }
 
@@ -57,8 +54,8 @@ export function Evidence({ record: r, state: st, yearError, offline, onRetry, se
   const unavailable = st === 'unavailable', loading = st === 'loading';
   const place = region?.name ?? selection.aoiId, when = monthLabel(selection.year, selection.month);
   const lines = unavailable
-    ? [`${place}, ${when}: this month could not be loaded — ${offline ? 'this year is not saved for offline use' : `the file failed to load${yearError ? ` (${yearError})` : ''}`}.`,
-       'The data exists; it is not missing and not zero. Reconnect and try again.']
+    ? [`${place}, ${when}: could not load (${offline ? 'not saved offline' : 'file failed'}${!offline && yearError ? `: ${yearError}` : ''}).`,
+       'Not missing, not zero. Reconnect and try again.']
     : loading ? ['Getting this month…']
     : plainMonth(r, st, place, when, manifest.synthetic);
   const flag = unavailable || loading ? null : shownAnomalyFlag(r, st);
@@ -88,7 +85,7 @@ export function Evidence({ record: r, state: st, yearError, offline, onRetry, se
       {unavailable && onRetry && <p><button className="btn btn--sm" onClick={onRetry}><Icon3D icon={RotateCw} tone="current" size={14} />Try again</button></p>}
       {r && !unavailable && (
         <details className="details evidence__tech">
-          <summary>Technical details for this month</summary>
+          <summary>More</summary>
           <div className="evidence__grid">
             <Group title="Raw detections (type 0)">
               <KV k="Aqua MODIS" v={fmtNum(r.raw_modis_detections)} c={SERIES_COLORS.aqua} />

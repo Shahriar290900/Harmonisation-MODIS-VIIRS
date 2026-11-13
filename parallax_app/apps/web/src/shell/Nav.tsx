@@ -11,7 +11,7 @@ const ITEMS: Item[] = [
   { route: 'map', label: 'Map', icon: MapIcon },
   { route: 'sensors', label: 'Two satellites', icon: Satellite },
   { route: 'live', label: 'Live', icon: Radio },
-  { route: 'method', label: 'How it works', icon: BookOpen },
+  { route: 'method', label: 'Results', icon: BookOpen },
   { route: 'data', label: 'Data & sources', icon: Database }
 ];
 

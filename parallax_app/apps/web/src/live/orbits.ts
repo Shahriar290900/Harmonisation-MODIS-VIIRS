@@ -9,13 +9,14 @@ export function makeSats(tles: SatTle[]): Sat[] {
   return tles.map((t) => ({ key: t.key, name: t.name, epoch_utc: t.epoch_utc, rec: twoline2satrec(t.line1, t.line2), halfSwathKm: t.key === 'terra' || t.key === 'aqua' ? 1165 : 1530 }));
 }
 
-export interface SubPoint { lon: number; lat: number; altKm: number }
+export interface SubPoint { lon: number; lat: number; altKm: number; /** speed along the orbit, km/s (inertial frame) */ speedKms: number }
 export function subPoint(s: Sat, at: Date): SubPoint | null {
   const pv = propagate(s.rec, at);
   if (!pv || typeof pv.position !== 'object' || !pv.position) return null;
   const g = eciToGeodetic(pv.position, gstime(at));
   const lat = degreesLat(g.latitude), lon = degreesLong(g.longitude);
-  return Number.isFinite(lat) && Number.isFinite(lon) ? { lon, lat, altKm: g.height } : null;
+  const v = pv.velocity as { x: number; y: number; z: number } | false;
+  return Number.isFinite(lat) && Number.isFinite(lon) ? { lon, lat, altKm: g.height, speedKms: v ? Math.hypot(v.x, v.y, v.z) : NaN } : null;
 }
 
 /** Ground track for the next `minutes`, split where it crosses the date line so no line is drawn across the map. */

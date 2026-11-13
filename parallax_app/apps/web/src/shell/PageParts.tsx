@@ -24,7 +24,7 @@ export const PAGE_LABEL: Partial<Record<Route, { label: string; why: string }>> 
   calendar: { label: 'Burning calendar', why: 'See every month of the place at a glance.' },
   map: { label: 'Map', why: 'See where in the place it burned.' },
   sensors: { label: 'Two satellites', why: 'See why the two satellites disagree and how we line them up.' },
-  method: { label: 'How it works', why: 'See how the estimate is made and how well it holds up.' },
+  method: { label: 'Results', why: 'How well the estimate held up.' },
   data: { label: 'Data & sources', why: 'See where every number comes from and download it.' },
   live: { label: 'Live', why: 'See today’s fire detections.' }
 };

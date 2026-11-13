@@ -49,16 +49,16 @@ export default function StoryPage() {
   const when = monthLabel(STORY_YEAR, STORY_MONTH, true);
 
   const steps = [
-    { h: `March is ${name}’s fire month.`, p: d.share != null ? <>Across {d.shareFrom}–{d.shareTo}, March and April together hold about {Math.round(d.share * 100)}% of everything the sharper satellite detected here. The calendar shows it: those two columns glow every year.</> : <>Loading the calendar for {name}…</> },
-    { h: 'Two cameras, two counts.', p: sharp != null && old != null ? <>{when}: the sharper satellite counted {fmt(sharp)} detections, the older satellite {fmt(old)}. Same month, same country, very different numbers. Neither is wrong: the sharper camera sees smaller fires.</> : <>Loading the counts for {when}…</> },
-    { h: 'The check.', p: est != null && lo != null && hi != null && sharp != null ? <>{when} {checked ? 'was never used to build the estimate (it is one of the “checked on” years). ' : 'is shown here for comparison. '}From the older satellite’s count alone, the estimate said about {fmt(est)}, likely between {fmt(lo)} and {fmt(hi)}{level != null ? ` (${level} in 10 chance)` : ''}. The sharper satellite actually saw {fmt(sharp)}: {inside ? 'inside the likely range.' : 'outside the likely range, so the estimate missed this month.'}</> : <>Loading the estimate for {when}…</> },
-    { h: 'A quiet March.', p: r ? (flag === 'low' ? <>{when} was unusually low for a March{d.lowRank != null ? `: ${ord(d.lowRank)} of the ${d.marchCount} Marches in the record` : ''}. Below, where it burned.</> : <>{when} {flag === 'high' ? 'was unusually high' : 'was not unusual'} for a March{d.lowRank != null ? ` (${ord(d.lowRank)} of the ${d.marchCount} Marches in the record)` : ''}. Below, where it burned.</>) : <>Loading…</> },
-    { h: 'Your turn.', p: <>Open the calendar for your own place, see what is burning today, or read how the estimate is made. Everything here is a satellite hot-spot count, not a confirmed wildfire.</> }
+    { h: `March is ${name}’s fire month.`, p: d.share != null ? <>Across {d.shareFrom}–{d.shareTo}, March and April hold about {Math.round(d.share * 100)}% of the sharper satellite’s detections. Those two columns glow every year.</> : <>Loading the calendar for {name}…</> },
+    { h: 'Two cameras, two counts.', p: sharp != null && old != null ? <>{when}: the sharper satellite counted {fmt(sharp)} detections, the older one {fmt(old)}. Same month, same country. The sharper camera sees smaller fires.</> : <>Loading the counts for {when}…</> },
+    { h: 'The check.', p: est != null && lo != null && hi != null && sharp != null ? <>{checked ? 'A check year, never used to learn. ' : 'Shown for comparison. '}Estimate: about {fmt(est)}, likely between {fmt(lo)} and {fmt(hi)}{level != null ? ` (${level} in 10)` : ''}. Seen: {fmt(sharp)}, {inside ? 'inside the range.' : 'outside the range: a miss.'}</> : <>Loading the estimate for {when}…</> },
+    { h: 'A quiet March.', p: r ? (flag === 'low' ? <>{when} was unusually low{d.lowRank != null ? `: ${ord(d.lowRank)} of ${d.marchCount} Marches` : ''}. Below, where it burned.</> : <>{when} {flag === 'high' ? 'was unusually high' : 'was not unusual'}{d.lowRank != null ? ` (${ord(d.lowRank)} of ${d.marchCount} Marches)` : ''}. Below, where it burned.</>) : <>Loading…</> },
+    { h: 'Your turn.', p: <>Open the calendar for your place, or see today. Detections are hot pixels, not confirmed wildfires.</> }
   ];
 
   return (
     <Page route="story">
-      <PageHead title={`${when} in ${name}`} lead="Five short steps with real numbers from this snapshot: one month, two satellites, one honest check." />
+      <PageHead title={`${when} in ${name}`} lead="One month, two satellites, one honest check." />
       <div className="story" onKeyDown={onKey}>
         <div className="story__bar">
           <button type="button" className="btn" disabled={step === 0} onClick={() => go(step - 1)}><ArrowLeft size={16} aria-hidden />Back</button>
@@ -83,7 +83,7 @@ export default function StoryPage() {
                 <ul className="story__go">
                   <li><a className="btn btn--primary" href="#/calendar">Open the Calendar for your place</a></li>
                   <li><a className="btn" href="#/live">See today (Live)</a></li>
-                  <li><a className="btn" href="#/method">How it works</a></li>
+                  <li><a className="btn" href="#/method">Results</a></li>
                 </ul>
               )}
             </div>

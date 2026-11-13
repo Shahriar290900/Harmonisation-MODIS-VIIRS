@@ -3,6 +3,7 @@ import { Download, Printer } from 'lucide-react';
 import { Page, PageHead, NextSteps } from '../shell/PageParts';
 import { STAGE_PLAIN, type StageKey } from '../shell/glossary';
 import { useMonthData, useWorkspace } from '../shell/workspace';
+import { MANUAL_URL } from '../ui/TopBar';
 import { Icon3D } from '../ui/icons/Icon3D';
 import { Tip } from '../ui/Tip';
 import { exportCsv, printBrief } from '../ui/exporting';
@@ -11,16 +12,15 @@ import { monthLabel } from '../data/format';
 
 type Rec = Record<string, any>;
 const SENSOR_PLAIN: Record<string, { name: string; what: string }> = {
-  modis: { name: 'Older satellite (MODIS, Aqua and Terra)', what: 'Yearly country files of fire detections from NASA FIRMS.' },
-  'viirs-snpp': { name: 'Sharper satellite (VIIRS on S-NPP)', what: 'Yearly country files of fire detections from NASA FIRMS.' },
-  natural_earth: { name: 'Country outlines (Natural Earth)', what: 'Country and state outlines used to cut the data into places.' }
+  modis: { name: 'Older satellite (MODIS, Aqua and Terra)', what: 'Fire detections, NASA FIRMS.' },
+  'viirs-snpp': { name: 'Sharper satellite (VIIRS on S-NPP)', what: 'Fire detections, NASA FIRMS.' },
+  natural_earth: { name: 'Country outlines (Natural Earth)', what: 'Country and state outlines.' }
 };
 
 export default function DataPage() {
   const { core, sel, region } = useWorkspace();
   const d = useMonthData();
   const m = core.manifest;
-  const metrics = (core.metrics ?? {}) as Rec;
 
   const groups = useMemo(() => {
     const g = new Map<string, { files: number; years: number[]; first: string; last: string; countries: Set<string> }>();
@@ -37,12 +37,11 @@ export default function DataPage() {
     return [...g.entries()];
   }, [core.sources]);
 
-  const avail = Object.entries((metrics.availability ?? {}) as Rec);
-  const yearRecords = Array.from({ length: 12 }, (_, i) => d.allRecords.find((x) => x.period_start_utc.startsWith(`${sel.year}-${String(i + 1).padStart(2, '0')}`)) ?? null);
+    const yearRecords = Array.from({ length: 12 }, (_, i) => d.allRecords.find((x) => x.period_start_utc.startsWith(`${sel.year}-${String(i + 1).padStart(2, '0')}`)) ?? null);
 
   return (
     <Page route="data">
-      <PageHead title="Data & sources" lead="Where every number comes from, what you can download, and what is not in the data." />
+      <PageHead title="Data & sources" lead="Where the numbers come from, and what you can download." />
 
       <section className="panel prose">
         <h2 className="panel__title">Where the numbers come from</h2>
@@ -61,7 +60,6 @@ export default function DataPage() {
             </table>
           </div>
         )}
-        <p className="small muted">Every month in the calendar lists the source files behind it under &ldquo;Technical details&rdquo; on the Calendar page.</p>
       </section>
 
       <section className="panel">
@@ -72,53 +70,19 @@ export default function DataPage() {
           <div><dt>Places</dt><dd>{core.regions.filter((r) => m.aois.includes(r.aoi_id)).length}</dd></div>
           <div><dt>Result for the whole snapshot</dt><dd>{STAGE_PLAIN[m.release_stage as StageKey]?.label ?? 'not stated'}{m.synthetic ? ' (demo data)' : ''}</dd></div>
         </dl>
-        <details className="details"><summary>Technical details</summary><dl className="about__facts"><div><dt>Snapshot id</dt><dd><code>{m.snapshot_id}</code></dd></div><div><dt>Method behind the estimate</dt><dd><code>{m.selected_model_id}</code></dd></div></dl></details>
+        <details className="details"><summary>More</summary><dl className="about__facts"><div><dt>Snapshot id</dt><dd><code>{m.snapshot_id}</code></dd></div><div><dt>Method behind the estimate</dt><dd><code>{m.selected_model_id}</code></dd></div></dl></details>
       </section>
 
       <section className="panel">
         <h2 className="panel__title">Download</h2>
-        <p>Takes the place and years you picked on the Calendar page: <b>{region?.name}</b>, {d.from} to {d.to}. Estimates stay labelled as estimates and missing months stay missing.</p>
+        <p className="small muted">{region?.name}, {d.from} to {d.to}</p>
         <div className="evidence__actions tour-export">
           <Tip text="Download every month in the years shown as a spreadsheet (CSV), with status and estimate labels."><span className="tipwrap"><button className="btn" onClick={() => exportCsv(d.allRecords, region, m, core.sources)} disabled={!d.allRecords.length}><Icon3D icon={Download} tone="teal" size={15} />Download CSV</button></span></Tip>
           <Tip text="Open a one-page printable brief for the selected month, with its sources."><span className="tipwrap"><button className="btn" onClick={() => d.record && printBrief(d.record, region, m, core.sources, yearRecords)} disabled={!d.record}><Icon3D icon={Printer} tone="neutral" size={15} />Print brief for {monthLabel(sel.year, sel.month)}</button></span></Tip>
         </div>
       </section>
 
-      <section className="panel prose">
-        <h2 className="panel__title">Licences and credits</h2>
-        <ul className="bullets">
-          <li><b>Fire detections:</b> <a href="https://firms.modaps.eosdis.nasa.gov/" target="_blank" rel="noopener noreferrer">NASA FIRMS</a>. We acknowledge the use of data and imagery from LANCE FIRMS operated by NASA&rsquo;s Earth Science Data and Information System (ESDIS).</li>
-          <li><b>Country and state outlines:</b> <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener noreferrer">Natural Earth</a>, public domain.</li>
-          <li><b>Bangladesh districts:</b> <a href="https://www.geoboundaries.org/" target="_blank" rel="noopener noreferrer">geoBoundaries</a> (gbOpen, CC BY 3.0 IGO), source BBS / OCHA ROAP.</li>
-          <li><b>Map tiles and attribution:</b> shown on the map itself.</li>
-          <li>Created by M Al Shahriar Hameem, Team Lumos, for the NASA Space Apps Challenge 2026.</li>
-        </ul>
-      </section>
-
-      <section className="panel prose">
-        <h2 className="panel__title">What is not in the data</h2>
-        <ul className="bullets">
-          <li>Anything about the future. The numbers describe the past and the present only.</li>
-          <li>Confirmed wildfires. A detection is a hot pixel seen from space.</li>
-          <li>How cloudy it was. FIRMS gives no count of cloud-free looks, so we cannot say how many fires were hidden.</li>
-          <li>Fixed heat sources such as industry are counted separately. Planned burns such as crop burning cannot be told apart from other vegetation fires and are included.</li>
-          <li>Some months. They are shown hatched on the calendar, never as zero.</li>
-        </ul>
-        {avail.length > 0 && (
-          <div className="table-wrap">
-            <table className="tbl tbl--num">
-              <caption>Months with no satellite record, by country (from the snapshot)</caption>
-              <thead><tr><th scope="col">Country</th><th scope="col">Older satellite (Aqua)</th><th scope="col">Older satellite (Terra)</th><th scope="col">Sharper satellite (includes every month before 2012)</th></tr></thead>
-              <tbody>
-                {avail.map(([c, v]) => {
-                  const x = (k: string) => (typeof (v as Rec)?.[k]?.missing_months === 'number' ? (v as Rec)[k].missing_months : 'not measured');
-                  return <tr key={c}><th scope="row">{c.replace(/_/g, ' ')}</th><td>{x('aqua')}</td><td>{x('terra')}</td><td>{x('snpp')}</td></tr>;
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <p className="small"><a data-manual-inline href={MANUAL_URL} target="_blank" rel="noopener">Licences, credits and limits in the manual (PDF)</a></p>
       <NextSteps to={['calendar', 'method', 'map']} />
     </Page>
   );

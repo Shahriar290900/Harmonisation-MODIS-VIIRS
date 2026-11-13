@@ -2,8 +2,8 @@
 export type JumpMode = 'raw' | 'onescale';
 
 export const JUMP_SENTENCE: Record<JumpMode, string> = {
-  raw: 'As recorded, burning seems to jump in 2012. The older satellite’s counts end and the sharper satellite’s begin, and the line leaps.',
-  onescale: 'On one scale, most of that jump disappears: the camera changed. Before 2012 the line is our estimate of what the sharper satellite would have counted, with its likely range shaded.'
+  raw: 'As recorded, the line leaps in 2012, when the sharper satellite joins.',
+  onescale: 'On one scale, most of the jump disappears. Before 2012 the dashed line is an estimate.'
 };
 
 export function JumpSwitch({ mode, onChange, cta }: { mode: JumpMode; onChange: (m: JumpMode) => void; cta?: boolean }) {
@@ -14,7 +14,7 @@ export function JumpSwitch({ mode, onChange, cta }: { mode: JumpMode; onChange: 
         <span className={'jswitch__opt' + (!one ? ' is-on' : '')}>Joined as recorded</span>
         <span className={'jswitch__opt' + (one ? ' is-on' : '')}>On one scale</span>
       </button>
-      {cta && !one && <span className="jswitch__cta">Put them on one scale to see how much of the jump is the camera.</span>}
+      {cta && !one && <span className="jswitch__cta">See the jump on one scale.</span>}
     </div>
   );
 }

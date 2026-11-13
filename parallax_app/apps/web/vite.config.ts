@@ -87,7 +87,7 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}', 'basemap/*.geojson', 'data/index.json', 'data/*/manifest.json', 'data/*/regions.json', 'data/*/geo/*.geojson'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2}', 'basemap/*.geojson', 'data/index.json', 'data/*/manifest.json', 'data/*/regions.json', 'data/*/geo/*.geojson'], globIgnores: ['textures/**', 'Parallax-Fire-Manual.pdf'],   // big assets load on demand (Earth view, manual), not at install
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         // Live FIRMS function: never serve from the precache fallback, never cache in the SW.
         navigateFallbackDenylist: [/^\/api\//, /^\/\.netlify\//],

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Manifest, Region } from '../types';
-import { BadgeCheck, CircleHelp, Compass, Eye, FlaskConical, type LucideIcon } from 'lucide-react';
+import { BadgeCheck, BookOpen, CircleHelp, Compass, Eye, FlaskConical, type LucideIcon } from 'lucide-react';
 import { Tip } from './Tip';
 import { ThemeToggle } from './ThemeToggle';
 import { Logo } from './Logo';
@@ -39,6 +39,12 @@ interface Props {
   regions: Region[]; aoiId: string; /** The stage tag is about a place's estimate: shown only on the pages that show one. */ showStage?: boolean; manifest: Manifest; onAbout: () => void; onTour?: () => void; compact?: boolean; status?: ReactNode;
 }
 
+export const MANUAL_URL = `${import.meta.env.BASE_URL}Parallax-Fire-Manual.pdf`;
+/** Opens the PDF manual in a new tab. Used in the top bar on every app page. */
+export function ManualLink() {
+  return <Tip text="Open the manual (PDF): how it works, results, sources." side="bottom"><a className="btn btn--ghost manual-link" data-manual-link href={MANUAL_URL} target="_blank" rel="noopener"><Icon3D icon={BookOpen} tone="amber" size={16} /><span>Manual</span></a></Tip>;
+}
+
 /** Brand on the left; place status tag, snapshot status, tour, theme and help on the right. Navigation lives in the shell. */
 export function TopBar({ regions, aoiId, showStage = true, manifest, onAbout, onTour, compact, status }: Props) {
   const rel = regionRelease(manifest, aoiId);
@@ -62,6 +68,7 @@ export function TopBar({ regions, aoiId, showStage = true, manifest, onAbout, on
             <StageTag tone={stage.tone} label={`${compact ? (rel.scope === 'region' ? regName : 'All') : (rel.scope === 'region' ? regName : 'Whole snapshot')}: ${compact ? stage.short : stage.label}`} help />
           </button>
         </Tip>}
+        <ManualLink />
         {!compact && onTour && <Tip text="A one-minute guided tour of the pages." side="bottom"><button className="btn btn--ghost tour-btn-text" onClick={onTour}><Icon3D icon={Compass} tone="teal" size={16} />Take the tour</button></Tip>}
         <span className="tour-theme topbar__tools">
           <ThemeToggle />

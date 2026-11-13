@@ -71,11 +71,11 @@ export function Calendar({ years, map, status, selection, onSelect, onActivate, 
     const top = er.top - sr.top + sc.scrollTop, bottom = top + er.height;
     if (top - head < sc.scrollTop) sc.scrollTop = Math.max(0, top - head - 4);
     else if (bottom + 8 > sc.scrollTop + sc.clientHeight) sc.scrollTop = bottom + 8 - sc.clientHeight;
-    // Phone: keep the selected month clear of the fixed bottom bar (the page itself scrolls).
-    const bar = document.querySelector<HTMLElement>('nav[data-nav]');
-    if (bar && getComputedStyle(bar).position === 'fixed') {
-      const barTop = bar.getBoundingClientRect().top, bt = el.getBoundingClientRect().bottom;
-      if (barTop > window.innerHeight / 2 && bt + 12 > barTop) window.scrollBy(0, bt + 12 - barTop);
+    // Phone: the page scrolls inside .shell__body (above the bottom bar); keep the selected month inside that area.
+    const pg = document.querySelector<HTMLElement>('.shell__body');
+    if (pg && getComputedStyle(pg).overflowY === 'auto') {
+      const lim = pg.getBoundingClientRect().bottom, bt = el.getBoundingClientRect().bottom;
+      if (bt + 12 > lim) pg.scrollBy(0, bt + 12 - lim);
     }
   }, [selection.year, selection.month, map]);
 
@@ -121,7 +121,7 @@ export function Calendar({ years, map, status, selection, onSelect, onActivate, 
       <div ref={scrollRef} className="tour-cal-grid cg-scroll" data-cal-grid>
         <div className="cg-grid" role="grid" aria-label="Burning calendar: years by months. Use arrow keys to move." aria-rowcount={years.length + 1} ref={gridRef} onKeyDown={onKey}>
           <div className="cg-row cg-row--head" role="row">
-            <div className="cg-yr cg-yr--head" role="columnheader"><span className="cg-sr">Year</span></div>
+            <div className="cg-yr cg-yr--head" role="columnheader"><span className="cg-sr sr-only">Year</span></div>
             {MONTHS_SHORT.map((m, i) => <div key={m} className={'cg-mh' + (selection.month === i + 1 ? ' is-on' : '')} role="columnheader">{m}</div>)}
           </div>
           {years.map((y, yi) => {

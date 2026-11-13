@@ -1,0 +1,128 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Parallax Fire manual</title><style>
+@page { size: A4; margin: 20mm 18mm 22mm 18mm; }
+:root { --ink:#1b1f24; --mut:#5a6470; --line:#d5dae0; --acc:#c2410c; --bg:#fff; }
+* { box-sizing: border-box; }
+body { font: 11pt/1.5 -apple-system, "Helvetica Neue", Arial, sans-serif; color: var(--ink); background: var(--bg); margin: 0; }
+h1 { font-size: 22pt; margin: 0 0 6mm; color: var(--acc); break-after: avoid; }
+h2 { font-size: 14pt; } h3 { font-size: 12pt; margin: 6mm 0 2mm; break-after: avoid; }
+.chapter { break-before: page; } .cover, .toc { break-after: page; }
+.cover { padding-top: 70mm; } .cover h1 { font-size: 40pt; margin-bottom: 4mm; }
+.cover .sub { font-size: 15pt; color: var(--mut); margin: 0 0 14mm; } .cover p { margin: 1.5mm 0; }
+.toc ol { list-style: none; padding: 0; } .toc li { display: flex; gap: 4mm; padding: 1.6mm 0; border-bottom: 1px dotted var(--line); } .toc li span.t { flex: 1; } .toc li span.p { color: var(--mut); }
+p, li { margin: 0 0 3mm; } ul, ol { padding-left: 6mm; }
+.small { font-size: 9.5pt; color: var(--mut); } code { font: 9pt ui-monospace, Menlo, monospace; background: #f1f3f5; padding: 0 1mm; overflow-wrap: anywhere; }
+table { width: 100%; border-collapse: collapse; margin: 3mm 0 5mm; font-size: 9.5pt; } tr { break-inside: avoid; }
+th, td { border: 1px solid var(--line); padding: 1.6mm 2.2mm; vertical-align: top; text-align: left; } thead th { background: #f1f3f5; }
+td.n { text-align: right; font-variant-numeric: tabular-nums; } table.plain th { width: 32%; background: #f7f8f9; font-weight: 600; }
+ol.steps li { margin-bottom: 3.5mm; }
+</style></head><body>
+<section class="cover"><h1>Parallax Fire</h1><p class="sub">Manual</p><p><b>Team Lumos</b>, created by M Al Shahriar Hameem</p><p>NASA Space Apps Challenge 2026: Harmonization of MODIS and VIIRS Hot Spots</p><p class="small">Data snapshot parallax-20261010T190934Z-ce88f489, created 2026-10-10 19:22 UTC</p></section>
+<section class="toc"><h1>Contents</h1><ol><li><span class="t">1. What Parallax Fire is</span><span class="p">3</span></li><li><span class="t">2. Quick start</span><span class="p">4</span></li><li><span class="t">3. Reading the calendar</span><span class="p">5</span></li><li><span class="t">4. Two satellites and the jump</span><span class="p">6</span></li><li><span class="t">5. How the estimate is made</span><span class="p">7</span></li><li><span class="t">6. Results by place</span><span class="p">9</span></li><li><span class="t">7. Live data and the Earth view</span><span class="p">11</span></li><li><span class="t">8. Data, sources and licences</span><span class="p">12</span></li><li><span class="t">9. Limits and honest use</span><span class="p">13</span></li><li><span class="t">10. Glossary</span><span class="p">14</span></li><li><span class="t">11. Credits</span><span class="p">16</span></li></ol></section>
+<section class="chapter"><h1>1. What Parallax Fire is</h1>
+<p><b>Parallax Fire</b> shows how many fire detections two NASA satellites recorded, month by month, for 3 checked places (Bangladesh, New South Wales, California) and the divisions and states inside them. The data runs from 2001 to 2025.</p>
+<p>The two satellites do not count the same way. The older one (MODIS) sees squares about 1 km wide. The sharper one (VIIRS) sees squares about 375 m wide, so it notices smaller fires. When it joined in 2012, counts leapt up even though no more land burned. Parallax Fire lines the two up on one scale so the years can be compared fairly.</p>
+<h3>What it does not do</h3>
+<ul><li>It does not predict future fires. It estimates what the sharper satellite would probably have counted in the past.</li><li>A detection is a hot pixel seen from space. It is not a confirmed wildfire.</li><li>Missing is never shown as zero. Estimates are always labelled and drawn dashed.</li></ul>
+<p class="small">Data snapshot: <code>parallax-20261010T190934Z-ce88f489</code>, created 2026-10-10 19:22 UTC. Whole-snapshot result: <b>Raw comparison only</b>.</p></section>
+<section class="chapter"><h1>2. Quick start</h1>
+<table class="plain"><tbody>
+<tr><th>Home</th><td>A short scroll story of the idea. Pick a place and go.</td></tr>
+<tr><th>Story</th><td>One real month, March 2024 in Bangladesh, in a few steps with its real numbers.</td></tr>
+<tr><th>Calendar</th><td>Pick a place. Each square is one month. Click a square to see its summary.</td></tr>
+<tr><th>Map</th><td>Where inside the place the satellites saw fire in the month you picked.</td></tr>
+<tr><th>Two satellites</th><td>The older and the sharper satellite on one chart, with the 2012 jump shown raw and on one scale.</td></tr>
+<tr><th>Live</th><td>The Earth with today's satellite fire detections and where the satellites are now.</td></tr>
+<tr><th>Results</th><td>How well the estimate held up on unseen years, place by place.</td></tr>
+<tr><th>Data</th><td>Where every number comes from, downloads (CSV, printable brief), snapshot facts.</td></tr>
+</tbody></table>
+<p>The place, year and month you pick are shared across pages and kept in the address, so a link opens the same view.</p></section>
+<section class="chapter"><h1>3. Reading the calendar</h1>
+<p>Rows are years, columns are months. Colour shows the count of fire detections: darker means more. Each colour is paired with a symbol so the calendar also reads without colour.</p>
+<table class="plain"><tbody>
+<tr><th>fire detection</th><td>A spot where a satellite saw a pixel hotter than its surroundings. It is a hot pixel, not a confirmed wildfire.</td></tr>
+<tr><th>Estimate (dashed)</th><td>What the sharper satellite would probably have counted. It is worked out from the older satellite, so it is an estimate, never a measurement.</td></tr>
+<tr><th>no data for this month</th><td>Nothing was recorded for this month. Missing is never shown as zero. Hatched squares mean no data.</td></tr>
+<tr><th>part of the month only</th><td>The satellite record covers only part of this month, so the count may be too low.</td></tr>
+<tr><th>unusually high / low for the season</th><td>Compared with the same month in other years, this month sits near the top or the bottom.</td></tr>
+</tbody></table>
+<h3>Partial months in this snapshot</h3>
+<table><thead><tr><th>Country</th><th>Aqua partial month</th><th>S-NPP partial month</th></tr></thead><tbody><tr><th>Australia</th><td>2002-07</td><td>2012-01</td></tr><tr><th>Bangladesh</th><td>2002-07</td><td>2012-01</td></tr><tr><th>United States</th><td>2002-07</td><td>2012-01</td></tr></tbody></table>
+<p class="small">Partial months show their observed counts but are left out of learning, the simple rules and the unusual-month flags.</p></section>
+<section class="chapter"><h1>4. Two satellites and the jump</h1>
+<p>MODIS looks at the ground in squares about 1 km wide. It has been flying since 2000 and 2002 (Terra and Aqua). VIIRS sees squares about 375 m wide, so it notices smaller fires. It has been flying since 2012.</p>
+<p>Gluing the two records together makes the line leap upward in 2012. The "Two satellites" page shows that jump twice: raw, and on one scale (the estimate).</p>
+<p>The chart has a switch between <b>squeezed</b> and <b>even</b> scale. Squeezed gives every tripling the same height, so quiet and huge months can be read together, and zero stays at the bottom. Even gives equal steps equal counts, which is honest about size but makes quiet months look tiny.</p>
+<h3>The lines</h3>
+<ul><li><b>Older satellite:</b> what MODIS counted. Terra and Aqua are shown separately; Terra is never mixed into the estimate.</li><li><b>Sharper satellite:</b> what VIIRS counted, since 2012.</li><li><b>Estimate (dashed):</b> what the sharper satellite would probably have counted, with a shaded likely range.</li><li><b>Fixed heat sources:</b> industry, kilns and similar, counted separately.</li></ul></section>
+<section class="chapter"><h1>5. How the estimate is made</h1>
+<ol class="steps">
+<li><b>Count the hot pixels.</b> For each place and month we count the fire detections of each satellite.</li>
+<li><b>Notice the jump.</b> The sharper satellite sees smaller fires, so counts leap when it joins.</li>
+<li><b>Learn the translation.</b> In 2013–2020 both satellites were flying. We study how many detections the sharper one made whenever the older one saw a given number. These are the <i>years used to learn</i> (34,803,042 cell-months).</li>
+<li><b>Try several methods and pick one.</b> Each was compared on 2021–2022, years held back for choosing (10,972,320 cell-months). The winner is the <b>Tree model</b>.</li>
+<li><b>Check it on unseen years.</b> 2023–2024 were kept sealed until the end and used once (10,972,320 cell-months). The results in chapter 6 come from those years only.</li>
+<li><b>Add a likely range.</b> Next to every estimate we show a likely range (8 in 10). Chapter 6 measures how often the real value landed inside it.</li>
+<li><b>Fill in the past.</b> For 2003–2012, when only the older satellite existed, we show the estimated past, always dashed and labelled.</li>
+</ol>
+<h3>The methods compared</h3>
+<p>Error is the average miss of the monthly total over the whole pool of checked places, on the years used to choose (lower is better). A method only counts if it beats the simple rules by at least 10% (the gate rule).</p>
+<table><thead><tr><th>Method</th><th>Average miss</th><th>Passes the bar?</th></tr></thead><tbody><tr><th>Copy the older satellite</th><td class="n">3,686</td><td>no</td></tr><tr><th>Simple ratio by month</th><td class="n">1,218</td><td>no</td></tr><tr><th>Statistical model</th><td class="n">1,190</td><td>no</td></tr><tr><th>Tree model</th><td class="n">589</td><td>yes</td></tr><tr><th>Neural net</th><td class="n">601</td><td>yes</td></tr></tbody></table>
+<p class="small">The chosen method is the passing one with the lowest miss: <b>Tree model</b> (technical id <code>B2_xgb</code>).</p>
+<h3>Years at a glance</h3>
+<table class="plain"><tbody><tr><th>estimated past (before 2012)</th><td>2003–2012</td></tr><tr><th>years used to learn</th><td>2013–2020</td></tr><tr><th>years used to choose</th><td>2021–2022</td></tr><tr><th>years used to check</th><td>2023–2024</td></tr></tbody></table></section>
+<section class="chapter"><h1>6. Results by place</h1>
+<p>Every row is measured on the unseen check years (2023–2024). "Average miss" is how far off the monthly total was, on average, in fire detections; lower is better. A place is labelled <b>Checked on unseen years</b> only if the estimate beat both simple rules and its likely range was within 10% points of the 80% aim (each place has 24 checked months, so the coverage is uncertain by about 8%).</p>
+<h3>Places checked on their own</h3>
+<table><thead><tr><th>Place</th><th>Result</th><th>Average miss, ours</th><th>Simple rule: copy older satellite</th><th>Simple rule: monthly ratio</th><th>Real value inside likely range</th><th>Months checked</th></tr></thead><tbody><tr><th>Bangladesh</th><td>Checked on unseen years</td><td class="n">98 (beats both)</td><td class="n">627</td><td class="n">109</td><td class="n">75%</td><td class="n">24</td></tr><tr><th>New South Wales</th><td>Raw comparison only</td><td class="n">375 (beats both)</td><td class="n">4,087</td><td class="n">1,640</td><td class="n">100%</td><td class="n">24</td></tr><tr><th>California</th><td>Checked on unseen years</td><td class="n">794 (beats both)</td><td class="n">2,219</td><td class="n">909</td><td class="n">83%</td><td class="n">24</td></tr></tbody></table>
+<p>The whole snapshot is labelled <b>Raw comparison only</b> because it takes the result of its weakest checked place: New South Wales (interval coverage outside 0.80±0.10).</p>
+<h3>Reported separately (for information; they do not decide the label)</h3>
+<p class="small">These sit inside a larger checked place, or are whole countries dominated by huge counts.</p>
+<table><thead><tr><th>Place</th><th>Result</th><th>Average miss, ours</th><th>Simple rule: copy older satellite</th><th>Simple rule: monthly ratio</th><th>Real value inside likely range</th><th>Months checked</th></tr></thead><tbody><tr><th>Barishal</th><td>not checked on its own</td><td class="n">2</td><td class="n">4</td><td class="n">3</td><td class="n">50%</td><td class="n">24</td></tr><tr><th>Chattogram</th><td>not checked on its own</td><td class="n">69</td><td class="n">501</td><td class="n">94</td><td class="n">50%</td><td class="n">24</td></tr><tr><th>Dhaka</th><td>not checked on its own</td><td class="n">13</td><td class="n">39</td><td class="n">25</td><td class="n">67%</td><td class="n">24</td></tr><tr><th>Khulna</th><td>not checked on its own</td><td class="n">12</td><td class="n">20</td><td class="n">19</td><td class="n">33%</td><td class="n">24</td></tr><tr><th>Rajshahi</th><td>not checked on its own</td><td class="n">19</td><td class="n">40</td><td class="n">27</td><td class="n">42%</td><td class="n">24</td></tr><tr><th>Rangpur</th><td>not checked on its own</td><td class="n">8</td><td class="n">8</td><td class="n">7</td><td class="n">33%</td><td class="n">24</td></tr><tr><th>Sylhet</th><td>not checked on its own</td><td class="n">7</td><td class="n">16</td><td class="n">13</td><td class="n">46%</td><td class="n">24</td></tr><tr><th>Australia</th><td>not checked on its own</td><td class="n">8,552</td><td class="n">102,204</td><td class="n">12,745</td><td class="n">100%</td><td class="n">24</td></tr><tr><th>United States</th><td>not checked on its own</td><td class="n">4,456</td><td class="n">24,857</td><td class="n">3,616</td><td class="n">92%</td><td class="n">24</td></tr></tbody></table>
+<p class="small">Source: <code>metrics.json</code> in snapshot <code>parallax-20261010T190934Z-ce88f489</code>, fields <code>release.regions</code> and <code>release.reported_separately</code>.</p></section>
+<section class="chapter"><h1>7. Live data and the Earth view</h1>
+<p>The Live page uses real, current feeds only. Each layer shows its source, a time and an honest state: loading, none in the area, or feed unavailable.</p>
+<table class="plain"><tbody>
+<tr><th>Fire detections, last 24 hours</th><td>NASA FIRMS near-real-time files for MODIS, NOAA-20 VIIRS and NOAA-21 VIIRS, worldwide. Fetched through a server function and cached about 15 to 30 minutes.</td></tr>
+<tr><th>Satellite imagery</th><td>NASA GIBS true-colour images of the day before, and night lights.</td></tr>
+<tr><th>Satellites now</th><td>Terra, Aqua, Suomi NPP, NOAA-20 and NOAA-21, calculated in your browser from public orbit elements (CelesTrak), refreshed no more often than every 2 hours.</td></tr>
+<tr><th>Basemap</th><td>OpenFreeMap (OpenStreetMap data). If it cannot load, a plain outline map is used and the page says so.</td></tr>
+</tbody></table>
+<h3>What "near-real-time" means</h3>
+<p>These detections arrive within a few hours of the overpass and are not final. They are not part of the monthly calendar, which uses the yearly FIRMS country files.</p>
+<h3>Suomi NPP feed</h3>
+<p>At the time of checking, NASA's Suomi NPP near-real-time file contained only its header and no detections. The page then says "none reported" for that satellite. It never shows an empty feed as zero fires.</p>
+<p>Ground cameras are not embedded because their licences do not allow it. The satellite imagery is the "camera", and is labelled as imagery.</p></section>
+<section class="chapter"><h1>8. Data, sources and licences</h1>
+<table><thead><tr><th>Source</th><th>Files</th><th>Years</th><th>Fetched</th></tr></thead><tbody><tr><th>Older satellite (MODIS, Aqua and Terra), NASA FIRMS yearly country files<br><span class="small">Australia, Bangladesh, United States</span></th><td class="n">75</td><td>2001–2025</td><td>2026-10-10</td></tr><tr><th>Sharper satellite (VIIRS on S-NPP), NASA FIRMS yearly country files<br><span class="small">Australia, Bangladesh, United States</span></th><td class="n">42</td><td>2012–2025</td><td>2026-10-10</td></tr><tr><th>Country and state outlines, Natural Earth</th><td class="n">2</td><td>n/a</td><td>2026-10-10</td></tr></tbody></table>
+<h3>Licences and credits</h3>
+<ul>
+<li><b>Fire detections:</b> NASA FIRMS (firms.modaps.eosdis.nasa.gov). We acknowledge the use of data and imagery from LANCE FIRMS operated by NASA's Earth Science Data and Information System (ESDIS).</li>
+<li><b>Satellite imagery:</b> NASA EOSDIS GIBS / Worldview.</li>
+<li><b>Satellite orbits:</b> CelesTrak (celestrak.org).</li>
+<li><b>Basemap:</b> OpenFreeMap, OpenMapTiles, data from OpenStreetMap contributors.</li>
+<li><b>Country and state outlines:</b> Natural Earth, public domain.</li>
+<li><b>Bangladesh districts:</b> geoBoundaries (gbOpen, CC BY 3.0 IGO), source BBS / OCHA ROAP.</li>
+</ul>
+<p>FIRMS acknowledgement: "We acknowledge the use of data and/or imagery from NASA's Fire Information for Resource Management System (FIRMS) (https://earthdata.nasa.gov/firms), part of NASA's Earth Observing System Data and Information System (EOSDIS)."</p>
+<h3>Downloads</h3>
+<p>The Data page downloads every month of the place and years you picked as a spreadsheet (CSV) and opens a one-page printable brief. Estimates stay labelled and missing months stay missing.</p></section>
+<section class="chapter"><h1>9. Limits and honest use</h1>
+<ul>
+<li>It does not say what will happen next. It lines up counts from the past and the present.</li>
+<li>A detection is a hot pixel seen from space. It is not a confirmed wildfire and gives neither size nor damage.</li>
+<li>Clouds and smoke can hide fires. FIRMS gives no count of cloud-free looks, so we cannot say how many fires were hidden.</li>
+<li>The estimate cannot recover small fires the older satellite never saw. It tells you what the sharper satellite would typically have counted, with a range.</li>
+<li>Results hold per place. A good result for one place says nothing about another.</li>
+<li>With 24 checked months per place, the results are coarse evidence (uncertain by about 8% on coverage).</li>
+<li>Fixed heat sources such as industry are counted separately. Crop and prescribed burning cannot be told apart from other vegetation fires and are included.</li>
+<li>Months with no satellite record in this snapshot (Aqua / Terra / S-NPP): Australia 18 / 0 / 132; Bangladesh 18 / 2 / 132; United States 18 / 0 / 132. The S-NPP figure includes every month before it flew.</li>
+<li>This snapshot is real data, not demo data.</li>
+</ul></section>
+<section class="chapter"><h1>10. Glossary</h1><table class="plain"><thead><tr><th>Plain word</th><th>Meaning</th><th>Technical term</th></tr></thead><tbody><tr><th>place</th><td>The area you are looking at: a whole country, or one division or state inside it.</td><td>AOI (area of interest)</td></tr><tr><th>fire detection</th><td>A spot where a satellite saw a pixel hotter than its surroundings. It is a hot pixel, not a confirmed wildfire.</td><td>active-fire pixel</td></tr><tr><th>older satellite (MODIS)</th><td>MODIS looks at the ground in squares about 1 km wide. It has been flying since 2000 and 2002 (Terra and Aqua).</td><td>Aqua / Terra MODIS C6.1</td></tr><tr><th>sharper satellite (VIIRS)</th><td>VIIRS sees squares about 375 m wide, so it notices smaller fires. It has been flying since 2012.</td><td>S-NPP VIIRS 375 m</td></tr><tr><th>estimate on the sharper satellite’s scale</th><td>What the sharper satellite would probably have counted. It is worked out from the older satellite, so it is an estimate, never a measurement.</td><td>estimated_viirs_reference_detections, harmonized</td></tr><tr><th>likely range (8 in 10)</th><td>We expect the true value to fall inside this range about 8 times out of 10.</td><td>80% interval</td></tr><tr><th>estimated past (before 2012)</th><td>Years before the sharper satellite existed. The numbers are estimates made from the older satellite.</td><td>backcast</td></tr><tr><th>years used to learn</th><td>Years the estimate was learned from, using months when both satellites were flying.</td><td>train split</td></tr><tr><th>years used to choose</th><td>Years held back to choose between different methods. Never used for learning.</td><td>validation split</td></tr><tr><th>years used to check</th><td>Years kept sealed until the end and used once to check the estimate honestly.</td><td>test split</td></tr><tr><th>Checked on unseen years</th><td>The estimate beat both simple baselines on years it never saw, and its likely range was about right there.</td><td>validated_calibration</td></tr><tr><th>Raw comparison only</th><td>Real satellite counts are shown, but the estimate has not passed every check for this place, so treat it as a comparison.</td><td>observed_comparison</td></tr><tr><th>Demo data</th><td>Made-up numbers in the real file format, used only to test the app. They are not real observations.</td><td>ui_prototype</td></tr><tr><th>no data for this month</th><td>Nothing was recorded for this month. Missing is never shown as zero.</td><td>missing / unavailable</td></tr><tr><th>part of the month only</th><td>The satellite record covers only part of this month, so the count may be too low.</td><td>partial</td></tr><tr><th>unusually high / low for the season</th><td>Compared with the same month in other years, this month sits near the top or the bottom.</td><td>anomaly flag</td></tr><tr><th>data snapshot</th><td>A frozen copy of the data, so numbers do not change under you.</td><td>snapshot</td></tr><tr><th>simple baseline</th><td>A very simple rule used as a yardstick. A method only counts as good if it beats these.</td><td>B0_identity, B0_month_ratio</td></tr><tr><th>Copy the older satellite</th><td>One of the methods tried (chapter 5).</td><td>B0_identity</td></tr><tr><th>Statistical model</th><td>One of the methods tried (chapter 5).</td><td>B1_poisson</td></tr><tr><th>Tree model</th><td>One of the methods tried (chapter 5).</td><td>B2_xgb</td></tr><tr><th>Neural net</th><td>One of the methods tried (chapter 5).</td><td>D1_mlp</td></tr></tbody></table></section>
+<section class="chapter"><h1>11. Credits</h1>
+<p><b>Parallax Fire</b> by <b>Team Lumos</b>, created by <b>M Al Shahriar Hameem</b>.</p>
+<p>Built for the <b>NASA Space Apps Challenge 2026</b>, challenge: <i>Harmonization of MODIS and VIIRS Hot Spots</i>.</p>
+<p>The team page, with the team members, is at spaceappschallenge.org/2026/find-a-team/lumos2/.</p>
+<p>Data courtesy of NASA FIRMS, NASA GIBS, CelesTrak, OpenFreeMap and OpenStreetMap contributors, Natural Earth and geoBoundaries (chapter 8).</p>
+<p class="small">Manual generated from snapshot <code>parallax-20261010T190934Z-ce88f489</code> on the numbers in its files; re-run <code>node scripts/manual/build_manual.mjs</code> to rebuild.</p></section>
+</body></html>

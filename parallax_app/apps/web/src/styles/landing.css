@@ -142,6 +142,11 @@
 .lx-prog i { width: 34px; height: 3px; border-radius: 0; background: rgba(147, 164, 195, .25); transition: background .4s; }
 .lx-prog i.is-on { background: #F59E0B; }
 .lx-scrolly.is-static { height: auto; }
+/* When a pinned panel is released and scrolls up, it fades out before its words slide under the fixed navigation bar. */
+@supports (animation-timeline: view()) {
+  @keyframes lx-exit-nav { to { opacity: 0; } }
+  .lx-scrolly:not(.is-static) .lx-scrolly__sticky { animation: lx-exit-nav linear both; animation-timeline: view(block 64px 0px); animation-range: exit 0% exit 14%; }
+}
 .lx-scrolly.is-static .lx-scrolly__sticky { position: relative; height: auto; padding-top: 96px; padding-bottom: 96px; }
 .lx-scrolly.is-static .lx-steps { gap: 22px; }
 .lx-scrolly.is-static .lx-step { grid-area: auto; opacity: 1; transform: none; }
@@ -429,8 +434,9 @@
 .lx-hud__tick--br { bottom: 12px; right: 12px; border-bottom-width: 1.5px; border-right-width: 1.5px; }
 .lx-hud__rail { position: absolute; right: 12px; top: 110px; bottom: 54px; width: 2px; background: color-mix(in srgb, var(--lx-ink) 16%, transparent); }
 .lx-hud__rail i { display: block; width: 100%; height: 100%; background: var(--amber); transform: scaleY(0); transform-origin: top; }
-.lx-hud__read { position: absolute; bottom: 14px; display: grid; gap: 1px; padding: 0 28px; color: var(--lx-dim); font-variant-numeric: tabular-nums; }
-.lx-hud__read--l { left: 12px; } .lx-hud__read--r { right: 12px; text-align: right; }
+/* Readouts run vertically inside the page gutters so they never sit on top of scrolling words */
+.lx-hud__read { position: absolute; bottom: 40px; display: flex; gap: 8px; writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; line-height: 1.3; color: var(--lx-dim); font-variant-numeric: tabular-nums; }
+.lx-hud__read--l { left: 14px; } .lx-hud__read--r { right: 20px; }
 .lx-hud__chap { color: var(--lx-ink); }
 
 /* ---------- chapters ---------- */
@@ -452,7 +458,7 @@
   .lx-fair { height: 220vh; height: 220svh; }
   .lx-chap { font-size: 16px; margin-right: 8px; padding-right: 8px; }
   .lx-hud__read--l span:nth-child(2), .lx-hud__rail, .lx-hud__tick--tl, .lx-hud__tick--tr { display: none; }
-  .lx-hud__read { padding: 0 20px; font-size: 9px; }
+  .lx-hud__read { font-size: 8.5px; letter-spacing: .08em; bottom: 36px; } .lx-hud__read--l { left: 2px; } .lx-hud__read--r { right: 2px; } .lx-hud__read--r span:nth-child(2) { display: none; }
   .lx-themebtn { width: 40px; height: 40px; }
   .lx-brand__by { display: none; }
   .lx-cam__look { top: 8px; right: 8px; }

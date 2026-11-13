@@ -65,9 +65,9 @@ function useSplitYears(snapshotId: string | undefined): SplitYears {
 }
 
 const cameras = (sy: SplitYears) => [
-  { k: 'MODIS · 1 km', h: 'One camera sees in big squares.', p: 'The older satellite (MODIS) reads the ground in squares about 1 km wide (try the older-satellite look). A small fire inside a big pixel often stays below the detection threshold — so it is never counted.' },
-  { k: 'VIIRS · 375 m', h: 'The other sees in small ones.', p: 'S-NPP VIIRS pixels are about 375 m — seven times less area each. Small fires light up, so VIIRS typically records several times more hotspots over the same land.' },
-  { k: 'One fair scale', h: 'We translate one into the other.', p: `Both flew together from 2012. We learn “when the older satellite saw X here, the sharper one saw Y”${sy.learn ? ` from the years ${sy.learn}` : ''}, check it on years and places it never saw, then turn the older counts${sy.past ? ` of ${sy.past}` : ''} into estimates on the sharper satellite’s scale, each with a likely range (8 in 10).` }
+  { k: 'MODIS · 1 km', h: 'One camera sees in big squares.', p: 'The older satellite (MODIS) sees squares about 1 km wide. A small fire inside a big pixel can go uncounted.' },
+  { k: 'VIIRS · 375 m', h: 'The other sees in small ones.', p: 'VIIRS sees squares about 375 m wide, so small fires light up. It records more hotspots over the same land.' },
+  { k: 'One fair scale', h: 'We translate one into the other.', p: `We learn the link from years both flew${sy.learn ? ` (${sy.learn})` : ''}, then estimate older years${sy.past ? ` (${sy.past})` : ''} on the sharper scale, with a likely range.` }
 ];
 
 /** (b) Two cameras: 3-D pixel compare (or a 2-D canvas), scrubbed 0→1. */
@@ -247,9 +247,9 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
 
   const r = ratio ? `×${ratio.toFixed(1)}` : 'several times';
   const items = [
-    { k: '01 · MODIS alone', h: 'A record since 2003.', p: `Aqua MODIS, month by month, averaged per year for ${home}. One camera, one scale.` },
-    { k: '02 · Splice in VIIRS', h: `In 2012 the record leaps ${r}.`, p: 'Join the sharper VIIRS onto the end and the chart jumps. The jump lines up with the instrument change — not necessarily with more fire on the ground.' },
-    { k: '03 · One scale', h: 'Now the years are comparable.', p: 'Press “On one scale” on the chart: the older years are translated to the sharper satellite’s scale (dashed), with the likely range (8 in 10), and 2005 and 2020 finally sit on the same axis.' }
+    { k: '01 · MODIS alone', h: 'A record since 2003.', p: `Aqua MODIS for ${home}, one camera, one scale.` },
+    { k: '02 · Splice in VIIRS', h: `In 2012 the record leaps ${r}.`, p: 'Join VIIRS on and the chart jumps. That is the camera change, not necessarily more fire.' },
+    { k: '03 · One scale', h: 'Now the years are comparable.', p: 'Press “On one scale”: older years are translated to the sharper scale (dashed), with a likely range.' }
   ];
   const full = flags.reduced;
 
@@ -349,9 +349,9 @@ export function FairScale({ ctx }: { ctx: Ctx }) {
   }, [flags.reduced]); // eslint-disable-line react-hooks/exhaustive-deps
   const sy = useSplitYears(ctx.core?.snapshotId);
   const items = [
-    { k: '01 · Overlap only', h: 'Learn from years both cameras flew.', p: `The translation “MODIS saw X, VIIRS saw Y” is learned only from years when both satellites were in orbit${sy.learn ? ` (${sy.learn})` : ''}, never from the years it is later checked on.` },
-    { k: '02 · Shown separately', h: 'An estimate is never passed off as an observation.', p: 'Years before the sharper satellite get an estimate, on its scale, worked out from the older one. It is drawn dashed, in its own colour, apart from observed counts.' },
-    { k: '03 · With a band', h: 'Every estimate carries a likely range.', p: 'The band says how far off the estimate may be. It is checked on years and places the model never saw, and its coverage is reported, not assumed.' }
+    { k: '01 · Overlap only', h: 'Learn from years both cameras flew.', p: `Learned only from years both satellites flew${sy.learn ? ` (${sy.learn})` : ''}, never from the check years.` },
+    { k: '02 · Shown separately', h: 'An estimate is never passed off as an observation.', p: 'Estimates are drawn dashed, in their own colour, apart from observed counts.' },
+    { k: '03 · With a band', h: 'Every estimate carries a likely range.', p: 'The band shows how far off it may be, checked on years never seen.' }
   ];
   const bar = (cls: string, a: number, b: number, y: number, fill: string, dashed = false) => (
     <rect className={cls} x={X(a)} y={y} width={X(b) - X(a)} height={16} rx={2} fill={dashed ? 'none' : fill} stroke={fill} strokeWidth={dashed ? 2 : 0} strokeDasharray={dashed ? '6 4' : undefined} style={{ transformOrigin: `${X(a)}px ${y}px`, transformBox: 'view-box' as never }} />
@@ -418,9 +418,9 @@ export function CalendarStory({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null })
   const nYears = rows.length || 23;
   const yearsWord = countWord(nYears).replace(/-/g, '\u2011');
   const items = [
-    { k: 'Rows × columns', h: 'Each row is a year. Each column, a month.', p: <>Bright cells hold more hotspots. The glyph says how we know: <Glyph state="observed" size={13} /> observed by VIIRS, <Glyph state="estimated" size={13} /> estimated from MODIS, <Glyph state="partial" size={13} /> partial month, <Glyph state="missing" size={13} /> missing — never zero.</> },
-    { k: 'The season', h: `The usual season: ${seasonText}.`, p: `Read down a column and the burning season appears. In this snapshot ${MONTHS_LONG[peak - 1]} is the usual peak (mean over all years).` },
-    { k: 'The outliers', h: 'Spot the unusual month.', p: <>A white corner flag <span className="lx-flag" aria-hidden /> marks months that are unusually high for their season, compared with the same month in other years. Open any month in the calendar for the full story.</> }
+    { k: 'Rows × columns', h: 'Each row is a year. Each column, a month.', p: <>Brighter means more. <Glyph state="observed" size={13} /> observed, <Glyph state="estimated" size={13} /> estimated, <Glyph state="partial" size={13} /> partial, <Glyph state="missing" size={13} /> missing, never zero.</> },
+    { k: 'The season', h: `The usual season: ${seasonText}.`, p: `${MONTHS_LONG[peak - 1]} is the usual peak.` },
+    { k: 'The outliers', h: 'Spot the unusual month.', p: <>A white corner flag <span className="lx-flag" aria-hidden /> marks an unusually high month.</> }
   ];
 
   return (
@@ -482,19 +482,17 @@ export function Honesty({ ctx }: { ctx: Ctx }) {
         <div className="lx-honest__card lx-honest__card--can">
           <h3><span className="lx-honest__ico"><Icon3D icon={CircleCheck} tone="teal" size={22} /></span>We can claim</h3>
           <ul>
-            <li><b>When a place usually burns</b>, month by month, across 20+ years.</li>
-            <li><b>Whether a month is unusual</b> for its season, compared with the same month in other years.</li>
-            <li><b>How far the sensors differ</b>, and exactly which adjustment was applied.</li>
-            <li><b>A likely range (8 in 10) on every estimate</b>, with how often it was right on years it never saw.</li>
+            <li><b>When a place usually burns.</b></li>
+            <li><b>Whether a month is unusual.</b></li>
+            <li><b>A likely range on every estimate.</b></li>
           </ul>
         </div>
         <div className="lx-honest__card lx-honest__card--cant">
           <h3><span className="lx-honest__ico"><Icon3D icon={CircleX} tone="red" size={22} /></span>We can’t claim</h3>
           <ul>
-            <li><b>The small fires MODIS missed.</b> We estimate counts, not individual fires.</li>
-            <li><b>Anything under cloud.</b> The data does not say how much of the month was hidden by cloud.</li>
-            <li><b>Wildfire incidents.</b> A hotspot is a hot pixel; a kiln or flare can be one too (fixed heat sources are counted separately).</li>
-            <li><b>Any quantum or “AI accuracy” advantage.</b> Our estimate comes from a trained method, and how well it holds up is measured, not claimed.</li>
+            <li><b>Individual small fires.</b></li>
+            <li><b>Anything under cloud.</b></li>
+            <li><b>Confirmed wildfires.</b></li>
           </ul>
         </div>
         <div className="lx-honest__card lx-honest__card--stage">
@@ -502,18 +500,16 @@ export function Honesty({ ctx }: { ctx: Ctx }) {
           {m ? (
             <>
               <p className="lx-honest__stage"><StageTagLx stage={m.release_stage} /></p>
-              <p>{m.synthetic ? 'Demo data in the real file format. It tests the app, not the science.' : 'Real FIRMS data. The result label says how far the estimate has been checked.'}</p>
-              <p className="lx-honest__small">Rule for “Checked on unseen years”: the chosen method must beat both simple rules on years it never saw, and its likely range must be right about 8 times in 10 (give or take 1).</p>
+              <p>{m.synthetic ? 'Demo data. It tests the app, not the science.' : 'Real FIRMS data.'}</p>
             </>
           ) : <p>Loading…</p>}
         </div>
         <div className="lx-honest__card lx-honest__card--usa" style={{ gridColumn: '1 / -1' }}>
           <h3><span className="lx-honest__ico"><Icon3D icon={Info} tone="cyan" size={22} /></span>United States caveats</h3>
           <ul>
-            <li><b>Alaska and Hawaii included.</b> The US national boundary includes these states.</li>
-            <li><b>Planned burns are included.</b> Crop and prescribed burning cannot be told apart from other vegetation fires in this data, so they are counted. Fixed heat sources such as industry are counted separately.</li>
-            <li><b>Grid scale limits.</b> The 5 km grid is unmeasured at the USA scale.</li>
-            <li><b>California.</b> California uses the national ratios for its estimate.</li>
+            <li><b>Alaska and Hawaii included.</b></li>
+            <li><b>Planned burns are included.</b></li>
+            <li><b>No 5 km grid</b> at the whole-country scale.</li>
           </ul>
         </div>
       </Reveal>

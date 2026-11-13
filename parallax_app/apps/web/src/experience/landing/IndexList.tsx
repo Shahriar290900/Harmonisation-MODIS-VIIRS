@@ -75,7 +75,7 @@ export function IndexList({ ctx }: { ctx: Ctx }) {
       <Reveal reduced={flags.reduced} className="lx-ix__head">
         <p className="lx-eyebrow">The index</p>
         <h2 id="lx-ix-h" className="lx-h2">Every area × year. <span className="lx-grad">Every month, one click.</span></h2>
-        <p className="lx-ix__lede">Dense on purpose. Numbers are fire detections per month on the sharper satellite's scale (measured, or estimated from the older satellite). Each link opens the calendar at that month. <kbd>Tab</kbd> moves between years, <Key icon={ArrowLeft} name="Left arrow" /><Key icon={ArrowRight} name="Right arrow" /> walks the months, <Key icon={ArrowUp} name="Up arrow" /><Key icon={ArrowDown} name="Down arrow" /> changes year.</p>
+        <p className="lx-ix__lede">Detections per month. Each number opens its month in the calendar.</p>
       </Reveal>
       <div className="lx-ix__cols">
         {regions.map((r) => <Aoi key={r.aoi_id} region={r} s={series.get(r.aoi_id) ?? null} years={years} />)}

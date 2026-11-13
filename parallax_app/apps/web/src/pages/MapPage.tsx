@@ -12,7 +12,7 @@ export default function MapPage() {
   const lo = allYears[0], hi = allYears[allYears.length - 1];
   return (
     <Page route="map">
-      <PageHead title="Map" lead="See where inside the place the satellites recorded fire detections in the month you picked.">
+      <PageHead title="Map" lead="Where the satellites saw fire detections this month.">
         <PlacePicker regions={core.regions} aoiId={sel.aoiId} allowed={core.manifest.aois} />
         <div className="stepper" role="group" aria-label="Month">
           <button className="btn btn--icon" aria-label="Previous month" onClick={() => actions.stepMonth(-1, lo, hi)}><ChevronLeft size={18} aria-hidden /></button>
@@ -23,7 +23,6 @@ export default function MapPage() {
       <div className="mapwrap tour-map">
         <MapPanel region={region} regions={core.regions} geo={d.geo} cells={d.cells} selection={sel} monthState={d.monthState} record={d.record} />
       </div>
-      <p className="page__note small muted">Each square is about 5 km wide. Brighter squares had more fire detections. A detection is a hot pixel seen from space, not a confirmed wildfire. Squares with no data are left empty, which does not mean zero.</p>
       <NextSteps to={['calendar', 'sensors', 'method']} />
     </Page>
   );

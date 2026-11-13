@@ -60,6 +60,8 @@
 .evidence__tech .evidence__grid { margin-top: 8px; }
 .details > summary { cursor: pointer; font-weight: 600; font-size: 13px; padding: 6px 0; }
 .details[open] > summary { margin-bottom: 8px; }
+/* a closed disclosure is not on screen, so its body must not take layout boxes either */
+.details:not([open]) > :not(summary), .cc__table:not([open]) > :not(summary) { display: none; }
 
 /* "Next step" buttons */
 .nextsteps { margin-top: 8px; padding-top: 16px; border-top: 1px solid var(--border); }
@@ -103,9 +105,10 @@
 
 /* ---------- phone: bottom bar + More sheet ---------- */
 @media (max-width: 699px) {
-  .shell { grid-template-columns: minmax(0, 1fr); grid-template-areas: "top" "body"; }
-  html { scroll-padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
-  .shell__body { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+  /* The page scrolls inside the area above the bottom bar (not under it), so the bar never sits on top of words. */
+  .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "top" "body"; height: calc(100vh - 59px - env(safe-area-inset-bottom)); height: calc(100dvh - 59px - env(safe-area-inset-bottom)); min-height: 0; overflow: hidden; }
+  .shell__body { overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: contain; padding-bottom: 12px; }
+  .shell__top .topbar { position: static; }
   .shell__top .topbar { padding: calc(8px + env(safe-area-inset-top)) 10px 8px; gap: 8px; }
   .topbar__brand { flex: none; }
   .topbar__title { font-size: 13px; line-height: 1.1; }
@@ -187,3 +190,7 @@ html[data-route]:not([data-route="home"]) { scroll-behavior: auto; }
 @media (max-width: 699px) {
   html[data-route]:not([data-route="home"]) #nl-badge-frame { bottom: calc(64px + env(safe-area-inset-bottom)) !important; }
 }
+
+.legend-list--row { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.legend-list--row .legend-list__row { grid-template-columns: auto auto auto; align-items: center; }
+.legend-list--row .legend-list__row .dot { margin-top: 0; }

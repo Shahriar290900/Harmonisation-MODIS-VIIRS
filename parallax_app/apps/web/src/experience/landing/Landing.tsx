@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import '../../styles/landing.css';
 import type { GlobeHandle, HotPoint } from '../contract';
 import { Logo } from '../../ui/Logo';
-import { ArrowRight, FlaskConical, Layers, Radio, TriangleAlert, X } from 'lucide-react';
+import { ArrowRight, BookOpen, FlaskConical, Layers, Radio, TriangleAlert, X } from 'lucide-react';
 import { Icon3D } from '../../ui/icons/Icon3D';
 import { STAGE_LABEL, StageTagLx } from './StageTag';
 import { MONTHS_LONG } from '../../data/format';
@@ -179,7 +179,7 @@ function Nav({ core, flags, openHash }: { core: Core | null; flags: Flags; openH
     on(); window.addEventListener('scroll', on, { passive: true });
     return () => window.removeEventListener('scroll', on);
   }, []);
-  const links: [string, string][] = [['how', 'How it works'], ['regions', 'Regions'], ['index', 'Index']];
+  const links: [string, string][] = [['how', 'Two satellites'], ['regions', 'Regions'], ['index', 'Index']];
   return (
     <header className={'lx-nav' + (solid ? ' is-solid' : '')}>
       <a className="lx-brand" href="#/" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: flags.reduced ? 'auto' : 'smooth' }); }} aria-label="Parallax Fire — top">
@@ -190,6 +190,7 @@ function Nav({ core, flags, openHash }: { core: Core | null; flags: Flags; openH
         {links.map(([id, label]) => <button key={id} className="lx-link" onClick={() => scrollToId(id, flags.reduced)}>{label}</button>)}
       </nav>
       <ThemeToggle className="lx-themebtn" />
+      <a className="lx-link lx-manual" data-manual-link href={`${BASE_URL.replace(/\/?$/, '/')}Parallax-Fire-Manual.pdf`} target="_blank" rel="noopener" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}><Icon3D icon={BookOpen} tone="amber" size={16} />Manual</a>
       <a className="lx-btn lx-btn--sm" href={openHash} onClick={(e) => onWorkspaceLink(e, openHash, 'Opening the fire calendar')}>Open app <span className="lx-btn__arrow"><Icon3D icon={ArrowRight} tone="current" size={16} /></span></a>
     </header>
   );
@@ -323,9 +324,9 @@ function GlobeStage({ ctx, bgd, others, openHash, error }: { ctx: Ctx; bgd: AoiS
   const [first, last] = bgd?.peakSpan ?? [core?.manifest.years[0] ?? 2001, core?.manifest.years.at(-1) ?? 2025];
 
   const captions = [
-    { k: '01 · Zoom', h: 'This is Bangladesh.', p: `Every glowing dot is a 5 km cell with at least one satellite hotspot in ${bgd ? `${MONTHS_LONG[bgd.openMonth - 1]} ${bgd.bestYear}, that year’s peak burning month` : 'its peak burning month'}. Cells, not fires: a hotspot is a hot pixel.` },
-    { k: '02 · Season', h: `${peak} burns most.`, p: `Averaged over ${first}–${last}, ${peak} carries the most hotspots of any month in this snapshot. That is the season the calendar makes visible.` },
-    { k: '03 · The catch', h: 'But which satellite was looking?', p: 'Two different cameras built this record. Before we compare 2005 with 2020, we have to put them on one scale.' }
+    { k: '01 · Zoom', h: 'This is Bangladesh.', p: `Each dot is a 5 km cell with a satellite hotspot in ${bgd ? `${MONTHS_LONG[bgd.openMonth - 1]} ${bgd.bestYear}` : 'its peak month'}. Hot pixels, not confirmed fires.` },
+    { k: '02 · Season', h: `${peak} burns most.`, p: `Averaged over ${first}–${last}, ${peak} has the most hotspots of any month.` },
+    { k: '03 · The catch', h: 'But which satellite was looking?', p: 'Two different cameras built this record. To compare years, they need one scale.' }
   ];
 
   return (
@@ -345,7 +346,7 @@ function GlobeStage({ ctx, bgd, others, openHash, error }: { ctx: Ctx; bgd: AoiS
               </span>
             </h1>
             <p className="lx-lede" data-intro>
-              NASA’s MODIS has watched for fires since 2001 (Terra from 2001, Aqua from mid-2002). The sharper VIIRS joined in 2012 — and the record jumped — most plausibly because the new camera sees smaller fires, not because more land burned. Parallax puts both on one fair scale, with honest error bars.
+              Two NASA satellites count fires differently. We put them on one scale.
             </p>
             <div className="lx-ctas" data-intro>
               <a ref={primary} className="lx-btn lx-btn--primary" href={openHash} onClick={(e) => onWorkspaceLink(e, openHash, 'Opening the fire calendar for Bangladesh')}>
@@ -404,10 +405,10 @@ function Footer({ core, openHash }: { core: Core | null; openHash: string }) {
         <div className="lx-foot__brand">
           <Logo size={36} />
           <p className="lx-foot__name">Parallax Fire</p>
-          <p>Pick a place. See its burning seasons over 20+ years on one fair scale. Tell real change apart from satellite change.</p>
+          <p>Burning seasons on one fair scale.</p>
           <a className="lx-btn lx-btn--primary lx-btn--sm" href={openHash} onClick={(e) => onWorkspaceLink(e, openHash)}>Open the fire calendar <span className="lx-btn__arrow"><Icon3D icon={ArrowRight} tone="current" size={16} /></span></a>
           <nav aria-label="Pages" className="lx-foot__small">
-            {HAS_LIVE && <><a href="#/live">Live</a> · </>}<a href="#/calendar">Calendar</a> · <a href="#/map">Map</a> · <a href="#/sensors">Two satellites</a> · <a href="#/method">How it works</a> · <a href="#/data">Data &amp; sources</a>
+            {HAS_LIVE && <><a href="#/live">Live</a> · </>}<a href="#/calendar">Calendar</a> · <a href="#/map">Map</a> · <a href="#/sensors">Two satellites</a> · <a href="#/method">Results</a> · <a href="#/data">Data &amp; sources</a>
           </nav>
         </div>
         <div>
@@ -417,9 +418,8 @@ function Footer({ core, openHash }: { core: Core | null; openHash: string }) {
         </div>
         <div>
           <h2 className="lx-foot__h">Data & credits</h2>
-          <p>Active-fire detections: <a href="https://firms.modaps.eosdis.nasa.gov/" rel="noopener" target="_blank">NASA FIRMS</a> — MODIS C6.1 (Aqua, Terra) and VIIRS 375 m (S-NPP).</p>
-          <p>Live layer: NASA FIRMS near-real-time detections from the last 24 hours (MODIS, and VIIRS on NOAA-20 and NOAA-21). Not quality-controlled, and not used in the calendar or the model.</p>
-          <p>Boundaries: <a href="https://www.naturalearthdata.com/" rel="noopener" target="_blank">Natural Earth</a> (public domain). Bangladesh districts: <a href="https://www.geoboundaries.org/" rel="noopener" target="_blank">geoBoundaries</a> (gbOpen, CC BY 3.0 IGO), source BBS / OCHA ROAP.</p>
+          <p>Fire detections: <a href="https://firms.modaps.eosdis.nasa.gov/" rel="noopener" target="_blank">NASA FIRMS</a>.</p>
+                    <p>Boundaries: <a href="https://www.naturalearthdata.com/" rel="noopener" target="_blank">Natural Earth</a>, <a href="https://www.geoboundaries.org/" rel="noopener" target="_blank">geoBoundaries</a>. Licences in the manual.</p>
           <p className="lx-foot__small">We acknowledge the use of data and imagery from LANCE FIRMS operated by NASA’s Earth Science Data and Information System (ESDIS).</p>
         </div>
         <div>
@@ -433,7 +433,7 @@ function Footer({ core, openHash }: { core: Core | null; openHash: string }) {
           ) : <p className="lx-foot__small">Loading snapshot…</p>}
         </div>
       </div>
-      <p className="lx-foot__base">A hotspot is a hot pixel, not a fire incident. No “AI accuracy” badges here. How well the estimate holds up is measured on years it never saw and shown, place by place, on the How it works page.</p>
+      <p className="lx-foot__base">A hotspot is a hot pixel, not a fire incident. Results, place by place, are on the Results page.</p>
     </footer>
   );
 }

@@ -84,10 +84,19 @@ function decodeB64(b64: string): Int16Array {
 
 export const worldCache = new Map<string, { at: number; fetched: string; sources: WorldSource[] }>();
 /** One request for some of the sources. Never throws: a source that cannot be read comes back as state "failed" with the reason. */
-export async function fetchWorld(keys: WorldKey[], timeoutMs = 30_000): Promise<{ fetched_utc: string | null; sources: WorldSource[] }> {
+type WorldAnswer = { fetched_utc: string | null; sources: WorldSource[] };
+const worldInflight = new Map<string, Promise<WorldAnswer>>();
+/** Same request from two views at once (Earth and Map) is made only once. */
+export function fetchWorld(keys: WorldKey[], timeoutMs = 30_000): Promise<WorldAnswer> {
   const ck = keys.join(',');
   const hit = worldCache.get(ck);
-  if (hit && Date.now() - hit.at < 10 * 60_000) return { fetched_utc: hit.fetched, sources: hit.sources };
+  if (hit && Date.now() - hit.at < 10 * 60_000) return Promise.resolve({ fetched_utc: hit.fetched, sources: hit.sources });
+  let p = worldInflight.get(ck);
+  if (!p) { p = fetchWorldNow(keys, timeoutMs).finally(() => worldInflight.delete(ck)); worldInflight.set(ck, p); }
+  return p;
+}
+async function fetchWorldNow(keys: WorldKey[], timeoutMs: number): Promise<WorldAnswer> {
+  const ck = keys.join(',');
   const failed = (why: string): WorldSource[] => keys.map((key) => ({ key, label: WORLD_LABEL[key], state: 'failed', count: 0, newest_utc: null, oldest_utc: null, error: why, raw: null }));
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), timeoutMs);

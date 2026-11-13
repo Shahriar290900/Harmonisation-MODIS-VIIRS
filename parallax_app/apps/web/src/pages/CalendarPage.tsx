@@ -44,7 +44,7 @@ export default function CalendarPage() {
 
   return (
     <Page route="calendar">
-      <PageHead title="Burning calendar" lead="Pick a place to see fire detections month by month: older-satellite counts from 2001, estimates from 2003 until 2012, then the sharper satellite’s own counts.">
+      <PageHead title="Burning calendar" lead="Fire detections by month. Click a month for its summary.">
         <PlacePicker regions={core.regions} aoiId={sel.aoiId} allowed={core.manifest.aois} />
         <div className="field field--range">
           <span className="field__lab">Years</span>
