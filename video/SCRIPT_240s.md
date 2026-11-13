@@ -20,13 +20,19 @@ Structure, following the Space Apps Bangladesh "240 Seconds of Glory" examples: 
 | 2:44–3:01 | Live Earth: whole Earth (impact and next steps) | A planner can see the real burning season before deciding when to watch closely. A researcher can compare two decades without mistaking a new camera for new fire. Looking ahead, we want more regions, the newer NOAA satellites, a Bangla interface, and partners to test it with. |
 | 3:01–3:11 | End card: logos, link, team, data credits | Parallax Fire. Same fires, two cameras, one honest record. This is Team Lumos. Thank you. |
 
-## 30-second video (26 s)
+## 30-second video (0:29)
+A fast promo: energetic voice (Kokoro `af_bella`, slightly faster, compressed to YouTube loudness), a hook in the first two seconds, crossfades between shots, no team photos (the team is on the end card). Captured frame by frame on a paused page clock, so every shot is a smooth 30 fps.
+
 | Time | On screen | Narration |
 |---|---|---|
-| 0:00–0:05 | Home: 2012 jump chart, with the team strip (logo, photos, names) | We are Team Lumos, from Dhaka. Satellites say fires jumped in 2012. Did they? |
-| 0:05–0:10 | Title card | Parallax Fire. Same fires, two cameras, one honest record. |
-| 0:10–0:19 | Calendar → Map → Live | We put NASA’s MODIS and VIIRS fire detections on one fair scale: a burning calendar, a real map and a live view, with every estimate labelled. |
-| 0:19–0:26 | Live Earth: whole Earth | Next: more regions, newer satellites and a Bangla interface, so anyone can tell a new fire from a new camera. |
+| 0:00–0:05 | Hook: "2012 ×5" title over the live Earth, camera flies to Bangladesh | In 2012, satellites suddenly counted five times more fire in Bangladesh. |
+| 0:05–0:10 | Home: the 2012 jump chart, scrolling | Was the land suddenly burning? Mostly, NASA just got a sharper camera. |
+| 0:10–0:15 | Two satellites: "On one scale" pressed as the second line starts | Parallax Fire puts both satellites on one honest scale. Most of the jump melts away. |
+| 0:15–0:18 | Map: Bangladesh districts, slow tilted push-in | Every fire season, mapped district by district. |
+| 0:18–0:22 | Live Earth: pull back from Bangladesh to the whole Earth with today's hot spots | Plus today's hot spots, live, as five fire satellites pass overhead. |
+| 0:22–0:29 | End card: logo, link, Team Lumos and names, challenge, data credit | Parallax Fire. Same fires. Two cameras. One honest record. |
+
+"Five times": VIIRS ÷ Aqua MODIS detections in Bangladesh, complete months 2013–2024 = 4.98 (the app's 2012 chart shows the joined record leaping ×5.3).
 
 ## Where every spoken fact comes from
 | Statement | Source |

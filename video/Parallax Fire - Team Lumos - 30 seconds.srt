@@ -1,23 +1,47 @@
 1
-00:00:00,150 --> 00:00:05,514
-We are Team Lumos, from Dhaka. Satellites say fires jumped in 2012. Did they?
+00:00:00,450 --> 00:00:01,365
+In 2012,
 
 2
-00:00:05,864 --> 00:00:09,847
-Parallax Fire. Same fires, two cameras, one honest record.
+00:00:01,484 --> 00:00:05,207
+satellites suddenly counted five times more fire in Bangladesh.
 
 3
-00:00:10,197 --> 00:00:14,062
-We put NASA’s MODIS and VIIRS fire detections on one fair scale:
+00:00:05,657 --> 00:00:07,395
+Was the land suddenly burning?
 
 4
-00:00:14,261 --> 00:00:18,857
-a burning calendar, a real map and a live view, with every estimate labelled.
+00:00:07,445 --> 00:00:09,589
+Mostly, NASA just got a sharper camera.
 
 5
-00:00:19,207 --> 00:00:23,084
-Next: more regions, newer satellites and a Bangla interface,
+00:00:10,039 --> 00:00:13,101
+Parallax Fire puts both satellites on one honest scale.
 
 6
-00:00:23,284 --> 00:00:25,941
-so anyone can tell a new fire from a new camera.
+00:00:13,361 --> 00:00:14,907
+Most of the jump melts away.
+
+7
+00:00:15,357 --> 00:00:16,432
+Every fire season,
+
+8
+00:00:16,552 --> 00:00:17,956
+mapped district by district.
+
+9
+00:00:18,406 --> 00:00:20,311
+Plus today’s hot spots, live,
+
+10
+00:00:20,431 --> 00:00:22,484
+as five fire satellites pass overhead.
+
+11
+00:00:22,934 --> 00:00:23,862
+Parallax Fire.
+
+12
+00:00:24,122 --> 00:00:26,973
+Same fires. Two cameras. One honest record.

@@ -4,7 +4,8 @@
 // Needs: Brave (headless, via Playwright), macOS `say`, an ffmpeg with libx264 + aac. Every number spoken is in
 // scripts/video/SCRIPT.md with its source in the snapshot. Nothing here is simulated: all footage is the real app.
 import { chromium } from '@playwright/test';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
+import { once } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -16,7 +17,8 @@ const VOICE = arg('voice', 'Daniel'), RATE = arg('rate', '165');
 const ONLY = arg('only', '').split(',').filter(Boolean);
 const BASE = process.env.VIDEO_BASE || 'https://parallaxfire.netlify.app/';
 const W = 1280, H = 720;
-const PAD = process.argv.includes('--short') ? 0.2 : 0.55, LEAD = process.argv.includes('--short') ? 0.15 : 0.35;
+const PAD = process.argv.includes('--short') ? 0.35 : 0.55, LEAD = process.argv.includes('--short') ? 0.45 : 0.35;
+const XF = 0.35;   // --short: crossfade between shots (overlaps only the silence of PAD + LEAD)
 fs.mkdirSync(work, { recursive: true });
 const BRAND = path.join(path.dirname(new URL(import.meta.url).pathname), '../../../branding');
 const logo = (f) => 'data:image/svg+xml;base64,' + fs.readFileSync(path.join(BRAND, f)).toString('base64');
@@ -95,27 +97,51 @@ const SEGMENTS = [
     act: async (p, ms) => { await p.waitForTimeout(ms + 2500); }, extra: 2.5 },
 ];
 
-// --short: the 30-second version (introduce yourself, lead in, name the solution, describe the idea, look ahead)
+// --short: the 30-second promo. Captured frame by frame on a paused page clock (see captureStepped), so every shot is a
+// smooth 30 fps whatever the machine. `shot` starts the motion and returns timed events ({ at: seconds, fn }).
+// *word* in a line is highlighted in the subtitles (and not spoken differently).
+const clickText = (p, sel, text) => p.locator(sel, { hasText: text }).first().evaluate((el) => el.click()).catch(() => {});
+const glide = (p, from, to, ms) => p.evaluate(({ from, to, ms }) => {   // non-blocking eased scroll on the page clock
+  const t0 = performance.now(); const ease = (k) => (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2);
+  const step = () => { const k = Math.min(1, (performance.now() - t0) / ms); window.scrollTo(0, from + (to - from) * ease(k)); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}, { from, to, ms });
 const SHORT = [
-  { id: 'q01', start: '', lower: '', strip: true,
-    text: 'We are Team Lumos, from Dhaka. Satellites say fires jumped in 2012. Did they?',
-    prep: async (p) => { const s = await sectionSpan(p, '#jump'); await p.evaluate((y) => window.scrollTo(0, y), s.top + (s.h - s.vh) * 0.45); await p.waitForTimeout(2200); return s; },
-    act: async (p, ms, s) => { await scrollOver(p, s.top + (s.h - s.vh) * 0.45, s.top + (s.h - s.vh) * 0.8, ms); } },
-  { id: 'q02', start: '', lower: '', card: true,
-    text: 'Parallax Fire. Same fires, two cameras, one honest record.',
-    prep: async (p) => { await p.waitForTimeout(800); },
-    act: async (p, ms) => { await p.waitForTimeout(ms); } },
-  { id: 'q03', start: '#/calendar' + q, lower: 'NASA FIRMS · MODIS and VIIRS on one scale',
-    text: 'We put NASA’s MODIS and VIIRS fire detections on one fair scale: a burning calendar, a real map and a live view, with every estimate labelled.',
-    prep: async (p) => {   // visit Map and Live once so their code and data are already loaded when the cut switches pages
-      await go(p, 'map', q, 5000); await go(p, 'live', q, 1000);
-      await p.waitForFunction(() => /\d/.test(document.querySelector('[data-live-count]')?.textContent || ''), null, { timeout: 60000 }).catch(() => {});
-      await go(p, 'calendar', q, 2500); },
-    act: async (p, ms) => { await p.waitForTimeout(ms * 0.34); await go(p, 'map', q, ms * 0.3); await go(p, 'live', q, ms * 0.3); } },
-  { id: 'q04', start: '#/live' + q, lower: 'What comes next',
-    text: 'Next: more regions, newer satellites and a Bangla interface, so anyone can tell a new fire from a new camera.',
-    prep: async (p) => { await p.waitForFunction(() => /\d/.test(document.querySelector('[data-live-count]')?.textContent || ''), null, { timeout: 60000 }).catch(() => {}); await tryClick(p, 'button:has-text("World")', 4500); },
-    act: async (p, ms) => { await p.waitForTimeout(ms); } },
+  { id: 'q01', start: '#/live' + q, hook: true,
+    text: 'In *2012*, satellites suddenly counted *five times* more fire in Bangladesh.',
+    prep: async (p) => { await earthReady(p); await tryClick(p, 'button:has-text("Whole Earth")', 3500); },
+    shot: async () => [{ at: 1.0, fn: (p) => clickText(p, 'button', 'Bangladesh') }] },
+  { id: 'q02', start: '',
+    text: 'Was the land suddenly burning? Mostly, NASA just got a *sharper camera*.',
+    prep: async (p) => { const s = await sectionSpan(p, '#jump'); const y0 = s.top + (s.h - s.vh) * 0.35; await p.evaluate((y) => window.scrollTo(0, y), y0); await p.waitForTimeout(2500); return { y0, y1: s.top + (s.h - s.vh) * 0.8 }; },
+    shot: async (p, { total, state }) => { await glide(p, state.y0, state.y1, total * 1000); return []; } },
+  { id: 'q03', start: '#/sensors' + q,
+    text: 'Parallax Fire puts both satellites on *one honest scale*. Most of the jump melts away.',
+    prep: async (p) => { await p.waitForTimeout(2500); await p.evaluate(() => document.querySelector('[data-chart="compare"]')?.scrollIntoView({ block: 'center' })); await p.waitForTimeout(800); },
+    shot: async (p, { cues }) => [{ at: LEAD + (cues[1] ? cues[1].s : 2) - 0.2, fn: (p) => clickText(p, 'button', 'On one scale') }] },
+  { id: 'q04', start: '#/map' + q,
+    text: 'Every *fire season*, mapped district by district.',
+    prep: async (p) => {
+      await p.waitForFunction(() => window.__map && window.__map.loaded(), null, { timeout: 60000 });
+      await tryClick(p, 'button:has-text("Districts")', 2500);
+      await p.evaluate(() => document.querySelector('.maplibregl-canvas')?.scrollIntoView({ block: 'center' }));
+      const A = { center: [90.3, 23.75], zoom: 5.95, pitch: 0, bearing: 0 }, B = { center: [90.45, 23.95], zoom: 6.85, pitch: 50, bearing: -16 };
+      for (const v of [B, A]) {   // visit the end view first so its tiles are cached, then start from the wide view
+        await p.evaluate((v) => window.__map.jumpTo(v), v);
+        await p.waitForFunction(() => window.__map.loaded() && window.__map.areTilesLoaded(), null, { timeout: 20000 }).catch(() => {});
+        await p.waitForTimeout(900);
+      }
+      return { B };
+    },
+    shot: async (p, { total, state }) => { await p.evaluate(({ B, ms }) => window.__map.easeTo({ ...B, duration: ms, easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2) }), { B: state.B, ms: total * 1000 }); return []; } },
+  { id: 'q05', start: '#/live' + q,
+    text: 'Plus today’s *hot spots*, live, as five fire satellites pass overhead.',
+    prep: async (p) => { await earthReady(p); await tryClick(p, 'button:has-text("Bangladesh")', 3500); },
+    shot: async () => [{ at: 0.5, fn: (p) => clickText(p, 'button', 'Whole Earth') }] },   // pull back to reveal the whole Earth
+  { id: 'q06', start: '', card: true, extra: 1.4,
+    text: 'Parallax Fire. *Same fires.* *Two cameras.* *One honest record.*',
+    prep: async (p) => { await p.waitForTimeout(500); },
+    shot: async () => [] },
 ];
 const IS_SHORT = process.argv.includes('--short');
 if (IS_SHORT) SEGMENTS.splice(0, SEGMENTS.length, ...SHORT);
@@ -135,7 +161,15 @@ const TEAM_HTML = `
   <div class="pfv-logos"><img src="${logo('lumos-team-logo.svg')}" alt="Team Lumos"><img src="${logo('parallax-fire-logo.svg')}" alt="Parallax Fire"></div>
   <div class="pfv-names">${MEMBERS.map(([n, r], i) => `<div class="${r ? 'lead' : ''}" style="animation-delay:${(2.4 + i * 1.2).toFixed(2)}s">${photo(n) ? `<img src="${photo(n)}" alt="">` : ''}<b>${n}</b>${r ? `<i>${r}</i>` : ''}</div>`).join('')}</div>
 </div></div>`;
-const STRIP_HTML = `<div class="pfv-strip"><img src="${logo('lumos-team-logo.svg')}" alt="Team Lumos">${MEMBERS.map(([n, r]) => `<span>${photo(n) ? `<b class="av" style="background-image:url(${photo(n)})"></b>` : ''}${n}${r ? ' <i>(lead)</i>' : ''}</span>`).join('')}</div>`;
+const SHORT_CARD_HTML = `
+<div class="pfv-card"><div>
+  <img class="pfv-logo pfv-up" style="animation-delay:.05s" src="${logo('parallax-fire-logo.svg')}" alt="Parallax Fire">
+  <div class="pfv-u pfv-up" style="animation-delay:.45s">parallaxfire.netlify.app</div>
+  <div class="pfv-c pfv-up" style="animation-delay:.8s"><img src="${logo('lumos-team-logo.svg')}" alt="Team Lumos" style="height:44px;display:block;margin:0 auto 8px">M Al Shahriar Hameem (team lead) · ${TEAM.join(' · ')}</div>
+  <div class="pfv-k pfv-up" style="animation-delay:1.1s;margin:24px 0 0">NASA SPACE APPS CHALLENGE 2026 · HARMONIZATION OF MODIS AND VIIRS HOT SPOTS</div>
+  <div class="pfv-d pfv-up" style="animation-delay:1.25s">Data: NASA FIRMS (MODIS, VIIRS) · NASA GIBS · CelesTrak. A hot spot is a satellite detection, not a confirmed wildfire.</div>
+</div></div>`;
+const HOOK_HTML = `<div class="pfv-hook"><div><b>2012</b><i>×5</i><span>fire detections over Bangladesh</span></div></div>`;
 const NASA_HTML = SPACE_APPS ? `<img class="pfv-nasa" src="${SPACE_APPS}" alt="NASA International Space Apps Challenge">` : '';
 const OVERLAY_CSS = `
 #nl-badge-frame{display:none!important} .topbar__tools{visibility:hidden!important} .lx-nav{padding-right:112px!important} html{scrollbar-width:none} ::-webkit-scrollbar{display:none}
@@ -156,14 +190,22 @@ const OVERLAY_CSS = `
 .pfv-names b{font-weight:700;display:block;padding:0 8px}@keyframes pfvIn{to{opacity:1;transform:none}}.pfv-names i{font:600 12px ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:#FCD34D;font-style:normal;display:block;margin-top:6px}
 .pfv-names .lead{border-color:rgba(245,158,11,.6);background:rgba(245,158,11,.08)}
 .pfv-team .pfv-k{margin-bottom:34px}
-.pfv-strip{position:fixed;top:12px;left:16px;z-index:2147483646;display:grid;grid-template-columns:auto repeat(3,auto);gap:6px 16px;align-items:center;padding:8px 16px 8px 8px;border-radius:10px;background:rgba(6,10,20,.86);border:1px solid rgba(245,158,11,.5);white-space:nowrap}
-.pfv-strip>img{height:44px;grid-row:span 2;margin-right:2px}.pfv-strip span{display:flex;align-items:center;gap:6px;font:600 12.5px/1.2 Inter,system-ui,sans-serif;color:#DCE4F0}.pfv-strip i{font-style:normal;color:#FCD34D}
-.pfv-strip .av{width:34px;height:34px;border-radius:50%;background:#1d2a40 no-repeat 50% 4%/190% auto;border:1px solid rgba(255,255,255,.25)}
+.pfv-up{opacity:0;transform:translateY(18px);animation:pfvIn .7s cubic-bezier(.2,.7,.2,1) forwards}
+.pfv-cap em{font-style:normal;color:#FCD34D}
+.pfv-cap.big{font:800 31px/1.22 Inter,system-ui,-apple-system,sans-serif;letter-spacing:-.005em;padding:12px 26px;border-radius:14px;bottom:34px;background:rgba(6,10,20,.80);backdrop-filter:blur(6px);transition:opacity .14s}
+.pfv-hook{position:fixed;inset:0;z-index:2147483644;display:grid;place-items:center;pointer-events:none;background:radial-gradient(640px 380px at 50% 46%,rgba(5,8,16,.78),rgba(5,8,16,0) 75%);animation:pfvHook 2.9s ease forwards}
+.pfv-hook>div{text-align:center;color:#F4F7FB;font-family:Inter,system-ui,sans-serif;transform-origin:50% 60%;animation:pfvPunch 2.9s cubic-bezier(.2,.8,.2,1) forwards}
+.pfv-hook b{display:block;font-size:150px;font-weight:900;line-height:.9;letter-spacing:-.04em}
+.pfv-hook i{display:block;font-style:normal;font-size:96px;font-weight:900;line-height:1;background:linear-gradient(90deg,#FCD34D,#F97316 55%,#EF4444);-webkit-background-clip:text;background-clip:text;color:transparent}
+.pfv-hook span{display:block;margin-top:10px;font:700 15px ui-monospace,Menlo,monospace;letter-spacing:.2em;text-transform:uppercase;color:#DCE4F0}
+@keyframes pfvHook{0%{opacity:0}10%{opacity:1}72%{opacity:1}100%{opacity:0}}
+@keyframes pfvPunch{0%{transform:scale(1.25);filter:blur(8px)}14%{transform:scale(1);filter:blur(0)}100%{transform:scale(.94)}}
 .pfv-nasa{position:fixed;top:12px;right:16px;height:74px;z-index:2147483647;filter:drop-shadow(0 2px 6px rgba(0,0,0,.7))}`;
 
-const chunks = (t) => { // caption chunks of roughly one line and a half, cut at sentence or comma boundaries
+const CHUNK = IS_SHORT ? 46 : 78;
+const chunks = (t) => { // caption chunks (about one line), cut at sentence or comma boundaries
   const out = []; let cur = '';
-  for (const part of t.split(/(?<=[.?!:,])\s+/)) { if ((cur + ' ' + part).trim().length > 78 && cur) { out.push(cur.trim()); cur = part; } else cur = (cur + ' ' + part).trim(); }
+  for (const part of t.split(/(?<=[.?!:,])\s+/)) { if ((cur + ' ' + part).trim().length > CHUNK && cur) { out.push(cur.trim()); cur = part; } else cur = (cur + ' ' + part).trim(); }
   if (cur) out.push(cur.trim());
   return out;
 };
@@ -184,6 +226,50 @@ if (process.argv.includes('--dry')) {   // time the narration only
   for (const s of SEGMENTS) { const f = path.join(work, s.id + '.dry.aiff'); execFileSync('say', ['-v', VOICE, '-r', RATE, '-o', f, speak(s.text)]); const a = dur(f); fs.rmSync(f); sum += LEAD + a + PAD + (s.extra || 0); console.log(s.id, a.toFixed(1)); }
   console.log('TOTAL', sum.toFixed(1), 'voice', VOICE, 'rate', RATE); process.exit(0);
 }
+// Frame-by-frame capture: the page clock (Date, timers, requestAnimationFrame) is paused and stepped 1/30 s per frame,
+// CSS animations are slowed to match, and each screenshot is piped to ffmpeg. Smooth 30 fps on any machine.
+async function captureStepped(s, a, total, aiff, mp4) {
+  const ctx = await browser.newContext({ viewport: { width: W, height: H }, colorScheme: 'dark' });
+  await ctx.addInitScript(() => { try { localStorage.setItem('parallax-theme', 'dark'); localStorage.setItem('parallax.tour.v1', 'done'); } catch { /* private mode */ } });
+  const p = await ctx.newPage(); const errs = [];
+  p.on('pageerror', (e) => errs.push(e.message.slice(0, 120)));
+  await p.clock.install();
+  await p.goto(BASE + (s.start || '?notour'), { waitUntil: 'load' });
+  await p.waitForTimeout(s.start ? 4500 : 6500);
+  await p.addStyleTag({ content: OVERLAY_CSS });
+  const state = await s.prep(p);
+  for (const ahead of [3000, 8000, 20000]) {   // a busy page can run past a near target: retry further ahead
+    try { await p.clock.pauseAt(await p.evaluate((x) => Date.now() + x, ahead)); break; } catch (e) { if (ahead === 20000) throw e; }
+  }
+  const cdp = await ctx.newCDPSession(p); await cdp.send('Animation.enable'); await cdp.send('Animation.setPlaybackRate', { playbackRate: 0.17 });
+  if (!s.card) await p.addStyleTag({ content: `#root{transform-origin:50% 45%;animation:pfvKen ${total.toFixed(2)}s linear forwards}@keyframes pfvKen{from{transform:scale(1)}to{transform:scale(1.05)}}` });   // slow push-in keeps every shot moving
+  const over = (s.card ? SHORT_CARD_HTML : '') + (s.hook ? HOOK_HTML : '') + NASA_HTML;
+  if (over) await p.evaluate((h) => document.body.insertAdjacentHTML('beforeend', h), over);
+  const cs = cues(s, a);
+  await p.evaluate(({ caps, lead }) => {
+    const c = document.createElement('div'); c.className = 'pfv-cap big'; document.body.appendChild(c);
+    const html = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    for (const q of caps) setTimeout(() => { c.innerHTML = html(q.t); c.classList.add('on'); }, (lead + q.s) * 1000);
+    setTimeout(() => c.classList.remove('on'), (lead + caps[caps.length - 1].e) * 1000 + 200);
+  }, { caps: cs, lead: LEAD });
+  await p.waitForTimeout(300);   // let images in the overlays decode
+  const events = (await s.shot(p, { total, state, cues: cs })) || [];
+  const L = Math.round(LEAD * 1000);
+  const enc = spawn(FF, ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'image2pipe', '-framerate', '30', '-c:v', 'mjpeg', '-i', '-', '-i', aiff,
+    '-filter_complex', `[0:v]format=yuv420p[v];[1:a]adelay=${L}|${L},apad,aresample=48000[a]`, '-map', '[v]', '-map', '[a]', '-t', total.toFixed(3),
+    '-r', '30', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-c:a', 'aac', '-b:a', '192k', '-ac', '2', mp4], { stdio: ['pipe', 'inherit', 'inherit'] });
+  const done = once(enc, 'close');
+  const N = Math.round(total * 30); let t = Date.now();
+  for (let i = 0; i < N; i++) {
+    for (const e of events) if (!e.done && i / 30 >= e.at) { e.done = true; await e.fn(p); }
+    const buf = await p.screenshot({ type: 'jpeg', quality: 92 });
+    if (!enc.stdin.write(buf)) await once(enc.stdin, 'drain');
+    await p.clock.runFor(i % 3 === 2 ? 34 : 33);
+    if (i % 10 === 9) { const ms = (Date.now() - t) / 10; t = Date.now(); await cdp.send('Animation.setPlaybackRate', { playbackRate: Math.min(1, 33.3 / ms) }); }
+  }
+  enc.stdin.end(); await done; await ctx.close();
+  return { id: s.id, audio_s: +a.toFixed(2), total_s: +total.toFixed(2), frames: N, errs };
+}
 const browser = await chromium.launch({ executablePath: '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser', headless: true });
 const report = [];
 for (const s of SEGMENTS) {
@@ -193,9 +279,13 @@ for (const s of SEGMENTS) {
   // --audio=<dir>: use recorded narration (<dir>/<id>.m4a|.wav|.aiff|.mp3, e.g. the owner's own voice) instead of the built-in voice
   const rec = AUDIO && ['m4a', 'wav', 'aiff', 'mp3'].map((x) => path.join(AUDIO, `${s.id}.${x}`)).find((f) => fs.existsSync(f));
   const timed = AUDIO && fs.existsSync(path.join(AUDIO, s.id + '.json'));   // timed narration is already trimmed: keep its timing
-  if (rec) ff(['-i', rec, '-af', (timed ? '' : 'silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse,') + 'loudnorm=I=-16:TP=-1.5:LRA=11', '-ar', '48000', '-ac', '1', aiff]);
+  const VOICE_FX = IS_SHORT   // promo: tighter, brighter, louder (YouTube level)
+    ? 'highpass=f=80,acompressor=threshold=-20dB:ratio=3.5:attack=4:release=60:makeup=2,equalizer=f=3200:t=q:w=1.2:g=2.5,loudnorm=I=-14:TP=-1:LRA=6'
+    : 'loudnorm=I=-16:TP=-1.5:LRA=11';
+  if (rec) ff(['-i', rec, '-af', (timed ? '' : 'silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse,') + VOICE_FX, '-ar', '48000', '-ac', '1', aiff]);
   else execFileSync('say', ['-v', VOICE, '-r', RATE, '-o', aiff, speak(s.text)]);
   const a = dur(aiff), total = LEAD + a + PAD + (s.extra || 0);
+  if (IS_SHORT) { report.push(await captureStepped(s, a, total, aiff, mp4)); console.log(JSON.stringify(report[report.length - 1])); continue; }
   const vdir = path.join(work, s.id + '_raw'); fs.rmSync(vdir, { recursive: true, force: true });
   const ctx = await browser.newContext({ viewport: { width: W, height: H }, recordVideo: { dir: vdir, size: { width: W, height: H } }, colorScheme: 'dark' });
   await ctx.addInitScript(() => { try { localStorage.setItem('parallax-theme', 'dark'); localStorage.setItem('parallax.tour.v1', 'done'); } catch { /* private mode */ } });
@@ -205,14 +295,15 @@ for (const s of SEGMENTS) {
   await p.waitForTimeout(s.start ? 4500 : 6500);
   await p.addStyleTag({ content: OVERLAY_CSS });
   const state = await s.prep(p);
-  const over = s.card ? CARD_HTML : s.team ? TEAM_HTML : s.strip ? STRIP_HTML : '';
+  const over = s.card ? CARD_HTML : s.team ? TEAM_HTML : '';
   if (over) await p.evaluate((h) => document.body.insertAdjacentHTML('beforeend', h), over);
   if (NASA_HTML) await p.evaluate((h) => document.body.insertAdjacentHTML('beforeend', h), NASA_HTML);
   await p.evaluate((lower) => { if (lower) { const l = document.createElement('div'); l.className = 'pfv-low'; l.textContent = lower; document.body.appendChild(l); } }, s.lower);
   await p.waitForTimeout(900);   // the recording starts a little before t0: settle so the cut never shows the page before the card/label
   await p.evaluate(({ caps, lead }) => {
     const c = document.createElement('div'); c.className = 'pfv-cap'; document.body.appendChild(c);
-    for (const q of caps) setTimeout(() => { c.textContent = q.t; c.classList.add('on'); }, (lead + q.s) * 1000);
+    const html = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    for (const q of caps) setTimeout(() => { c.innerHTML = html(q.t); c.classList.add('on'); }, (lead + q.s) * 1000);
     setTimeout(() => c.classList.remove('on'), (lead + caps[caps.length - 1].e) * 1000 + 250);
   }, { caps: cues(s, a), lead: LEAD });
   const ready = (Date.now() - t0) / 1000;
@@ -234,14 +325,26 @@ if (!SEGMENTS.every((s) => fs.existsSync(path.join(work, s.id + '.mp4')))) { con
 const list = SEGMENTS.map((s) => `file '${path.join(work, s.id + '.mp4')}'`).join('\n');
 fs.writeFileSync(path.join(work, 'list.txt'), list + '\n');
 const out = path.join(work, OUT_NAME);
-ff(['-f', 'concat', '-safe', '0', '-i', path.join(work, 'list.txt'), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', out]);
+if (IS_SHORT) {   // crossfade the shots, fade in from and out to black
+  const d = SEGMENTS.map((s) => Math.round((LEAD + dur(path.join(work, s.id + '.aiff')) + PAD + (s.extra || 0)) * 30) / 30);
+  let v = '[0:v]', au = '[0:a]', off = 0; const g = [];
+  for (let i = 1; i < d.length; i++) {
+    off += d[i - 1] - XF;
+    g.push(`${v}[${i}:v]xfade=transition=fade:duration=${XF}:offset=${off.toFixed(3)}[v${i}]`, `${au}[${i}:a]acrossfade=d=${XF}[a${i}]`);
+    v = `[v${i}]`; au = `[a${i}]`;
+  }
+  const T = d.reduce((x, y) => x + y, 0) - XF * (d.length - 1);
+  g.push(`${v}fade=t=in:st=0:d=0.35,fade=t=out:st=${(T - 0.7).toFixed(3)}:d=0.7,format=yuv420p[vo]`, `${au}afade=t=out:st=${(T - 0.7).toFixed(3)}:d=0.7[ao]`);
+  ff([...SEGMENTS.flatMap((s) => ['-i', path.join(work, s.id + '.mp4')]), '-filter_complex', g.join(';'), '-map', '[vo]', '-map', '[ao]',
+    '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', out]);
+} else ff(['-f', 'concat', '-safe', '0', '-i', path.join(work, 'list.txt'), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', out]);
 // captions file with the same timing as the burned-in captions
 const ts = (x) => new Date(x * 1000).toISOString().slice(11, 23).replace('.', ',');
 let t = 0, n = 0; const srt = [];
 for (const s of SEGMENTS) {
   const a = dur(path.join(work, s.id + '.aiff'));
-  for (const c of cues(s, a)) srt.push(`${++n}\n${ts(t + LEAD + c.s)} --> ${ts(t + LEAD + c.e)}\n${c.t}\n`);
-  t += LEAD + a + PAD + (s.extra || 0);
+  for (const c of cues(s, a)) srt.push(`${++n}\n${ts(t + LEAD + c.s)} --> ${ts(t + LEAD + c.e)}\n${c.t.replace(/\*/g, '')}\n`);
+  t += LEAD + a + PAD + (s.extra || 0) - (IS_SHORT ? XF : 0);
 }
 fs.writeFileSync(out.replace(/\.mp4$/, '.srt'), srt.join('\n'));
-console.log(JSON.stringify({ out, bytes: fs.statSync(out).size, seconds: +t.toFixed(1) }));
+console.log(JSON.stringify({ out, bytes: fs.statSync(out).size, seconds: +(t + (IS_SHORT ? XF : 0)).toFixed(1) }));
