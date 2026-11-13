@@ -1,5 +1,7 @@
 # Parallax Fire
 
+<p align="center"><img src="branding/parallax-fire-logo.png" width="440" alt="Parallax Fire logo"> &nbsp; <img src="branding/lumos-team-logo.png" width="300" alt="Team Lumos logo"></p>
+
 **Same fires. Two cameras. One honest record.**
 
 NASA Space Apps Challenge 2026 · *Harmonization of MODIS and VIIRS Hot Spots* · **Team Lumos**, Dhaka, Bangladesh · created by M Al Shahriar Hameem
@@ -57,6 +59,10 @@ Source: `parallax_app/apps/web/public/data/parallax-20261010T190934Z-ce88f489/me
 | `kaggle_notebooks/` | Notebook A (download NASA FIRMS data) and Notebook B (train and export), run on Kaggle |
 | `video/` | Pitch video script with sources, captions (`.srt`); the builder is `parallax_app/scripts/video/make_video.mjs` |
 | `docs/screenshots/` | Screenshots of every page |
+| `branding/` | Project logo (Parallax Fire) and team logo (Lumos), SVG and PNG mockups |
+
+## Team Lumos
+M Al Shahriar Hameem (team lead) · Tuasin Taj Fiha · Afifa Asif · Md Abu Ammar · Kausar Ahmed · Sabiha Akter
 
 Run locally (Node 20+): `cd parallax_app && npm install && npm run dev` → http://localhost:5173. Tests: `npm test`. Checks used during development: `parallax_app/scripts/goals/`.
 

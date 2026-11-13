@@ -1,0 +1,175 @@
+1
+00:00:00,350 --> 00:00:04,808
+Right now, five NASA satellites are circling the Earth, watching for fire.
+
+2
+00:00:05,188 --> 00:00:09,183
+In the last day alone, they reported tens of thousands of hot spots.
+
+3
+00:00:09,562 --> 00:00:12,568
+Two of these satellites have watched for more than twenty years.
+
+4
+00:00:12,948 --> 00:00:14,824
+But they do not see fire the same way.
+
+5
+00:00:15,723 --> 00:00:20,300
+We are Team Lumos, from Dhaka: M Al Shahriar Hameem, our team lead,
+
+6
+00:00:20,500 --> 00:00:26,266
+with Tuasin Taj Fiha, Afifa Asif, Md Abu Ammar, Kausar Ahmed and Sabiha Akter.
+
+7
+00:00:26,646 --> 00:00:29,993
+For the NASA Space Apps Challenge, we built Parallax Fire,
+
+8
+00:00:30,193 --> 00:00:35,509
+to turn two satellite records that disagree into one honest story of when a place burns.
+
+9
+00:00:36,410 --> 00:00:41,043
+The older satellite, MODIS, sees the ground in pixels one kilometre wide.
+
+10
+00:00:41,423 --> 00:00:48,146
+The sharper one, VIIRS, arrived in 2012 and sees pixels of 375 metres,
+
+11
+00:00:48,346 --> 00:00:49,929
+so it catches smaller fires.
+
+12
+00:00:50,309 --> 00:00:53,391
+In Bangladesh it records about five times as many.
+
+13
+00:00:54,291 --> 00:00:58,195
+So when you join the two records, burning seems to leap in 2012.
+
+14
+00:00:58,575 --> 00:01:01,546
+Imagine planning your district’s fire season from this chart.
+
+15
+00:01:01,926 --> 00:01:05,650
+You would ask for help against a change that never happened on the ground.
+
+16
+00:01:06,550 --> 00:01:11,237
+Parallax Fire puts both on one scale. It learns how the two satellites relate,
+
+17
+00:01:11,437 --> 00:01:14,601
+only from years when both were flying. Press one switch,
+
+18
+00:01:14,801 --> 00:01:18,913
+and most of that jump disappears. The camera changed, not the fire.
+
+19
+00:01:19,813 --> 00:01:22,849
+Here is a real test. In March 2024,
+
+20
+00:01:23,049 --> 00:01:27,984
+the sharper satellite counted 621 detections over Bangladesh.
+
+21
+00:01:28,364 --> 00:01:34,003
+The older one counted 111. That month was never used to build our estimate.
+
+22
+00:01:34,383 --> 00:01:38,704
+From the older count alone, we estimated about 1,093,
+
+23
+00:01:38,904 --> 00:01:47,661
+likely between 571 and 1,529. The real 621 fell inside that range.
+
+24
+00:01:48,561 --> 00:01:49,755
+First, pick a place.
+
+25
+00:01:50,135 --> 00:01:53,806
+The calendar shows each year as a row and each month as a column.
+
+26
+00:01:54,186 --> 00:01:58,201
+In Bangladesh, March and April hold about four in five detections,
+
+27
+00:01:58,401 --> 00:02:02,445
+year after year. In California, the season moves to late summer.
+
+28
+00:02:03,345 --> 00:02:07,586
+Next, the map shows where it burned, district by district, on a real map.
+
+29
+00:02:08,486 --> 00:02:13,722
+We checked the method on the years 2023 and 2024, which it had never seen.
+
+30
+00:02:14,102 --> 00:02:17,267
+In Bangladesh it missed by 98 detections a month,
+
+31
+00:02:17,467 --> 00:02:21,048
+where the raw older count misses by 627.
+
+32
+00:02:21,428 --> 00:02:23,589
+In New South Wales it was not good enough,
+
+33
+00:02:23,789 --> 00:02:26,732
+so there the app shows the raw records only, and says so.
+
+34
+00:02:27,633 --> 00:02:28,922
+Finally, for today,
+
+35
+00:02:29,122 --> 00:02:32,287
+the live Earth shows each fire satellite where it really is,
+
+36
+00:02:32,487 --> 00:02:35,970
+with every hot spot it reported in the last twenty-four hours.
+
+37
+00:02:36,350 --> 00:02:40,506
+It is all NASA data: FIRMS fire detections from MODIS and VIIRS,
+
+38
+00:02:40,706 --> 00:02:44,036
+and GIBS satellite imagery, with public orbit records.
+
+39
+00:02:44,936 --> 00:02:49,473
+A planner can see the real burning season before deciding when to watch closely.
+
+40
+00:02:49,853 --> 00:02:54,472
+A researcher can compare two decades without mistaking a new camera for new fire.
+
+41
+00:02:54,852 --> 00:02:58,448
+Looking ahead, we want more regions, the newer NOAA satellites,
+
+42
+00:02:58,648 --> 00:03:01,303
+a Bangla interface, and partners to test it with.
+
+43
+00:03:02,203 --> 00:03:07,685
+Parallax Fire. Same fires, two cameras, one honest record. This is Team Lumos.
+
+44
+00:03:08,065 --> 00:03:08,736
+Thank you.

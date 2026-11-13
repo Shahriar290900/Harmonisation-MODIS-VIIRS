@@ -1,23 +1,32 @@
-# Parallax Fire — pitch video script (240 seconds)
+# Parallax Fire: pitch video scripts (240 seconds and 30 seconds)
 
-Built by `parallax_app/scripts/video/make_video.mjs` from the live site https://parallaxfire.netlify.app (real app, real data; nothing simulated). Voice: macOS on-device narrator "Daniel". Captions are burned in; a separate `.srt` is alongside the video.
+Built by `parallax_app/scripts/video/make_video.mjs` from the live site https://parallaxfire.netlify.app (the real app, real data; nothing simulated). Voice: Kokoro-82M (`af_heart`, Apache-2.0), generated locally one subtitle line at a time, so the burned-in subtitles and the `.srt` files follow the voice exactly. NASA Space Apps Challenge logo in the top-right corner throughout; team photos have their backgrounds removed (MODNet, run locally).
 
-Total length: **3:38** (218 s; limit 240 s). Structure follows the Space Apps "240 Seconds of Glory" guide: WHO (attention), WHY (the problem), WHAT (the idea and demo), HOW (impact and what we need).
+Structure, following the Space Apps Bangladesh "240 Seconds of Glory" examples: hook → meet the team (names and faces) → the problem and why it matters → the idea → "First / Next / Finally" walk through the app → the NASA data used → honest limits → impact and what comes next → sign-off "This is Team Lumos".
 
+## 240-second video (3:11; limit 4:00)
 | Time | On screen | Narration |
 |---|---|---|
-| 0:00–0:15 | Home: two cameras, one Earth | Every March, satellites light up with fire detections over Bangladesh. Two NASA satellites watch the same fires. The older one sees one hot pixel. The sharper one sees several. So which count do you trust? |
-| 0:15–0:29 | Team Lumos · Dhaka, Bangladesh · NASA Space Apps Challenge 2026 | We are Team Lumos, from Dhaka. We built Parallax Fire for the NASA Space Apps Challenge 2026, to turn two satellite records that disagree into one honest story of when a place burns. |
-| 0:29–0:56 | The problem · Bangladesh, real NASA FIRMS detections | Here is the problem. MODIS has recorded fires for more than twenty years, in pixels one kilometre wide. VIIRS arrived in 2012 with pixels of 375 metres, so it catches smaller fires. In Bangladesh it records about five times as many detections. Join the two records, and burning seems to jump in 2012. But mostly, the camera changed. |
-| 0:56–1:21 | Why it matters | Imagine you plan for the burning season in your district. You compare 2005 with 2020, see five times the fire, and ask for five times the resources, for a change that never happened on the ground. And a hot spot is not always a wildfire. It can be crop burning, or one fire seen twice. Cloud hides fires too, so no detection never means no fire. |
-| 1:21–1:42 | Step 1 · Calendar: pick a place | So here is how you use Parallax Fire. Open the calendar and pick your place. Each row is a year, each column a month, and the colour shows how much burning the satellites recorded. In Bangladesh, March and April hold about four in five detections, year after year. Choose California, and the season moves to late summer. |
-| 1:42–1:54 | Step 2 · Map: see where | Pick a month, and the map shows where it burned, on a real map, by five kilometre square or by district. Heat view and night vision change only how the map looks, never the data. |
-| 1:54–2:22 | Step 3 · Two satellites, one scale | Open Two satellites to see both records side by side, with our estimate of what the sharper satellite would have counted in the earlier years. The estimate learns only from years when both satellites flew, and we checked it on 2023 and 2024, years it had never seen. In Bangladesh it missed by 98 detections a month on average. Taking the old satellite’s count as it is misses by 627. |
-| 2:22–2:40 | Honest limits | We also show where it falls short. In New South Wales the estimate was closer than the simple rules, but its likely range was too wide to pass our check, so there the app shows the raw comparison only. Missing months stay missing. Every estimate is labelled as an estimate. |
-| 2:40–2:53 | Step 4 · Live: today, from NASA FIRMS | And for today, the Live page shows the last twenty-four hours of NASA fire detections on a real globe, counted per satellite, with fresh satellite pictures and the position of each fire satellite right now. |
-| 2:53–3:12 | Impact | What does this change? A planner can see the real burning season before deciding when to watch more closely. A researcher can compare two decades without mistaking a new camera for a new fire. A teacher can show students why data needs care. And every number can be traced to its source and downloaded. |
-| 3:12–3:28 | What comes next | Next, we want to add more regions, follow the newer NOAA satellites as the Suomi NPP data stream ends, add a Bangla interface, and test it with the people who plan for burning seasons. For that, we need partners and field feedback. |
-| 3:28–3:38 | Title and credits card | Parallax Fire. Same fires, two cameras, one honest record. Thank you. |
+| 0:00–0:15 | Live Earth, real satellites and sun: whole Earth, then Bangladesh | Right now, five NASA satellites are circling the Earth, watching for fire. In the last day alone, they reported tens of thousands of hot spots. Two of these satellites have watched for more than twenty years. But they do not see fire the same way. |
+| 0:15–0:36 | Meet the team: Lumos and Parallax Fire logos, six team photos and names | We are Team Lumos, from Dhaka: M Al Shahriar Hameem, our team lead, with Tuasin Taj Fiha, Afifa Asif, Md Abu Ammar, Kausar Ahmed and Sabiha Akter. For the NASA Space Apps Challenge, we built Parallax Fire, to turn two satellite records that disagree into one honest story of when a place burns. |
+| 0:36–0:53 | Home: "How it works", pixel sizes of the two satellites | The older satellite, MODIS, sees the ground in pixels one kilometre wide. The sharper one, VIIRS, arrived in 2012 and sees pixels of 375 metres, so it catches smaller fires. In Bangladesh it records about five times as many. |
+| 0:53–1:06 | Home: the 2012 jump chart | So when you join the two records, burning seems to leap in 2012. Imagine planning your district’s fire season from this chart. You would ask for help against a change that never happened on the ground. |
+| 1:06–1:19 | Two satellites: the "On one scale" switch | Parallax Fire puts both on one scale. It learns how the two satellites relate, only from years when both were flying. Press one switch, and most of that jump disappears. The camera changed, not the fire. |
+| 1:19–1:48 | Story: March 2024 in Bangladesh, step by step | Here is a real test. In March 2024, the sharper satellite counted 621 detections over Bangladesh. The older one counted 111. That month was never used to build our estimate. From the older count alone, we estimated about 1,093, likely between 571 and 1,529. The real 621 fell inside that range. |
+| 1:48–2:02 | Calendar: Bangladesh, then California | First, pick a place. The calendar shows each year as a row and each month as a column. In Bangladesh, March and April hold about four in five detections, year after year. In California, the season moves to late summer. |
+| 2:02–2:08 | Map: Bangladesh districts on a real map | Next, the map shows where it burned, district by district, on a real map. |
+| 2:08–2:27 | Results: the 2023–2024 check per place | We checked the method on the years 2023 and 2024, which it had never seen. In Bangladesh it missed by 98 detections a month, where the raw older count misses by 627. In New South Wales it was not good enough, so there the app shows the raw records only, and says so. |
+| 2:27–2:44 | Live Earth: California, NOAA-20 card | Finally, for today, the live Earth shows each fire satellite where it really is, with every hot spot it reported in the last twenty-four hours. It is all NASA data: FIRMS fire detections from MODIS and VIIRS, and GIBS satellite imagery, with public orbit records. |
+| 2:44–3:01 | Live Earth: whole Earth (impact and next steps) | A planner can see the real burning season before deciding when to watch closely. A researcher can compare two decades without mistaking a new camera for new fire. Looking ahead, we want more regions, the newer NOAA satellites, a Bangla interface, and partners to test it with. |
+| 3:01–3:11 | End card: logos, link, team, data credits | Parallax Fire. Same fires, two cameras, one honest record. This is Team Lumos. Thank you. |
+
+## 30-second video (26 s)
+| Time | On screen | Narration |
+|---|---|---|
+| 0:00–0:05 | Home: 2012 jump chart, with the team strip (logo, photos, names) | We are Team Lumos, from Dhaka. Satellites say fires jumped in 2012. Did they? |
+| 0:05–0:10 | Title card | Parallax Fire. Same fires, two cameras, one honest record. |
+| 0:10–0:19 | Calendar → Map → Live | We put NASA’s MODIS and VIIRS fire detections on one fair scale: a burning calendar, a real map and a live view, with every estimate labelled. |
+| 0:19–0:26 | Live Earth: whole Earth | Next: more regions, newer satellites and a Bangla interface, so anyone can tell a new fire from a new camera. |
 
 ## Where every spoken fact comes from
 | Statement | Source |
@@ -33,8 +42,14 @@ Total length: **3:38** (218 s; limit 240 s). Structure follows the Space Apps "2
 | Live page: last 24 hours, per satellite, satellite pictures, satellite positions | `docs/LIVE_SOURCES.md` (NASA FIRMS, NASA GIBS, CelesTrak) |
 | The Suomi NPP data stream ends | NASA Earthdata notice: S-NPP VIIRS science data delivery ceases 2 Nov 2026 (`docs/research/FINDINGS.md`) |
 
-## Not claimed in the video
-No forecast or prediction, no accuracy percentage, no claim of testing on real phones or with real planners. "Imagine you plan…" is a stated hypothetical. The future items are plans.
+| March 2024, Bangladesh: sharper satellite 621, older 111, estimate about 1,093 (likely 571–1,529), real count inside the range | Snapshot `parallax-20261010T190934Z-ce88f489`, month 2024-03 for BGD (shown step by step on the Story page); 2024 is a test year, never used for training |
+| "Tens of thousands of hot spots in the last day" | Live NASA FIRMS world feed at recording time (the count is on screen in the first shot) |
 
-## Re-recording the voice
-The narration is an on-device synthetic voice. To use a team member's voice, record the Narration column in order (the timings above are the targets) and replace the audio track, or ask for a rebuild with a different voice (`--voice=Samantha`, `--rate=172`).
+## Not claimed in the video
+No forecast or prediction, no accuracy percentage, no claim of testing on real phones or with real planners. "Imagine planning…" is a stated hypothetical. The future items are plans.
+
+## Team
+M Al Shahriar Hameem (team lead) · Tuasin Taj Fiha · Afifa Asif · Md Abu Ammar · Kausar Ahmed · Sabiha Akter. The photos and the Space Apps logo are kept locally in `video/assets/` (not committed).
+
+## Rebuilding
+Narration: `node gen.mjs <make_video.mjs> <dir> long|short af_heart` (kokoro-js). Video: `FFMPEG=<ffmpeg> node scripts/video/make_video.mjs <work dir> [--short] --audio=<dir>`. To use a team member's own voice, record the lines in `video/VOICE_LINES.md` as `sNN.m4a` and pass that folder with `--audio`.
