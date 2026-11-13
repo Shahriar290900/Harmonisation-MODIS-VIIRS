@@ -30,7 +30,8 @@ describe('explainMonth', () => {
   it('sensor-ratio sentence uses only record numbers', () => {
     const t = explainMonthText(load('BGD', 2016)[2], { aoiName: 'Bangladesh' });
     expect(t).toContain('In Mar 2016 VIIRS recorded 408 detections, about 3.1× Aqua\'s 133');
-    expect(t).toContain('468.65'.slice(0, 3));
+    expect(t).toContain('about 469 detections');   // estimate 468.65, shown rounded to whole detections
+    expect(t).toContain('likely between 325 and 935');   // its 80% range in words
     expect(t).toMatch(/ranks 14th highest of 23/);
   });
   it('backcast meaning', () => {
