@@ -236,11 +236,12 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
         map.on('mouseenter', 'cells', () => (map.getCanvas().style.cursor = 'pointer'));
         map.on('mouseleave', 'cells', () => (map.getCanvas().style.cursor = ''));
         mapRef.current = map;
+        (window as unknown as { __map?: unknown }).__map = map;   // read-only hook for the pitch-video recorder, like window.__earth
       } catch (err) {
         if (!disposed) setFailed('The map could not start: ' + String((err as Error)?.message ?? err));
       }
     })();
-    return () => { disposed = true; stopHealth?.(); markersRef.current.forEach((m) => m.remove()); markersRef.current = []; hoverRef.current?.remove(); mapRef.current?.remove(); mapRef.current = null; };
+    return () => { disposed = true; stopHealth?.(); markersRef.current.forEach((m) => m.remove()); markersRef.current = []; hoverRef.current?.remove(); mapRef.current?.remove(); mapRef.current = null; delete (window as unknown as { __map?: unknown }).__map; };
   }, [failed]);
 
   // Place outline + fit.
