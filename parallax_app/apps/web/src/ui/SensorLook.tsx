@@ -1,4 +1,5 @@
-import { Binoculars, Eye, Flame, Tv } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Binoculars, Eye, Flame, Palette, Tv } from 'lucide-react';
 import { Tip } from './Tip';
 
 /* Sensor looks inspired by gods-eye-view (MIT): display-only CSS/SVG filters on the map canvas; the data is never changed. */
@@ -49,15 +50,29 @@ export function SensorFilters() {
 }
 
 export function SensorControl({ look, onLook }: { look: Look; onLook: (l: Look) => void }) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: Event) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('pointerdown', away);
+    return () => document.removeEventListener('pointerdown', away);
+  }, [open]);
+  const cur = LOOKS.find((l) => l.k === look)!;
   return (
-    <div className="seg seg--sm look__seg" role="group" aria-label="Sensor look (display style)">
-      {LOOKS.map((l) => (
-        <Tip key={l.k} text={l.tip}>
-          <button type="button" data-look={l.k} className={look === l.k ? 'is-on' : ''} aria-label={`${l.label} look`} title={l.label} aria-pressed={look === l.k} aria-keyshortcuts={l.key} onClick={() => onLook(l.k)}>
-            <l.icon size={13} aria-hidden="true" /><span className="look__lab">{l.label}</span>
-          </button>
-        </Tip>
-      ))}
+    <div className="look__menu" ref={root} onKeyDown={(e) => { if (e.key === 'Escape' && open) { e.stopPropagation(); setOpen(false); (root.current?.querySelector('[data-looks-menu]') as HTMLElement | null)?.focus(); } }}>
+      <button type="button" className="btn btn--sm" data-looks-menu aria-haspopup="true" aria-expanded={open} aria-controls="looks-pop" onClick={() => setOpen(!open)}>
+        <Palette size={14} aria-hidden="true" />Display style{look !== 'normal' && <span className="muted"> · {cur.label}</span>}
+      </button>
+      <div id="looks-pop" className="seg seg--sm look__seg look__pop" role="group" aria-label="Display style" hidden={!open}>
+        {LOOKS.map((l) => (
+          <Tip key={l.k} text={l.tip}>
+            <button type="button" data-look={l.k} className={look === l.k ? 'is-on' : ''} aria-label={`${l.label} look`} title={l.label} aria-pressed={look === l.k} aria-keyshortcuts={l.key} onClick={() => onLook(l.k)}>
+              <l.icon size={13} aria-hidden="true" /><span className="look__lab">{l.label}</span>
+            </button>
+          </Tip>
+        ))}
+      </div>
     </div>
   );
 }

@@ -83,3 +83,13 @@
   .cc__tag { min-height: 32px; }
   .cc__seg button { min-height: 32px; }
 }
+
+/* Jump switch: "Joined as recorded" / "On one scale" */
+.jswitch { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 4px 0 10px; }
+.jswitch__btn { display: inline-flex; padding: 3px; gap: 2px; background: var(--bg-2); border: 1px solid var(--border-2); border-radius: 999px; cursor: pointer; font: inherit; color: var(--muted); }
+.jswitch__opt { padding: 0 14px; min-height: 36px; display: inline-flex; align-items: center; border-radius: 999px; font-size: 13px; font-weight: 600; transition: background 0.3s, color 0.3s; }
+.jswitch__opt.is-on { background: var(--surface-on); color: var(--text); box-shadow: inset 0 0 0 1px var(--border-2), inset 0 -2px 0 var(--amber); }
+.jswitch__btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.jswitch__cta { font-size: 13px; color: var(--muted); }
+.cc__jumpnote { margin: 8px 0 0; font-size: 14px; color: var(--text); }
+@media (prefers-reduced-motion: reduce) { .jswitch__opt { transition: none; } }

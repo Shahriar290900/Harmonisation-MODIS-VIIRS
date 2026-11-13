@@ -29,9 +29,9 @@ export const DEFAULT_STATE: AppState = {
 const LS_KEY = 'parallax.selection.v1';
 
 /** App pages. 'live' is reserved: the Router renders it only once src/pages/LivePage.tsx exists (track RV-B). */
-export type Route = 'home' | 'calendar' | 'map' | 'sensors' | 'method' | 'data' | 'live';
-export const PAGE_ROUTES: Route[] = ['calendar', 'map', 'sensors', 'method', 'data', 'live'];
-const ROUTE_RE = /^\/(calendar|map|sensors|method|data|live)(?:$|[?&/])/;
+export type Route = 'home' | 'calendar' | 'map' | 'sensors' | 'method' | 'data' | 'live' | 'story';
+export const PAGE_ROUTES: Route[] = ['calendar', 'map', 'sensors', 'method', 'data', 'live', 'story'];
+const ROUTE_RE = /^\/(calendar|map|sensors|method|data|live|story)(?:$|[?&/])/;
 
 /**
  * Which page a hash opens. '#/calendar?aoi=..' and friends; the legacy '#aoi=..&y=..' and '#/app..' open the Calendar;
@@ -163,7 +163,9 @@ export function createStore(initial: Partial<AppState> = {}, opts: { persist?: b
     try {
       // REVIEW H1: never write '#aoi=…' over a landing entry (e.g. a flush/throttled write after Back).
       if (typeof location !== 'undefined' && typeof history !== 'undefined' && (force || isWorkspaceHash(location.hash))) {
-        const h = routed ? routeHash(routeOfHash(location.hash), state) : toHash(state);
+        let h = routed ? routeHash(routeOfHash(location.hash), state) : toHash(state);
+        const stp = routed && routeOfHash(location.hash) === 'story' ? /[?&]step=(\d+)/.exec(location.hash) : null;
+        if (stp) h += `&step=${stp[1]}`; // the story keeps its step in the link
         if (location.hash !== h) history.replaceState(history.state, '', `${location.pathname}${location.search}${h}`);
       }
     } catch {

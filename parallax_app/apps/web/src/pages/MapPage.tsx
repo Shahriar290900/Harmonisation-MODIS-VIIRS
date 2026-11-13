@@ -21,7 +21,7 @@ export default function MapPage() {
         </div>
       </PageHead>
       <div className="mapwrap tour-map">
-        <MapPanel region={region} regions={core.regions} geo={d.geo} cells={d.cells} selection={sel} monthState={d.monthState} />
+        <MapPanel region={region} regions={core.regions} geo={d.geo} cells={d.cells} selection={sel} monthState={d.monthState} record={d.record} />
       </div>
       <p className="page__note small muted">Each square is about 5 km wide. Brighter squares had more fire detections. A detection is a hot pixel seen from space, not a confirmed wildfire. Squares with no data are left empty, which does not mean zero.</p>
       <NextSteps to={['calendar', 'sensors', 'method']} />

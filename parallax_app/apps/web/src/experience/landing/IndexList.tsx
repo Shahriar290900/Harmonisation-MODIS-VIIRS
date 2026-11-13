@@ -75,7 +75,7 @@ export function IndexList({ ctx }: { ctx: Ctx }) {
       <Reveal reduced={flags.reduced} className="lx-ix__head">
         <p className="lx-eyebrow">The index</p>
         <h2 id="lx-ix-h" className="lx-h2">Every area × year. <span className="lx-grad">Every month, one click.</span></h2>
-        <p className="lx-ix__lede">Dense on purpose. Numbers are VIIRS-scale hotspots per month (observed, or estimated from MODIS). Each link opens the calendar at that month. <kbd>Tab</kbd> moves between years, <Key icon={ArrowLeft} name="Left arrow" /><Key icon={ArrowRight} name="Right arrow" /> walks the months, <Key icon={ArrowUp} name="Up arrow" /><Key icon={ArrowDown} name="Down arrow" /> changes year.</p>
+        <p className="lx-ix__lede">Dense on purpose. Numbers are fire detections per month on the sharper satellite's scale (measured, or estimated from the older satellite). Each link opens the calendar at that month. <kbd>Tab</kbd> moves between years, <Key icon={ArrowLeft} name="Left arrow" /><Key icon={ArrowRight} name="Right arrow" /> walks the months, <Key icon={ArrowUp} name="Up arrow" /><Key icon={ArrowDown} name="Down arrow" /> changes year.</p>
       </Reveal>
       <div className="lx-ix__cols">
         {regions.map((r) => <Aoi key={r.aoi_id} region={r} s={series.get(r.aoi_id) ?? null} years={years} />)}
@@ -122,7 +122,7 @@ const Aoi = memo(function Aoi({ region, s, years }: { region: Region; s: AoiSeri
                 return (
                   <a key={mn} tabIndex={-1} href={h} className={'lx-ix__m' + (c ? ' st-' + c.state : ' is-loading')}
                     style={col ? { ['--c' as string]: col } : undefined}
-                    data-tip={`${name} · ${MONTHS_LONG[i]} ${y}\n${val}${ok ? (c!.kind === 'estimate' ? ' estimated' : ' VIIRS observed') : ''}\n${st}${c?.flag === 'high' ? ' · high for its season' : ''}`}
+                    data-tip={`${name} · ${MONTHS_LONG[i]} ${y}\n${val}${ok ? (c!.kind === 'estimate' ? ' estimated' : ' measured by the sharper satellite') : ''}\n${st}${c?.flag === 'high' ? ' · high for its season' : ''}`}
                     aria-label={`${MONTHS_LONG[i]} ${y}: ${val}, ${st}`}
                     onClick={(e) => onWorkspaceLink(e, h, `Opening ${name}, ${MONTHS_LONG[i]} ${y}`)}>
                     {c ? (ok ? fmtCompact(c.value) : c.state === 'unsupported' ? <Glyph state="unsupported" size={10} className="lx-ix__g" /> : '·') : ''}

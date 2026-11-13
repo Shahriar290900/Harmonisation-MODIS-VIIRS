@@ -19,7 +19,7 @@ export function routeOf(hash: string, current?: Route): Route {
   return r;
 }
 
-const TITLES: Partial<Record<Route, string>> = { calendar: 'Burning calendar', map: 'Map', sensors: 'Two satellites', method: 'How it works', data: 'Data & sources', live: 'Live' };
+const TITLES: Partial<Record<Route, string>> = { calendar: 'Burning calendar', map: 'Map', sensors: 'Two satellites', method: 'How it works', data: 'Data & sources', live: 'Live', story: 'Story' };
 
 let attached = false;
 function ensureStore() { if (attached) return; attached = true; selectionStore.attach(); }

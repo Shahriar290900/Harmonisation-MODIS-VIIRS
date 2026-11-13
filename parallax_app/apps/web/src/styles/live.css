@@ -166,3 +166,8 @@
 @media (max-width: 760px) {
   .map__stage .maplibregl-ctrl-bottom-right { top: auto !important; left: auto !important; right: 0 !important; bottom: 0 !important; }
 }
+
+/* Display style menu: the four looks sit behind one small button. */
+.look__menu { position: relative; display: inline-block; }
+.look__pop { position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; box-shadow: 0 8px 24px rgba(0,0,0,.35); background: var(--panel); }
+.look__pop[hidden] { display: none; }

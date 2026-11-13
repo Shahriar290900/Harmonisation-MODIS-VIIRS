@@ -88,9 +88,10 @@ export function explainMonth(rec: ActivityRecord | null | undefined, ctx: Explai
 
   // Estimate
   if (isNum(est)) {
-    let t = `The estimate is ${fmtNum(est, 1)} detections on the sharper satellite's (VIIRS) scale`;
+    const n = rec.interval_nominal_level;
+    let t = `Estimate: about ${fmtCount(est)} detections on the sharper satellite's (VIIRS) scale`;
     if (isNum(lo) && isNum(hi)) {
-      t += ` (${isNum(rec.interval_nominal_level) ? fmtPct(rec.interval_nominal_level) + ' ' : ''}interval ${fmtNum(lo, 1)}–${fmtNum(hi, 1)}`;
+      t += `, likely between ${fmtCount(lo)} and ${fmtCount(hi)} (${isNum(n) ? Math.round(n * 10) : 8} in 10 chance`;
       if (isNum(rec.interval_empirical_holdout_coverage)) t += `; empirical holdout coverage ${fmtPct(rec.interval_empirical_holdout_coverage)} for test years in ${ctx.aoiName ?? 'this region'}`;
       t += ')';
     }

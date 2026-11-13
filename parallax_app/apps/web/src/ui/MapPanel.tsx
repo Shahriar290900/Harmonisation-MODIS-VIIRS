@@ -8,9 +8,9 @@ import { rowsInBbox, useLive } from '../data/live';
 import { LIVE_COLORS, LIVE_ICON, LiveLegend, LiveTag, type LiveTagData, liveFeatures, livePopup, makeLiveImages } from './LiveLayer';
 import { SensorControl, SensorCaption, SensorFilters, lookForKey, type Look } from './SensorLook';
 import { buildDistricts, districtPopup, labelPoint } from './DistrictLayer';
-import type { CellsFile, Region, Selection } from '../types';
+import type { ActivityRecord, CellsFile, Region, Selection } from '../types';
 import { SERIES_COLORS } from '../types';
-import { fmtCompact, fmtNum, monthLabel } from '../data/format';
+import { fmtCompact, fmtCount, fmtNum, monthLabel } from '../data/format';
 import { noCellsHint } from '../data/regions';
 import { RAMP_CSS, valueColor } from './scale';
 import type { CellState } from './glyphs';
@@ -30,6 +30,8 @@ interface Props {
   cells: { loaded: boolean; file: CellsFile | null; error?: string | null; retry?: () => void }; selection: Selection; visible?: boolean;
   /** Display state of the month record for the place (REVIEW M5): a missing month is never shown as '0 active cells'. */
   monthState?: CellState;
+  /** The month's record: gives the legend a plain-words estimate line when the month is estimated. */
+  record?: ActivityRecord | null;
 }
 
 // REVIEW M5: probe once per page and release the throwaway context (the workspace can now remount many times).
@@ -82,7 +84,7 @@ function overlayFor(dark: boolean, hasBase: boolean): Overlay {
 
 interface CellPt { id: string; lon: number; lat: number; aqua: number | null; viirs: number | null; est: number | null; v: number | null }
 
-export function MapPanel({ region, regions, geo, cells, selection, visible = true, monthState }: Props) {
+export function MapPanel({ region, regions, geo, cells, selection, visible = true, monthState, record }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -422,6 +424,8 @@ export function MapPanel({ region, regions, geo, cells, selection, visible = tru
               {districtsOn
                 ? <div className="map__legend-sub">{districtSub}</div>
                 : <div className="map__legend-sub">{subIcon(cells, monthState)}{legendSub(cells, pts.length, monthState)}</div>}
+              {monthState === 'estimated' && record && record.estimated_viirs_reference_detections != null && record.estimate_interval_low != null && record.estimate_interval_high != null
+                && <div className="map__legend-sub">Whole place: estimate about {fmtCount(record.estimated_viirs_reference_detections)} detections, likely between {fmtCount(record.estimate_interval_low)} and {fmtCount(record.estimate_interval_high)} ({Math.round((record.interval_nominal_level ?? 0.8) * 10)} in 10 chance)</div>}
               {!districtsOn && cells.error && cells.retry && <button className="btn btn--sm map__retry" onClick={cells.retry}><Icon3D icon={RotateCw} tone="current" size={14} />Retry</button>}
             </div>
           </div>

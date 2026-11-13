@@ -9,6 +9,8 @@ const b = await launch();
 const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } });
 const p = await ctx.newPage(); watch(p, errs);
 await p.goto(BASE + '#/map?aoi=BGD&y=2024&m=3&notour=1', { waitUntil: 'load' }); await p.waitForTimeout(5000);
+// looks live behind the Display style menu (13 Nov): open it once; choosing a look keeps it open
+try { await p.click('[data-looks-menu]', { timeout: 3000 }); await p.waitForTimeout(400); } catch { fails.push('no clickable [data-looks-menu]'); }
 for (const look of ['thermal', 'nvg', 'crt', 'normal']) {
   try { await p.click(`[data-look="${look}"]`, { timeout: 3000 }); } catch { fails.push(`no clickable [data-look="${look}"] button`); continue; }
   await p.waitForTimeout(900);

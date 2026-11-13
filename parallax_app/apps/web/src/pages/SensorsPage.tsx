@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { JumpSwitch, type JumpMode } from '../story/JumpSwitch';
 import { Page, PageHead, NextSteps } from '../shell/PageParts';
 import { PlacePicker } from '../shell/PlacePicker';
 import { Term } from '../shell/Term';
@@ -21,11 +23,17 @@ export default function SensorsPage() {
   const d = useMonthData();
   const on = useAppState((s) => s.series);
   const scale = useAppState((s) => s.scale);
+  const [jump, setJump] = useState<JumpMode>('raw');
   return (
     <Page route="sensors">
       <PageHead title="Two satellites" lead="The older and the sharper satellite count fire differently, so we line them up on one scale to compare the years fairly.">
         <PlacePicker regions={core.regions} aoiId={sel.aoiId} allowed={core.manifest.aois} />
       </PageHead>
+      <section className="panel chart-panel" aria-label="The 2012 jump, with and without putting the satellites on one scale">
+        <div className="panel__head"><h2 className="panel__title">The 2012 jump: is it real? <span className="muted">· {core.regions.find((r) => r.aoi_id === sel.aoiId)?.name}</span></h2></div>
+        <JumpSwitch mode={jump} onChange={setJump} cta />
+        <CompareChart flat={d.flat} selection={sel} onSelect={(year, month) => setSelection({ year, month })} height={340} mode={jump} />
+      </section>
       <section className="panel chart-panel tour-chart" aria-label="Compare the two satellites">
         <div className="panel__head"><h2 className="panel__title">Fire detections per month <span className="muted">· {core.regions.find((r) => r.aoi_id === sel.aoiId)?.name}</span></h2></div>
         <CompareChart flat={d.flat} selection={sel} onSelect={(year, month) => setSelection({ year, month })} height={340} />

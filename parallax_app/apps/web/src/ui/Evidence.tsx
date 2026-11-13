@@ -2,7 +2,7 @@ import type { ActivityRecord, Manifest, Region, Selection } from '../types';
 import { Download, ExternalLink, FlaskConical, Printer, RotateCw, TrendingDown, TrendingUp } from 'lucide-react';
 import { Icon3D } from './icons/Icon3D';
 import { shownAnomalyFlag, terraOnlyIssue } from './bridge';
-import { fmtNum, fmtPct, fmtSigned, monthLabel, ordinal, utcRangeLabel } from '../data/format';
+import { fmtCount, fmtNum, fmtPct, fmtSigned, monthLabel, ordinal, utcRangeLabel } from '../data/format';
 import { STATE_LABEL, type CellState } from './glyphs';
 import { Glyph } from './Glyph';
 import { Tip, STATE_TIP } from './Tip';
@@ -42,7 +42,8 @@ function plainMonth(r: ActivityRecord | null, st: CellState, place: string, when
   else if (has(v)) out.push(`The sharper satellite counted ${fmtNum(v)} fire detections. The older satellite has no count for this month.`);
   if (has(e)) {
     const lo = r.estimate_interval_low, hi = r.estimate_interval_high;
-    out.push(`Estimate on the sharper satellite's scale: about ${fmtNum(e)}${has(lo) && has(hi) ? `, likely range ${fmtNum(lo)} to ${fmtNum(hi)} (8 in 10)` : ''}. It is an estimate, never a measurement.`);
+    const n = r.interval_nominal_level, chance = n != null && Number.isFinite(n) ? Math.round(n * 10) : 8;
+    out.push(`Estimate: about ${fmtCount(e)} detections${has(lo) && has(hi) ? `, likely between ${fmtCount(lo)} and ${fmtCount(hi)} (${chance} in 10 chance)` : ''}. It is an estimate on the sharper satellite's scale, never a measurement.`);
   }
   const flag = st === 'unavailable' || st === 'loading' ? null : shownAnomalyFlag(r, st);
   if (flag === 'high') out.push('Compared with the same month in other years, this month is unusually high.');

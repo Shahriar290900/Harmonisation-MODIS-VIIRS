@@ -196,6 +196,7 @@ function Nav({ core, flags, openHash }: { core: Core | null; flags: Flags; openH
 }
 
 // The Live page (track RV-B) is linked only once its file exists.
+const QUICK = [{ id: 'BGD', name: 'Bangladesh' }, { id: 'USA-CA', name: 'California' }, { id: 'AUS-NSW', name: 'New South Wales' }];
 const HAS_LIVE = Object.keys(import.meta.glob('../../pages/LivePage.tsx')).length > 0;
 
 type Detail = { region: Region; series: AoiSeries };
@@ -351,7 +352,18 @@ function GlobeStage({ ctx, bgd, others, openHash, error }: { ctx: Ctx; bgd: AoiS
                 Open the fire calendar <span className="lx-btn__arrow"><Icon3D icon={ArrowRight} tone="current" size={19} strokeWidth={2.4} /></span>
               </a>
               <button ref={secondary} className="lx-btn lx-btn--ghost" onClick={() => scrollToId('how', flags.reduced)}><Icon3D icon={Layers} tone="cyan" size={18} />How the two satellites line up</button>
-              {HAS_LIVE && <a className="lx-btn lx-btn--ghost" href="#/live"><Icon3D icon={Radio} tone="amber" size={18} />See today’s detections</a>}
+            </div>
+            <div className="lx-quick" data-intro data-quick-entry>
+              <p className="lx-quick__t" id="lx-quick-t">Pick a place</p>
+              <ul className="lx-quick__places" aria-labelledby="lx-quick-t">
+                {QUICK.filter((q) => !core || core.manifest.aois.includes(q.id)).map((q) => (
+                  <li key={q.id}><a className="lx-chip" href={`#/calendar?aoi=${q.id}`}>{core?.regions.find((r) => r.aoi_id === q.id)?.name ?? q.name}</a></li>
+                ))}
+              </ul>
+              <p className="lx-quick__more">
+                <a href="#/story">Watch the story</a>
+                {HAS_LIVE && <a href="#/live">See today</a>}
+              </p>
             </div>
             <ul className="lx-sensors" data-intro aria-label="Series colours">
               <li><i className="sw sw--aqua" />Older satellite (MODIS, 1 km) <span>since 2001</span></li>

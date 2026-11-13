@@ -1,4 +1,5 @@
-import { useMemo, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { JUMP_SENTENCE, type JumpMode } from '../story/JumpSwitch';
 import { actions, useAppState } from './bridge';
 import { scaleLinear, scaleSymlog } from 'd3-scale';
 import { area, line } from 'd3-shape';
@@ -11,7 +12,9 @@ import '../styles/charts.css';
 
 type Pt = { year: number; month: number; r: ActivityRecord | null };
 /** `height` is accepted for backwards compatibility and ignored: the chart sizes itself from its width. */
-interface Props { flat: Pt[]; selection: Selection; onSelect: (y: number, m: number) => void; height?: number }
+interface Props { flat: Pt[]; selection: Selection; onSelect: (y: number, m: number) => void; height?: number;
+  /** Jump view: one joined line (older satellite, or the estimate, before 2012; sharper satellite from 2012). Absent = the detailed view. */
+  mode?: JumpMode }
 
 const COLOR: Record<SeriesKey, string> = { aqua: 'var(--aqua)', viirs: 'var(--viirs)', estimate: 'var(--est)', terra: 'var(--terra)', static: 'var(--static)' };
 const SERIES: { key: SeriesKey; label: string; direct: string; title: string; get: (r: ActivityRecord) => number | null }[] = [
@@ -29,10 +32,24 @@ const SPAN: Record<string, { label: string; fill: string }> = {
 };
 const statusWord = (r: ActivityRecord | null) => !r ? 'no data for this month' : r.extract_status === 'complete' ? 'full month' : r.extract_status === 'partial' ? 'part of the month only' : 'no data for this month';
 
-export function CompareChart({ flat, selection, onSelect }: Props) {
+export function CompareChart({ flat, selection, onSelect, mode }: Props) {
   const [ref, { w }] = useSize<HTMLDivElement>();
   const log = useAppState((s) => s.scale) === 'log';
-  const on = useAppState((s) => s.series);
+  const onStore = useAppState((s) => s.series);
+  const jump = mode != null;
+  const on = jump ? { aqua: false, viirs: false, estimate: false, terra: false, static: false } : onStore;
+  const target = mode === 'onescale' ? 1 : 0;
+  const [tt, setTt] = useState(target);
+  const ttRef = useRef(target); ttRef.current = tt;
+  useEffect(() => {
+    if (!jump) return;
+    const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { setTt(target); return; }
+    const from = ttRef.current, t0 = performance.now(); let raf = 0;
+    const step = (now: number) => { const k = Math.min(1, (now - t0) / 650); const e = 1 - (1 - k) ** 3; setTt(from + (target - from) * e); if (k < 1) raf = requestAnimationFrame(step); };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [jump, target]);
   const [hover, setHover] = useState<number | null>(null);
 
   const n = flat.length;
@@ -48,11 +65,12 @@ export function CompareChart({ flat, selection, onSelect }: Props) {
       if (!p.r) continue;
       for (const s of SERIES) if (on[s.key]) { const v = s.get(p.r); if (v != null && v > mx) mx = v; }
       if (on.estimate && p.r.estimate_interval_high != null) mx = Math.max(mx, p.r.estimate_interval_high);
+      if (jump) for (const v of [p.r.raw_viirs_reference_detections, p.r.raw_modis_detections, p.r.estimated_viirs_reference_detections, p.r.estimate_interval_high]) if (v != null && v > mx) mx = v;
     }
     const x = scaleLinear().domain([0, Math.max(1, n - 1)]).range([0, iw]);
     const y = (log ? scaleSymlog().constant(1) : scaleLinear()).domain([0, mx * 1.05]).range([ih, 0]).nice();
     return { x, y, maxV: mx };
-  }, [flat, on, log, iw, ih, n]);
+  }, [flat, on, log, iw, ih, n, jump]);
 
   const complete = (p: Pt) => p.r != null && p.r.extract_status === 'complete';
   const paths = useMemo(() => {
@@ -63,6 +81,24 @@ export function CompareChart({ flat, selection, onSelect }: Props) {
     }
     return out;
   }, [flat, on, x, y]);
+  const pre = (p: Pt) => p.year < 2012;
+  const joined = useMemo(() => {
+    if (!jump) return null;
+    const val = (p: Pt) => {
+      if (!complete(p)) return null;
+      if (!pre(p)) return p.r!.raw_viirs_reference_detections;
+      const a = p.r!.raw_modis_detections, e = p.r!.estimated_viirs_reference_detections;
+      const want = target === 1 ? e : a, other = target === 1 ? a : e;
+      return want == null ? null : other == null ? want : other + (want - other) * (target === 1 ? tt : 1 - tt);
+    };
+    const mk = (f: (p: Pt) => boolean) => line<Pt>().defined((p) => f(p) && val(p) != null).x((_, i) => x(i)).y((p) => y(val(p)!))(flat) ?? '';
+    const pts = flat.map((p, i) => ({ i, v: val(p), pre: pre(p) })).filter((q) => q.v != null);
+    const lastPre = [...pts].reverse().find((q) => q.pre), firstPost = pts.find((q) => !q.pre);
+    const link = lastPre && firstPost ? `M${x(lastPre.i)},${y(lastPre.v!)}L${x(firstPost.i)},${y(firstPost.v!)}` : '';
+    const bandPre = area<Pt>().defined((p) => pre(p) && complete(p) && p.r!.estimate_interval_low != null && p.r!.estimate_interval_high != null)
+      .x((_, i) => x(i)).y0((p) => y(p.r!.estimate_interval_low!)).y1((p) => y(p.r!.estimate_interval_high!))(flat) ?? '';
+    return { pre: mk(pre), post: mk((p) => !pre(p)), link, bandPre, midX: lastPre && firstPost ? (x(lastPre.i) + x(firstPost.i)) / 2 : null, hiY: firstPost ? y(firstPost.v!) : 0 };
+  }, [jump, flat, x, y, tt, target]);  // eslint-disable-line react-hooks/exhaustive-deps
   const band = useMemo(() => on.estimate ? area<Pt>()
     .defined((p) => complete(p) && p.r!.estimate_interval_low != null && p.r!.estimate_interval_high != null)
     .x((_, i) => x(i)).y0((p) => y(p.r!.estimate_interval_low!)).y1((p) => y(p.r!.estimate_interval_high!))(flat) ?? '' : '', [flat, on.estimate, x, y]);
@@ -122,8 +158,14 @@ export function CompareChart({ flat, selection, onSelect }: Props) {
   const yearRows = flat.filter((p) => p.year === selection.year);
 
   return (
-    <div className="cc" data-chart="compare">
+    <div className="cc" data-chart="compare" data-mode={mode}>
       <div className="cc__bar">
+        {jump ? (
+          <ul className="cc__legend" aria-label="Lines">
+            <li><span className="cc__tag is-on"><svg width="22" height="10" aria-hidden><Swatch k={mode === 'onescale' ? 'estimate' : 'aqua'} /></svg>{mode === 'onescale' ? 'Estimate before 2012, likely range shaded' : 'Older satellite (MODIS) before 2012'}</span></li>
+            <li><span className="cc__tag is-on"><svg width="22" height="10" aria-hidden><Swatch k="viirs" /></svg>Sharper satellite (VIIRS) from 2012</span></li>
+          </ul>
+        ) : (
         <ul className="cc__legend" aria-label="Lines (press to show or hide)">
           {SERIES.map((s) => (
             <li key={s.key}>
@@ -133,6 +175,7 @@ export function CompareChart({ flat, selection, onSelect }: Props) {
             </li>
           ))}
         </ul>
+        )}
         <div className="cc__seg" role="group" aria-label="Vertical scale">
           <Tip text="Squeezed scale: each step up is about three times more, so small and big months can be read together. Zero stays at the bottom."><button type="button" className={log ? 'is-on' : ''} aria-pressed={log} onClick={() => actions.setScale('log')}>squeezed</button></Tip>
           <Tip text="Even scale: equal steps are equal counts. Best for judging real size differences; small months look tiny."><button type="button" className={!log ? 'is-on' : ''} aria-pressed={!log} onClick={() => actions.setScale('linear')}>even</button></Tip>
@@ -170,6 +213,16 @@ export function CompareChart({ flat, selection, onSelect }: Props) {
                     <text className="cc__mark" x={x(i2012) + 4} y={-3}>2012: sharper satellite starts</text>
                   </g>
                 )}
+                {joined && (
+                  <g>
+                    {joined.bandPre && <path d={joined.bandPre} fill={COLOR.estimate} opacity={0.22 * tt} />}
+                    <path d={joined.pre} fill="none" stroke={COLOR.aqua} strokeWidth={2.2} opacity={1 - tt} />
+                    <path d={joined.pre} fill="none" stroke={COLOR.estimate} strokeWidth={2.2} strokeDasharray="6 3" opacity={tt} />
+                    <path d={joined.link} fill="none" stroke="var(--amber)" strokeWidth={2} strokeDasharray="2 3" opacity={0.9} />
+                    <path d={joined.post} fill="none" stroke={COLOR.viirs} strokeWidth={2.2} />
+                    <text className="cc__direct" x={x(Math.max(0, i2012)) + 6} y={Math.max(12, (joined.hiY || 0) - 10)} style={{ fill: 'var(--amber)' }}>{mode === 'raw' ? 'the jump: the camera changed' : 'jump mostly gone'}</text>
+                  </g>
+                )}
                 {band && <path d={band} fill={COLOR.estimate} opacity={0.22} />}
                 {on.static && <path d={paths.static} fill="none" stroke={COLOR.static} strokeWidth={1.4} />}
                 {on.terra && <path d={paths.terra} fill="none" stroke={COLOR.terra} strokeWidth={1.2} />}
@@ -202,6 +255,7 @@ export function CompareChart({ flat, selection, onSelect }: Props) {
           </div>
         )}
       </div>
+      {jump && <p className="cc__jumpnote" aria-live="polite">{JUMP_SENTENCE[mode!]}</p>}
       <p className="cc__note">
         {log ? 'Squeezed scale: zero sits at the bottom and each step up is about three times more. ' : 'Even scale. '}
         Gaps are missing months (never zero). Hollow dots are part-month counts. The strip on top shows how each period was used (estimated past, learned from, chosen on, checked on). Tap or click a month to select it.

@@ -12,6 +12,7 @@ import { gsap, Reveal } from './motion';
 import type { Ctx } from './Landing';
 import { DEFAULT_AOI } from '../../data/regions';
 import { StageTagLx } from './StageTag';
+import { JUMP_SENTENCE, JumpSwitch, type JumpMode } from '../../story/JumpSwitch';
 
 /** The Bangladesh-first story's region name, read from regions.json (falls back to the default's name while loading). */
 const homeName = (ctx: Ctx) => ctx.core?.regions.find((r) => r.aoi_id === DEFAULT_AOI)?.name ?? 'Bangladesh';
@@ -64,7 +65,7 @@ function useSplitYears(snapshotId: string | undefined): SplitYears {
 }
 
 const cameras = (sy: SplitYears) => [
-  { k: 'MODIS · 1 km', h: 'One camera sees in big squares.', p: 'Aqua MODIS reads the ground in pixels about 1 km wide (try the MODIS look). A small fire inside a big pixel often stays below the detection threshold — so it is never counted.' },
+  { k: 'MODIS · 1 km', h: 'One camera sees in big squares.', p: 'The older satellite (MODIS) reads the ground in squares about 1 km wide (try the older-satellite look). A small fire inside a big pixel often stays below the detection threshold — so it is never counted.' },
   { k: 'VIIRS · 375 m', h: 'The other sees in small ones.', p: 'S-NPP VIIRS pixels are about 375 m — seven times less area each. Small fires light up, so VIIRS typically records several times more hotspots over the same land.' },
   { k: 'One fair scale', h: 'We translate one into the other.', p: `Both flew together from 2012. We learn “when the older satellite saw X here, the sharper one saw Y”${sy.learn ? ` from the years ${sy.learn}` : ''}, check it on years and places it never saw, then turn the older counts${sy.past ? ` of ${sy.past}` : ''} into estimates on the sharper satellite’s scale, each with a likely range (8 in 10).` }
 ];
@@ -131,7 +132,7 @@ export function TwoCameras({ ctx }: { ctx: Ctx }) {
             </div>
             <div className="lx-cam__look" role="group" aria-label="Sensor look">
               {(['modis', 'viirs'] as const).map((k) => (
-                <button key={k} type="button" aria-pressed={look === k} className={look === k ? 'is-on' : ''} onClick={() => setLook(look === k ? 'scroll' : k)}>{k === 'modis' ? 'MODIS look' : 'VIIRS look'}</button>
+                <button key={k} type="button" aria-pressed={look === k} className={look === k ? 'is-on' : ''} onClick={() => setLook(look === k ? 'scroll' : k)}>{k === 'modis' ? 'Older-satellite look' : 'Sharper-satellite look'}</button>
               ))}
             </div>
             <IllustrativeNote />
@@ -179,6 +180,7 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(640);
   const [step, setStep] = useStep(3);
+  const [mode, setMode] = useState<JumpMode>('raw');
   useEffect(() => {
     const el = box.current!;
     // Debounced: every width change rebuilds the scrubbed timeline, so don't do it on every resize frame.
@@ -210,15 +212,20 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
   const Y = (v: number) => m.t + ph - (Math.min(v, ymax) / ymax) * ph;
   const path = (k: 'aqua' | 'viirs' | 'est') => {
     let d = '', pen = false;
-    for (const p of data) { const v = p[k]; if (v == null) { pen = false; continue; } d += `${pen ? 'L' : 'M'}${X(p.year).toFixed(1)},${Y(v).toFixed(1)}`; pen = true; }
+    for (const p of data) { const v = k === 'viirs' ? p[k] : p.year < 2012 ? p[k] : null; if (v == null) { pen = false; continue; } d += `${pen ? 'L' : 'M'}${X(p.year).toFixed(1)},${Y(v).toFixed(1)}`; pen = true; }
     return d;
   };
   const bandPath = useMemo(() => {
-    const pts = data.filter((d) => d.lo != null && d.hi != null);
+    const pts = data.filter((d) => d.year < 2012 && d.lo != null && d.hi != null);
     if (!pts.length) return '';
     return 'M' + pts.map((d) => `${X(d.year).toFixed(1)},${Y(d.hi!).toFixed(1)}`).join('L') + 'L' + [...pts].reverse().map((d) => `${X(d.year).toFixed(1)},${Y(d.lo!).toFixed(1)}`).join('L') + 'Z';
   }, [data, w, h, ymax]); // eslint-disable-line react-hooks/exhaustive-deps
   const ticks = useMemo(() => { const n = 4, s = ymax / n; const mag = 10 ** Math.floor(Math.log10(s)); const st = Math.ceil(s / mag) * mag; return Array.from({ length: n + 1 }, (_, i) => i * st).filter((v) => v <= ymax); }, [ymax]);
+  const link = useMemo(() => {
+    const pre = [...data].reverse().find((d) => d.year < 2012 && (mode === 'raw' ? d.aqua : d.est) != null), post = data.find((d) => d.year >= 2012 && d.viirs != null);
+    const v = pre ? (mode === 'raw' ? pre.aqua : pre.est) : null;
+    return pre && post && v != null ? `M${X(pre.year).toFixed(1)},${Y(v).toFixed(1)}L${X(post.year).toFixed(1)},${Y(post.viirs!).toFixed(1)}` : '';
+  }, [data, mode, w, h, ymax]); // eslint-disable-line react-hooks/exhaustive-deps
   const xt = [2003, 2008, 2012, 2016, 2020, 2025].filter((y) => y >= y0 && y <= y1);
 
   useLayoutEffect(() => {
@@ -242,7 +249,7 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
   const items = [
     { k: '01 · MODIS alone', h: 'A record since 2003.', p: `Aqua MODIS, month by month, averaged per year for ${home}. One camera, one scale.` },
     { k: '02 · Splice in VIIRS', h: `In 2012 the record leaps ${r}.`, p: 'Join the sharper VIIRS onto the end and the chart jumps. The jump lines up with the instrument change — not necessarily with more fire on the ground.' },
-    { k: '03 · One scale', h: 'Now the years are comparable.', p: 'The older years translated to the sharper satellite’s scale (dashed), with the likely range (8 in 10). 2005 and 2020 finally sit on the same axis.' }
+    { k: '03 · One scale', h: 'Now the years are comparable.', p: 'Press “On one scale” on the chart: the older years are translated to the sharper satellite’s scale (dashed), with the likely range (8 in 10), and 2005 and 2020 finally sit on the same axis.' }
   ];
   const full = flags.reduced;
 
@@ -258,16 +265,17 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
         <figure className="lx-jump__fig">
           <div className="lx-jump__head">
           <ul className="lx-legend" aria-label="Legend">
-            <li><i className="sw sw--aqua" />Raw Aqua MODIS</li>
-            <li><i className="sw sw--viirs" />Raw S-NPP VIIRS</li>
-            <li><i className="sw sw--est sw--dash" />Estimate on the sharper scale · likely range</li>
+            <li><i className="sw sw--aqua" />Older satellite, as recorded</li>
+            <li><i className="sw sw--viirs" />Sharper satellite, as recorded</li>
+            <li><i className="sw sw--est sw--dash" />Estimate on the sharper satellite’s scale · likely range</li>
           </ul>
-          {ratio && <p className="lx-jump__ratio"><b>{r}</b><span>VIIRS ÷ MODIS hotspots<br />mean ratio, 2013–2024</span></p>}
+          {ratio && <p className="lx-jump__ratio"><b>{r}</b><span>sharper ÷ older satellite<br />average ratio, 2013–2024</span></p>}
           </div>
-          <div ref={box} className="lx-jump__box" data-ember-anchor="jump" data-chart="jump">
+          <JumpSwitch mode={mode} onChange={setMode} cta />
+          <div ref={box} className="lx-jump__box" data-ember-anchor="jump" data-chart="jump" data-mode={mode}>
             <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img" aria-labelledby="lx-jump-desc">
               <desc id="lx-jump-desc">
-                {`${home}, mean monthly hotspots per year, ${y0}–${y1}. Raw MODIS stays low; raw VIIRS from 2012 is ${r} higher; the estimate puts all years on the VIIRS scale.`}
+                {`${home}, mean monthly hotspots per year, ${y0}–${y1}. The older satellite stays low; the sharper satellite from 2012 is ${r} higher; the estimate puts the earlier years on the sharper satellite’s scale.`}
               </desc>
               <defs>
                 <clipPath id="lx-clip-aqua"><rect x={m.l - 2} y={0} width={full ? pw + 4 : 0} height={h} /></clipPath>
@@ -288,11 +296,12 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
                 <line x1={X(2012)} x2={X(2012)} y1={m.t} y2={m.t + ph} stroke="var(--amber)" strokeDasharray="3 4" strokeWidth="1.5" />
                 <text x={X(2012) + 6} y={m.t + 12} className="lx-jump__marktext">VIIRS arrives · Jan 2012</text>
               </g>
-              <g clipPath="url(#lx-clip-est)">
+              <path d={link} className="lx-jump__link" fill="none" stroke="var(--amber)" strokeWidth="2.25" strokeDasharray="2 4" strokeLinecap="round" />
+              <g clipPath="url(#lx-clip-est)" className="lx-jump__est">
                 <path d={bandPath} fill="url(#lx-bandfade)" />
                 <path d={path('est')} fill="none" stroke={C.est} strokeWidth="2.5" strokeDasharray="7 5" strokeLinecap="round" />
               </g>
-              <g clipPath="url(#lx-clip-aqua)">
+              <g clipPath="url(#lx-clip-aqua)" className="lx-jump__old">
                 <path d={path('aqua')} fill="none" stroke={C.aqua} strokeWidth="2.5" strokeLinejoin="round" />
               </g>
               <g clipPath="url(#lx-clip-viirs)">
@@ -303,6 +312,7 @@ export function JumpChart({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null }) {
               {!data.length && <text x={w / 2} y={h / 2} textAnchor="middle" className="lx-axis">{ctx.homeFailed ? unavailableText(`${home} activity`) : `Loading ${home} activity…`}</text>}
             </svg>
           </div>
+          <p className="lx-jump__sentence" aria-live="polite">{JUMP_SENTENCE[mode]}</p>
           <figcaption className="lx-figcap">{home} · mean monthly hotspot detections per year · y-axis linear. Source: this snapshot’s <code>activity/{DEFAULT_AOI}/*.json</code>.</figcaption>
         </figure>
       </div>
@@ -340,7 +350,7 @@ export function FairScale({ ctx }: { ctx: Ctx }) {
   const sy = useSplitYears(ctx.core?.snapshotId);
   const items = [
     { k: '01 · Overlap only', h: 'Learn from years both cameras flew.', p: `The translation “MODIS saw X, VIIRS saw Y” is learned only from years when both satellites were in orbit${sy.learn ? ` (${sy.learn})` : ''}, never from the years it is later checked on.` },
-    { k: '02 · Shown separately', h: 'An estimate is never passed off as an observation.', p: 'Years before VIIRS get a VIIRS-scale estimate from MODIS. It is drawn dashed, in its own colour, apart from observed counts.' },
+    { k: '02 · Shown separately', h: 'An estimate is never passed off as an observation.', p: 'Years before the sharper satellite get an estimate, on its scale, worked out from the older one. It is drawn dashed, in its own colour, apart from observed counts.' },
     { k: '03 · With a band', h: 'Every estimate carries a likely range.', p: 'The band says how far off the estimate may be. It is checked on years and places the model never saw, and its coverage is reported, not assumed.' }
   ];
   const bar = (cls: string, a: number, b: number, y: number, fill: string, dashed = false) => (
@@ -433,7 +443,7 @@ export function CalendarStory({ ctx, bgd }: { ctx: Ctx; bgd: AoiSeries | null })
             {rows.length > 0 && <span className="lx-cal__peak" style={{ gridColumn: `${peak + 1} / span 1`, gridRow: `2 / span ${rows.length}` }} />}
           </div>
           {ctx.homeFailed && !rows.length && <p className="lx-figcap lx-cal__na" role="status">{unavailableText(`The ${home} calendar`)}</p>}
-          <figcaption className="lx-figcap lx-cal__key">{home} · VIIRS-scale hotspots per month · <span><Glyph state="observed" /> observed</span> <span><Glyph state="estimated" /> estimated</span> <span><Glyph state="partial" /> partial</span> <span><Glyph state="missing" /> missing</span> <span><span className="lx-flag" aria-hidden /> high for its season</span></figcaption>
+          <figcaption className="lx-figcap lx-cal__key">{home} · detections per month, on the sharper satellite’s scale · <span><Glyph state="observed" /> observed</span> <span><Glyph state="estimated" /> estimated</span> <span><Glyph state="partial" /> partial</span> <span><Glyph state="missing" /> missing</span> <span><span className="lx-flag" aria-hidden /> high for its season</span></figcaption>
         </figure>
       </div>
     </section>

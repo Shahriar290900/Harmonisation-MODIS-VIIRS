@@ -11,6 +11,7 @@ import MapPage from './pages/MapPage';
 import SensorsPage from './pages/SensorsPage';
 import MethodPage from './pages/MethodPage';
 import DataPage from './pages/DataPage';
+import StoryPage from './pages/StoryPage';
 
 NProgress.configure({ showSpinner: false });
 
@@ -21,7 +22,7 @@ const LIVE_LOADER = Object.values(LIVE_MODULES)[0] as (() => Promise<{ default: 
 const LivePage = LIVE_LOADER ? lazy(LIVE_LOADER) : null;
 export const LIVE_AVAILABLE = !!LivePage;
 
-const PAGES: Partial<Record<Route, ComponentType>> = { calendar: CalendarPage, map: MapPage, sensors: SensorsPage, method: MethodPage, data: DataPage };
+const PAGES: Partial<Record<Route, ComponentType>> = { calendar: CalendarPage, map: MapPage, sensors: SensorsPage, method: MethodPage, data: DataPage, story: StoryPage };
 
 function Page({ route }: { route: Route }) {
   const { ready } = useWorkspace();

@@ -459,3 +459,26 @@
   .lx-cam__legend { top: 48px; }
 }
 @media (max-width: 1099px) and (min-width: 700px) { .lx-cam__legend { top: 52px; } }
+
+/* 2012 jump switch: the older satellite's line (as recorded) or the estimate (one scale) before 2012 */
+.lx-jump__est, .lx-jump__old, .lx-jump__link { transition: opacity 0.5s ease; }
+.lx-jump__box[data-mode="raw"] .lx-jump__est { opacity: 0; }
+.lx-jump__box[data-mode="onescale"] .lx-jump__old { opacity: 0; }
+.lx-jump__sentence { margin: 10px 0 0; font-size: 15px; color: var(--text); max-width: 62ch; }
+.lx-jump__fig .jswitch { margin: 8px 0; }
+@media (prefers-reduced-motion: reduce) { .lx-jump__est, .lx-jump__old, .lx-jump__link { transition: none; } }
+
+/* Quick entry in the first screen: pick a place, watch the story, see today */
+.lx-quick { margin-top: 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.lx-quick__t { margin: 0; font-size: 14px; font-weight: 650; color: var(--lx-ink); }
+.lx-quick__places { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.lx-chip { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--lx-ink) 40%, transparent); background: color-mix(in srgb, var(--lx-bg) 55%, transparent); color: var(--lx-ink); font: 600 14px/1 var(--font); text-decoration: none; backdrop-filter: blur(8px); }
+.lx-chip:hover { border-color: var(--lx-ink); }
+.lx-quick__more { display: flex; gap: 16px; margin: 0; font-size: 14px; }
+.lx-quick__more a { color: var(--lx-ink); font-weight: 600; text-underline-offset: 3px; display: inline-flex; align-items: center; min-height: 40px; }
+@media (max-width: 700px) {
+  .lx-quick { margin-top: 12px; }
+  .lx-hero__copy .lx-sensors { display: none; }
+}
+@media (max-height: 820px) { .lx-hero__copy .lx-sensors { display: none; } }
+@media (max-width: 700px) { .lx-hero__aside { display: none; } .lx-quick__more { width: 100%; } }

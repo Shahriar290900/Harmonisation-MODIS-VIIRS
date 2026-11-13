@@ -1,0 +1,40 @@
+/* #/story walkthrough. Tokens only. */
+.story { display: grid; gap: 12px; }
+.story__bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.story__bar .btn { min-height: 44px; }
+.story__dots { display: flex; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.story__dot { width: 28px; height: 28px; padding: 0; border: 0; background: transparent; cursor: pointer; position: relative; }
+.story__dot::after { content: ''; position: absolute; inset: 9px; border-radius: 50%; background: var(--border-2); transition: background .25s, transform .25s; }
+.story__dot.is-on::after { background: var(--amber); transform: scale(1.35); }
+.story__dot:focus-visible { outline: 2px solid var(--focus); border-radius: 50%; }
+.story__step { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr); gap: 20px 28px; align-items: start; }
+.story__step[hidden] { display: none; }
+.story__text h2 { margin: 4px 0 10px; font-size: clamp(22px, 2.6vw, 30px); }
+.story__text p { font-size: 16px; line-height: 1.55; max-width: 52ch; }
+.story__n { color: var(--muted); font-size: 13px; margin: 0; }
+.story__vis { min-width: 0; }
+.story__go { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; max-width: 380px; }
+.story__go .btn { width: 100%; justify-content: center; min-height: 46px; }
+.story__src { margin: 0; }
+.story__bars { margin: 0; display: grid; gap: 12px; }
+.story__bar-row { display: grid; grid-template-columns: 130px 1fr auto; align-items: center; gap: 10px; font-size: 14px; }
+.story__bar-row i { display: block; height: 28px; border-radius: 4px; transition: width .6s ease; }
+.story__bar-row b { font-variant-numeric: tabular-nums; font-size: 18px; }
+.story__bars figcaption, .story__range figcaption { color: var(--muted); font-size: 13px; }
+.story__range { margin: 0 0 14px; }
+.story__track { position: relative; height: 34px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; }
+.story__band { position: absolute; top: 0; bottom: 0; background: var(--est); opacity: .28; }
+.story__est { position: absolute; top: 4px; bottom: 4px; width: 0; border-left: 2px dashed var(--est); }
+.story__seen { position: absolute; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--viirs); border: 2px solid var(--panel); }
+.story__seen.is-out { background: var(--amber); }
+.story__range figcaption { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+/* the two columns that matter in step 1 */
+.story-cal .cg-row > :nth-child(4), .story-cal .cg-row > :nth-child(5) { box-shadow: inset 0 0 0 2px var(--amber); }
+.story-cal .cg-row--head > :nth-child(4), .story-cal .cg-row--head > :nth-child(5) { color: var(--amber); font-weight: 700; }
+.story .mapwrap .map__stage { height: min(440px, 56vh); min-height: 300px; }
+@media (max-width: 860px) {
+  .story__step { grid-template-columns: minmax(0, 1fr); }
+  .story__bar-row { grid-template-columns: 100px 1fr auto; }
+}
+@media (prefers-reduced-motion: reduce) { .story__bar-row i, .story__dot::after { transition: none; } }
+.story__go .btn, .story__bar .btn { text-decoration: none; }

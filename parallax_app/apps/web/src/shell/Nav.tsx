@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, CalendarDays, Database, House, Map as MapIcon, MoreHorizontal, Radio, Satellite, type LucideIcon } from 'lucide-react';
+import { BookOpen, CalendarDays, Compass, Database, House, Map as MapIcon, MoreHorizontal, Radio, Satellite, type LucideIcon } from 'lucide-react';
 import { routeHash, type Route } from '../state/store';
 import { useSelection } from '../ui/bridge';
 
 interface Item { route: Route; label: string; icon: LucideIcon }
 const ITEMS: Item[] = [
   { route: 'home', label: 'Home', icon: House },
+  { route: 'story', label: 'Story', icon: Compass },
   { route: 'calendar', label: 'Calendar', icon: CalendarDays },
   { route: 'map', label: 'Map', icon: MapIcon },
   { route: 'sensors', label: 'Two satellites', icon: Satellite },
