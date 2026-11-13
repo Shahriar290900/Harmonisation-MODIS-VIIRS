@@ -1,1 +1,0 @@
-{"cell_size_m":5000,"proj":"lambert-cea","est_min":1.0,"columns":["cell_id","lon","lat","month","aqua","viirs","est"],"rows":[["2002_495",90.0445,22.8843,3,1,null,1.1],["2010_498",90.4042,23.0308,3,1,null,1.16]]}

@@ -60,6 +60,7 @@ Source: `parallax_app/apps/web/public/data/parallax-20261010T190934Z-ce88f489/me
 | `video/` | Pitch video script with sources, captions (`.srt`); the builder is `parallax_app/scripts/video/make_video.mjs` |
 | `docs/screenshots/` | Screenshots of every page |
 | `branding/` | Project logo (Parallax Fire) and team logo (Lumos), SVG and PNG mockups |
+| `docs/archive/` | Build notes, agent prompts and the original challenge and PRD documents |
 
 ## Team Lumos
 M Al Shahriar Hameem (team lead) · Tuasin Taj Fiha · Afifa Asif · Md Abu Ammar · Kausar Ahmed · Sabiha Akter

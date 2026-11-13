@@ -18,11 +18,10 @@ parallax_app/docs/kaggle/probes/*/output/
 parallax_app/docs/research/messages/
 
 # large local recordings
-for Chatgpt/assets/*.webm
+docs/archive/for-chatgpt/assets/*.webm
 video/*.mp4
 
 # team photos and the Space Apps logo: used in the video only, not published in this repo
 video/assets/
-team pictures/
-team pictures.zip
-space_apps_logo.webp
+# personal and local-only files (screenshots, original photos, downloads)
+_local/
