@@ -17,8 +17,8 @@ const VOICE = arg('voice', 'Daniel'), RATE = arg('rate', '165');
 const ONLY = arg('only', '').split(',').filter(Boolean);
 const BASE = process.env.VIDEO_BASE || 'https://parallaxfire.netlify.app/';
 const W = 1280, H = 720;
-const PAD = process.argv.includes('--short') ? 0.35 : 0.55, LEAD = process.argv.includes('--short') ? 0.45 : 0.35;
-const XF = 0.35;   // --short: crossfade between shots (overlaps only the silence of PAD + LEAD)
+const PAD = process.argv.includes('--short') ? 0 : 0.55, LEAD = process.argv.includes('--short') ? 0.25 : 0.35;
+const XF = 0.25;   // --short: crossfade between shots; each shot has a fixed slot so the beats land on the guide's marks
 fs.mkdirSync(work, { recursive: true });
 const BRAND = path.join(path.dirname(new URL(import.meta.url).pathname), '../../../branding');
 const logo = (f) => 'data:image/svg+xml;base64,' + fs.readFileSync(path.join(BRAND, f)).toString('base64');
@@ -27,7 +27,7 @@ const TEAM = ['Tuasin Taj Fiha', 'Afifa Asif', 'Md Abu Ammar', 'Kausar Ahmed', '
 const ASSETS = path.join(BRAND, '../video/assets');
 const png = (f) => { const p = path.join(ASSETS, f); return fs.existsSync(p) ? 'data:image/png;base64,' + fs.readFileSync(p).toString('base64') : ''; };
 const photo = (n) => png(n.toLowerCase().replace(/\s+/g, '-') + '.png');
-const SPACE_APPS = png('space-apps-logo-white.png');
+const SPACE_APPS = png('space-apps-logo.png');   // original colours, unmodified (NASA branding may not be altered)
 const MEMBERS = [['M Al Shahriar Hameem', 'Team lead'], ...TEAM.map((n) => [n, ''])];
 
 // spoken text uses phonetic spellings; captions use the real names
@@ -106,21 +106,25 @@ const glide = (p, from, to, ms) => p.evaluate(({ from, to, ms }) => {   // non-b
   const step = () => { const k = Math.min(1, (performance.now() - t0) / ms); window.scrollTo(0, from + (to - from) * ease(k)); if (k < 1) requestAnimationFrame(step); };
   requestAnimationFrame(step);
 }, { from, to, ms });
-const SHORT = [
-  { id: 'q01', start: '#/live' + q, hook: true,
-    text: 'In *2012*, satellites suddenly counted *five times* more fire in Bangladesh.',
+const SHORT = [   // beats from the Space Apps "30 Seconds of Glory" guide: 0:00 introduce, 0:02 lead in, 0:05 name, 0:10 describe, 0:20 future
+  { id: 'q1', slot: 2.2, start: '#/live' + q, overlay: 'intro',
+    text: 'We’re *Team Lumos*, from Dhaka.',
     prep: async (p) => { await earthReady(p); await tryClick(p, 'button:has-text("Whole Earth")', 3500); },
-    shot: async () => [{ at: 1.0, fn: (p) => clickText(p, 'button', 'Bangladesh') }] },
-  { id: 'q02', start: '',
-    text: 'Was the land suddenly burning? Mostly, NASA just got a *sharper camera*.',
-    prep: async (p) => { const s = await sectionSpan(p, '#jump'); const y0 = s.top + (s.h - s.vh) * 0.35; await p.evaluate((y) => window.scrollTo(0, y), y0); await p.waitForTimeout(2500); return { y0, y1: s.top + (s.h - s.vh) * 0.8 }; },
+    shot: async () => [] },
+  { id: 'q2', slot: 3.3, start: '#/live' + q, overlay: 'hook',
+    text: 'In *2012*, fire counts jumped *five-fold*.',
+    prep: async (p) => { await earthReady(p); await tryClick(p, 'button:has-text("Whole Earth")', 3500); },
+    shot: async () => [{ at: 0.6, fn: (p) => clickText(p, 'button', 'Bangladesh') }] },
+  { id: 'q3', slot: 5.0, start: '', overlay: 'name',
+    text: 'Meet *Parallax Fire*. That jump? Mostly a *sharper camera*, not more fire.',
+    prep: async (p) => { const s = await sectionSpan(p, '#jump'); const y0 = s.top + (s.h - s.vh) * 0.35; await p.evaluate((y) => window.scrollTo(0, y), y0); await p.waitForTimeout(2500); return { y0, y1: s.top + (s.h - s.vh) * 0.7 }; },
     shot: async (p, { total, state }) => { await glide(p, state.y0, state.y1, total * 1000); return []; } },
-  { id: 'q03', start: '#/sensors' + q,
-    text: 'Parallax Fire puts both satellites on *one honest scale*. Most of the jump melts away.',
+  { id: 'q4', slot: 3.4, start: '#/sensors' + q,
+    text: 'Flip one switch: *25 years*, one fair scale.',
     prep: async (p) => { await p.waitForTimeout(2500); await p.evaluate(() => document.querySelector('[data-chart="compare"]')?.scrollIntoView({ block: 'center' })); await p.waitForTimeout(800); },
-    shot: async (p, { cues }) => [{ at: LEAD + (cues[1] ? cues[1].s : 2) - 0.2, fn: (p) => clickText(p, 'button', 'On one scale') }] },
-  { id: 'q04', start: '#/map' + q,
-    text: 'Every *fire season*, mapped district by district.',
+    shot: async (p, { cues }) => [{ at: LEAD + (cues[1] ? cues[1].s : 0.9) - 0.15, fn: (p) => clickText(p, 'button', 'On one scale') }] },
+  { id: 'q5', slot: 2.9, start: '#/map' + q,
+    text: 'Every *district*, every season, mapped.',
     prep: async (p) => {
       await p.waitForFunction(() => window.__map && window.__map.loaded(), null, { timeout: 60000 });
       await tryClick(p, 'button:has-text("Districts")', 2500);
@@ -134,12 +138,16 @@ const SHORT = [
       return { B };
     },
     shot: async (p, { total, state }) => { await p.evaluate(({ B, ms }) => window.__map.easeTo({ ...B, duration: ms, easing: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2) }), { B: state.B, ms: total * 1000 }); return []; } },
-  { id: 'q05', start: '#/live' + q,
-    text: 'Plus today’s *hot spots*, live, as five fire satellites pass overhead.',
+  { id: 'q6', slot: 3.1, start: '#/live' + q,
+    text: 'Plus today’s NASA *hot spots*, live.',
     prep: async (p) => { await earthReady(p); await tryClick(p, 'button:has-text("Bangladesh")', 3500); },
-    shot: async () => [{ at: 0.5, fn: (p) => clickText(p, 'button', 'Whole Earth') }] },   // pull back to reveal the whole Earth
-  { id: 'q06', start: '', card: true, extra: 1.4,
-    text: 'Parallax Fire. *Same fires.* *Two cameras.* *One honest record.*',
+    shot: async () => [{ at: 0.3, fn: (p) => clickText(p, 'button', 'Whole Earth') }] },   // pull back to reveal the whole Earth
+  { id: 'q7', slot: 5.3, start: '#/live' + q, label: 'What’s next',
+    text: 'Next: every country, newer satellites, a *Bangla* app: real fire, not a new camera.',
+    prep: async (p) => { await earthReady(p); await tryClick(p, 'button:has-text("California")', 3500); },
+    shot: async () => [{ at: 0.4, fn: (p) => clickText(p, 'button', 'New South Wales') }] },   // sweep across the globe
+  { id: 'q8', slot: 3.7, start: '', overlay: 'card',
+    text: '*Parallax Fire*, by Team Lumos.',
     prep: async (p) => { await p.waitForTimeout(500); },
     shot: async () => [] },
 ];
@@ -161,14 +169,17 @@ const TEAM_HTML = `
   <div class="pfv-logos"><img src="${logo('lumos-team-logo.svg')}" alt="Team Lumos"><img src="${logo('parallax-fire-logo.svg')}" alt="Parallax Fire"></div>
   <div class="pfv-names">${MEMBERS.map(([n, r], i) => `<div class="${r ? 'lead' : ''}" style="animation-delay:${(2.4 + i * 1.2).toFixed(2)}s">${photo(n) ? `<img src="${photo(n)}" alt="">` : ''}<b>${n}</b>${r ? `<i>${r}</i>` : ''}</div>`).join('')}</div>
 </div></div>`;
+const MUSIC_CREDIT = arg('music', '') ? 'Music: “Voltaic” Kevin MacLeod (incompetech.com), licensed under CC BY 4.0.' : '';
 const SHORT_CARD_HTML = `
 <div class="pfv-card"><div>
   <img class="pfv-logo pfv-up" style="animation-delay:.05s" src="${logo('parallax-fire-logo.svg')}" alt="Parallax Fire">
   <div class="pfv-u pfv-up" style="animation-delay:.45s">parallaxfire.netlify.app</div>
   <div class="pfv-c pfv-up" style="animation-delay:.8s"><img src="${logo('lumos-team-logo.svg')}" alt="Team Lumos" style="height:44px;display:block;margin:0 auto 8px">M Al Shahriar Hameem (team lead) · ${TEAM.join(' · ')}</div>
   <div class="pfv-k pfv-up" style="animation-delay:1.1s;margin:24px 0 0">NASA SPACE APPS CHALLENGE 2026 · HARMONIZATION OF MODIS AND VIIRS HOT SPOTS</div>
-  <div class="pfv-d pfv-up" style="animation-delay:1.25s">Data: NASA FIRMS (MODIS, VIIRS) · NASA GIBS · CelesTrak. A hot spot is a satellite detection, not a confirmed wildfire.</div>
+  <div class="pfv-d pfv-up" style="animation-delay:1.25s">Data: NASA FIRMS (MODIS, VIIRS) · NASA GIBS · CelesTrak. A hot spot is a satellite detection, not a confirmed wildfire.<br>Narration: AI-generated voice (Kokoro TTS). ${MUSIC_CREDIT}</div>
 </div></div>`;
+const INTRO_HTML = `<div class="pfv-hook pfv-intro"><div><img src="${logo('lumos-team-logo.svg')}" alt="Team Lumos"><span>M Al Shahriar Hameem (team lead) · ${TEAM.join(' · ')}</span><small>NASA SPACE APPS CHALLENGE 2026 · HARMONIZATION OF MODIS AND VIIRS HOT SPOTS</small></div></div>`;
+const NAME_HTML = `<div class="pfv-hook pfv-name"><div><img src="${logo('parallax-fire-logo.svg')}" alt="Parallax Fire"></div></div>`;
 const HOOK_HTML = `<div class="pfv-hook"><div><b>2012</b><i>×5</i><span>fire detections over Bangladesh</span></div></div>`;
 const NASA_HTML = SPACE_APPS ? `<img class="pfv-nasa" src="${SPACE_APPS}" alt="NASA International Space Apps Challenge">` : '';
 const OVERLAY_CSS = `
@@ -199,8 +210,13 @@ const OVERLAY_CSS = `
 .pfv-hook i{display:block;font-style:normal;font-size:96px;font-weight:900;line-height:1;background:linear-gradient(90deg,#FCD34D,#F97316 55%,#EF4444);-webkit-background-clip:text;background-clip:text;color:transparent}
 .pfv-hook span{display:block;margin-top:10px;font:700 15px ui-monospace,Menlo,monospace;letter-spacing:.2em;text-transform:uppercase;color:#DCE4F0}
 @keyframes pfvHook{0%{opacity:0}10%{opacity:1}72%{opacity:1}100%{opacity:0}}
+.pfv-intro{animation:pfvIntro 2.45s ease forwards;background:radial-gradient(760px 300px at 50% 47%,rgba(5,8,16,.9),rgba(5,8,16,.35) 80%)}.pfv-intro>div{animation:pfvPunch 2.45s cubic-bezier(.2,.8,.2,1) forwards}
+.pfv-intro img{height:120px;display:block;margin:0 auto 14px}.pfv-intro span{display:block;margin-top:4px;font:600 17px Inter,system-ui,sans-serif;color:#F4F7FB;letter-spacing:.01em;text-transform:none}
+.pfv-intro small{display:block;margin-top:10px;font:700 11.5px ui-monospace,Menlo,monospace;letter-spacing:.14em;color:#FCD34D}
+.pfv-name{animation:pfvIntro 2.6s ease forwards;background:radial-gradient(1200px 700px at 70% 20%,#12233f 0%,#0B1220 55%,#070b14 100%)}.pfv-name>div{animation:pfvPunch 2.6s cubic-bezier(.2,.8,.2,1) forwards}.pfv-name img{width:720px}
+@keyframes pfvIntro{0%{opacity:0}8%{opacity:1}84%{opacity:1}100%{opacity:0}}
 @keyframes pfvPunch{0%{transform:scale(1.25);filter:blur(8px)}14%{transform:scale(1);filter:blur(0)}100%{transform:scale(.94)}}
-.pfv-nasa{position:fixed;top:12px;right:16px;height:74px;z-index:2147483647;filter:drop-shadow(0 2px 6px rgba(0,0,0,.7))}`;
+.pfv-nasa{position:fixed;top:12px;right:16px;height:66px;z-index:2147483647;padding:5px;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.45)}`;
 
 const CHUNK = IS_SHORT ? 46 : 78;
 const chunks = (t) => { // caption chunks (about one line), cut at sentence or comma boundaries
@@ -242,8 +258,9 @@ async function captureStepped(s, a, total, aiff, mp4) {
     try { await p.clock.pauseAt(await p.evaluate((x) => Date.now() + x, ahead)); break; } catch (e) { if (ahead === 20000) throw e; }
   }
   const cdp = await ctx.newCDPSession(p); await cdp.send('Animation.enable'); await cdp.send('Animation.setPlaybackRate', { playbackRate: 0.17 });
-  if (!s.card) await p.addStyleTag({ content: `#root{transform-origin:50% 45%;animation:pfvKen ${total.toFixed(2)}s linear forwards}@keyframes pfvKen{from{transform:scale(1)}to{transform:scale(1.05)}}` });   // slow push-in keeps every shot moving
-  const over = (s.card ? SHORT_CARD_HTML : '') + (s.hook ? HOOK_HTML : '') + NASA_HTML;
+  if (s.overlay !== 'card') await p.addStyleTag({ content: `#root{transform-origin:50% 45%;animation:pfvKen ${total.toFixed(2)}s linear forwards}@keyframes pfvKen{from{transform:scale(1)}to{transform:scale(1.05)}}` });   // slow push-in keeps every shot moving
+  const over = ({ card: SHORT_CARD_HTML, hook: HOOK_HTML, intro: INTRO_HTML, name: NAME_HTML }[s.overlay] || '') + NASA_HTML
+    + (s.label ? `<div class="pfv-low pfv-up">${s.label}</div>` : '');
   if (over) await p.evaluate((h) => document.body.insertAdjacentHTML('beforeend', h), over);
   const cs = cues(s, a);
   await p.evaluate(({ caps, lead }) => {
@@ -284,7 +301,9 @@ for (const s of SEGMENTS) {
     : 'loudnorm=I=-16:TP=-1.5:LRA=11';
   if (rec) ff(['-i', rec, '-af', (timed ? '' : 'silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse,') + VOICE_FX, '-ar', '48000', '-ac', '1', aiff]);
   else execFileSync('say', ['-v', VOICE, '-r', RATE, '-o', aiff, speak(s.text)]);
-  const a = dur(aiff), total = LEAD + a + PAD + (s.extra || 0);
+  const a = dur(aiff);
+  const total = IS_SHORT ? s.slot + (s === SEGMENTS[SEGMENTS.length - 1] ? 0 : XF) : LEAD + a + PAD + (s.extra || 0);
+  if (IS_SHORT && LEAD + a + 0.15 > s.slot) throw new Error(`${s.id}: narration ${a.toFixed(2)} s does not fit its ${s.slot} s slot; shorten the line`);
   if (IS_SHORT) { report.push(await captureStepped(s, a, total, aiff, mp4)); console.log(JSON.stringify(report[report.length - 1])); continue; }
   const vdir = path.join(work, s.id + '_raw'); fs.rmSync(vdir, { recursive: true, force: true });
   const ctx = await browser.newContext({ viewport: { width: W, height: H }, recordVideo: { dir: vdir, size: { width: W, height: H } }, colorScheme: 'dark' });
@@ -325,18 +344,26 @@ if (!SEGMENTS.every((s) => fs.existsSync(path.join(work, s.id + '.mp4')))) { con
 const list = SEGMENTS.map((s) => `file '${path.join(work, s.id + '.mp4')}'`).join('\n');
 fs.writeFileSync(path.join(work, 'list.txt'), list + '\n');
 const out = path.join(work, OUT_NAME);
-if (IS_SHORT) {   // crossfade the shots, fade in from and out to black
-  const d = SEGMENTS.map((s) => Math.round((LEAD + dur(path.join(work, s.id + '.aiff')) + PAD + (s.extra || 0)) * 30) / 30);
-  let v = '[0:v]', au = '[0:a]', off = 0; const g = [];
-  for (let i = 1; i < d.length; i++) {
-    off += d[i - 1] - XF;
-    g.push(`${v}[${i}:v]xfade=transition=fade:duration=${XF}:offset=${off.toFixed(3)}[v${i}]`, `${au}[${i}:a]acrossfade=d=${XF}[a${i}]`);
-    v = `[v${i}]`; au = `[a${i}]`;
-  }
-  const T = d.reduce((x, y) => x + y, 0) - XF * (d.length - 1);
-  g.push(`${v}fade=t=in:st=0:d=0.35,fade=t=out:st=${(T - 0.7).toFixed(3)}:d=0.7,format=yuv420p[vo]`, `${au}afade=t=out:st=${(T - 0.7).toFixed(3)}:d=0.7[ao]`);
-  ff([...SEGMENTS.flatMap((s) => ['-i', path.join(work, s.id + '.mp4')]), '-filter_complex', g.join(';'), '-map', '[vo]', '-map', '[ao]',
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', out]);
+if (IS_SHORT) {   // promo: crossfade the shots on the slot grid, place each line on the same grid, duck the music under the voice
+  const starts = []; let acc = 0; for (const s of SEGMENTS) { starts.push(acc); acc += s.slot; }
+  const T = acc, n = SEGMENTS.length, g = [];
+  let v = '[0:v]';
+  for (let i = 1; i < n; i++) { g.push(`${v}[${i}:v]xfade=transition=fade:duration=${XF}:offset=${starts[i].toFixed(3)}[v${i}]`); v = `[v${i}]`; }
+  g.push(`${v}fade=t=in:st=0:d=0.3,fade=t=out:st=${(T - 0.6).toFixed(3)}:d=0.6,format=yuv420p[vo]`);
+  SEGMENTS.forEach((s, i) => { const d = Math.round((starts[i] + LEAD) * 1000); g.push(`[${n + i}:a]aresample=48000,adelay=${d}|${d}[l${i}]`); });
+  g.push(`${SEGMENTS.map((_, i) => `[l${i}]`).join('')}amix=inputs=${n}:normalize=0,apad,atrim=0:${T.toFixed(3)},aformat=channel_layouts=stereo[voice]`);
+  const MUSIC = arg('music', ''), MS = +arg('music-start', '0');
+  const inputs = [...SEGMENTS.flatMap((s) => ['-i', path.join(work, s.id + '.mp4')]), ...SEGMENTS.flatMap((s) => ['-i', path.join(work, s.id + '.aiff')])];
+  if (MUSIC) {
+    inputs.push('-i', MUSIC);
+    g.push(`[voice]asplit[vx][vk]`, `[${2 * n}:a]aresample=48000,atrim=${MS}:${(MS + T).toFixed(3)},asetpts=PTS-STARTPTS,volume=${arg('music-gain', '0.85')},afade=t=in:st=0:d=0.3,afade=t=out:st=${(T - 1.4).toFixed(3)}:d=1.4[mus]`,
+      `[mus][vk]sidechaincompress=threshold=0.03:ratio=6:attack=20:release=280[duck]`, `[vx][duck]amix=inputs=2:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=9[ao]`);
+  } else g.push(`[voice]loudnorm=I=-14:TP=-1.5:LRA=9[ao]`);
+  ff([...inputs, '-filter_complex', g.join(';'), '-map', '[vo]', '-map', '[ao]', '-t', T.toFixed(3),
+    '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-movflags', '+faststart',
+    '-metadata', 'title=Parallax Fire - Team Lumos - NASA Space Apps Challenge 2026',
+    '-metadata', `comment=Narration is AI-generated (Kokoro-82M text-to-speech). Footage is a screen capture of the real app at https://parallaxfire.netlify.app.${MUSIC ? ' Music: "Voltaic" Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0, http://creativecommons.org/licenses/by/4.0/' : ''}`, out]);
+  console.log(JSON.stringify({ starts: Object.fromEntries(SEGMENTS.map((s, i) => [s.id, +starts[i].toFixed(2)])), total: +T.toFixed(2) }));
 } else ff(['-f', 'concat', '-safe', '0', '-i', path.join(work, 'list.txt'), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', out]);
 // captions file with the same timing as the burned-in captions
 const ts = (x) => new Date(x * 1000).toISOString().slice(11, 23).replace('.', ',');
@@ -344,7 +371,7 @@ let t = 0, n = 0; const srt = [];
 for (const s of SEGMENTS) {
   const a = dur(path.join(work, s.id + '.aiff'));
   for (const c of cues(s, a)) srt.push(`${++n}\n${ts(t + LEAD + c.s)} --> ${ts(t + LEAD + c.e)}\n${c.t.replace(/\*/g, '')}\n`);
-  t += LEAD + a + PAD + (s.extra || 0) - (IS_SHORT ? XF : 0);
+  t += IS_SHORT ? s.slot : LEAD + a + PAD + (s.extra || 0);
 }
 fs.writeFileSync(out.replace(/\.mp4$/, '.srt'), srt.join('\n'));
-console.log(JSON.stringify({ out, bytes: fs.statSync(out).size, seconds: +(t + (IS_SHORT ? XF : 0)).toFixed(1) }));
+console.log(JSON.stringify({ out, bytes: fs.statSync(out).size, seconds: +t.toFixed(2) }));

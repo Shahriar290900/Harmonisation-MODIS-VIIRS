@@ -1,47 +1,39 @@
 1
-00:00:00,450 --> 00:00:01,365
-In 2012,
+00:00:00,250 --> 00:00:01,939
+We’re Team Lumos, from Dhaka.
 
 2
-00:00:01,484 --> 00:00:05,207
-satellites suddenly counted five times more fire in Bangladesh.
+00:00:02,450 --> 00:00:05,340
+In 2012, fire counts jumped five-fold.
 
 3
-00:00:05,657 --> 00:00:07,395
-Was the land suddenly burning?
+00:00:05,750 --> 00:00:07,762
+Meet Parallax Fire. That jump?
 
 4
-00:00:07,445 --> 00:00:09,589
-Mostly, NASA just got a sharper camera.
+00:00:07,982 --> 00:00:10,262
+Mostly a sharper camera, not more fire.
 
 5
-00:00:10,039 --> 00:00:13,101
-Parallax Fire puts both satellites on one honest scale.
+00:00:10,750 --> 00:00:13,714
+Flip one switch: 25 years, one fair scale.
 
 6
-00:00:13,361 --> 00:00:14,907
-Most of the jump melts away.
+00:00:14,150 --> 00:00:16,158
+Every district, every season, mapped.
 
 7
-00:00:15,357 --> 00:00:16,432
-Every fire season,
+00:00:17,050 --> 00:00:19,128
+Plus today’s NASA hot spots, live.
 
 8
-00:00:16,552 --> 00:00:17,956
-mapped district by district.
+00:00:20,150 --> 00:00:22,407
+Next: every country, newer satellites,
 
 9
-00:00:18,406 --> 00:00:20,311
-Plus today’s hot spots, live,
+00:00:22,507 --> 00:00:24,987
+a Bangla app: real fire, not a new camera.
 
 10
-00:00:20,431 --> 00:00:22,484
-as five fire satellites pass overhead.
-
-11
-00:00:22,934 --> 00:00:23,862
-Parallax Fire.
-
-12
-00:00:24,122 --> 00:00:26,973
-Same fires. Two cameras. One honest record.
+00:00:25,450 --> 00:00:27,534
+Parallax Fire, by Team Lumos.

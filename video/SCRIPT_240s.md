@@ -20,19 +20,26 @@ Structure, following the Space Apps Bangladesh "240 Seconds of Glory" examples: 
 | 2:44–3:01 | Live Earth: whole Earth (impact and next steps) | A planner can see the real burning season before deciding when to watch closely. A researcher can compare two decades without mistaking a new camera for new fire. Looking ahead, we want more regions, the newer NOAA satellites, a Bangla interface, and partners to test it with. |
 | 3:01–3:11 | End card: logos, link, team, data credits | Parallax Fire. Same fires, two cameras, one honest record. This is Team Lumos. Thank you. |
 
-## 30-second video (0:29)
-A fast promo: energetic voice (Kokoro `af_bella`, slightly faster, compressed to YouTube loudness), a hook in the first two seconds, crossfades between shots, no team photos (the team is on the end card). Captured frame by frame on a paused page clock, so every shot is a smooth 30 fps.
+## 30-second video (0:28.9): the Project Demo for global judging
+Follows the Space Apps "30 Seconds of Glory" guide: introduce yourself (0:00), lead us in (0:02), name your solution (0:05), describe your idea (0:10), look into the future (0:20). Captured frame by frame on a paused page clock (a smooth 30 fps), with crossfades, highlighted subtitles and music ducked under the voice. No photos of people.
 
-| Time | On screen | Narration |
-|---|---|---|
-| 0:00–0:05 | Hook: "2012 ×5" title over the live Earth, camera flies to Bangladesh | In 2012, satellites suddenly counted five times more fire in Bangladesh. |
-| 0:05–0:10 | Home: the 2012 jump chart, scrolling | Was the land suddenly burning? Mostly, NASA just got a sharper camera. |
-| 0:10–0:15 | Two satellites: "On one scale" pressed as the second line starts | Parallax Fire puts both satellites on one honest scale. Most of the jump melts away. |
-| 0:15–0:18 | Map: Bangladesh districts, slow tilted push-in | Every fire season, mapped district by district. |
-| 0:18–0:22 | Live Earth: pull back from Bangladesh to the whole Earth with today's hot spots | Plus today's hot spots, live, as five fire satellites pass overhead. |
-| 0:22–0:29 | End card: logo, link, Team Lumos and names, challenge, data credit | Parallax Fire. Same fires. Two cameras. One honest record. |
+| Time | Beat | On screen | Narration |
+|---|---|---|---|
+| 0:00 | Introduce | Team Lumos logo and all six names over the live Earth | We're Team Lumos, from Dhaka. |
+| 0:02 | Lead in | "2012 ×5" title; camera flies to Bangladesh | In 2012, fire counts jumped five-fold. |
+| 0:05 | Name | Parallax Fire logo and tagline on the music drop, then the 2012 jump chart | Meet Parallax Fire. That jump? Mostly a sharper camera, not more fire. |
+| 0:10 | Describe | "On one scale" switch pressed | Flip one switch: 25 years, one fair scale. |
+| 0:14 | Describe | Bangladesh districts, tilted push-in | Every district, every season, mapped. |
+| 0:17 | Describe | Live Earth: pull back to today's NASA hot spots | Plus today's NASA hot spots, live. |
+| 0:20 | Future | Globe sweeps from California to New South Wales, "What's next" | Next: every country, newer satellites, a Bangla app: real fire, not a new camera. |
+| 0:25 | Close | End card: logo, link, team names, challenge, credits | Parallax Fire, by Team Lumos. |
 
-"Five times": VIIRS ÷ Aqua MODIS detections in Bangladesh, complete months 2013–2024 = 4.98 (the app's 2012 chart shows the joined record leaping ×5.3).
+- Voice: AI-generated (Kokoro-82M, voice `af_bella`). This is stated on the end card and in the file metadata, as the Space Apps rules require for AI audio.
+- Music: "Voltaic" Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0 License, http://creativecommons.org/licenses/by/4.0/. The track starts 10.25 s in, so its drop lands on the 0:05 name reveal; the music is ducked under the voice. The file is kept locally in `video/assets/music/` (not committed).
+- Space Apps logo: the original, unmodified artwork on a white badge (NASA branding may not be altered).
+- "Five-fold": VIIRS ÷ Aqua MODIS detections in Bangladesh, complete months 2013–2024 = 4.98 (the app's 2012 chart shows the joined record leaping ×5.3).
+
+Rebuild: `FFMPEG=<ffmpeg> node scripts/video/make_video.mjs <work> --short --audio=<narration dir> --music=video/assets/music/Voltaic.mp3 --music-start=10.25`
 
 ## Where every spoken fact comes from
 | Statement | Source |
