@@ -29,7 +29,7 @@ const CLIPS = [
   { name: 'one-scale', start: '#/sensors' + q(), seconds: 4.5,
     prep: async (p) => { await p.waitForTimeout(2500); await p.evaluate(() => document.querySelector('[data-chart="compare"]')?.scrollIntoView({ block: 'center' })); await p.waitForTimeout(800); },
     shot: async () => [{ at: 1.4, fn: (p) => clickText(p, 'button', 'On one scale') }] },
-  { name: 'district-map', start: '#/map' + q(), seconds: 4, width: 640, colors: 96,   // detailed and moving every frame: smaller to stay under ~3 MB
+  { name: 'district-map', start: '#/map' + q(), seconds: 3.5, width: 560, colors: 72,   // detailed and moving every frame: kept small so it loads quickly
     prep: async (p) => {
       await p.waitForFunction(() => window.__map && window.__map.loaded(), null, { timeout: 60000 });
       await tryClick(p, 'button:has-text("Districts")', 2500);
