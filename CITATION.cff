@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use Parallax Fire, please cite it as below."
+title: "Parallax Fire: MODIS and VIIRS fire hot spots on one honest scale"
+type: software
+authors:
+  - family-names: "Hameem"
+    given-names: "M Al Shahriar"
+  - name: "Team Lumos"
+repository-code: "https://github.com/Shahriar290900/Harmonisation-MODIS-VIIRS"
+url: "https://parallaxfire.netlify.app"
+license: MIT
+version: "1.0.0"
+date-released: "2026-11-14"
+keywords:
+  - NASA Space Apps Challenge 2026
+  - MODIS
+  - VIIRS
+  - NASA FIRMS
+  - active fire
+  - harmonization
+  - Bangladesh
+abstract: >-
+  A web app and Kaggle pipeline that puts NASA's MODIS and VIIRS active-fire
+  detections on one fair scale, with a burning calendar, district maps and a
+  live 3D Earth of today's hot spots. Built by Team Lumos (Dhaka) for the
+  NASA Space Apps Challenge 2026 "Harmonization of MODIS and VIIRS Hot Spots".
