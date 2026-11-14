@@ -67,6 +67,12 @@ M Al Shahriar Hameem (team lead) · Tuasin Taj Fiha · Afifa Asif · Md Abu Amma
 
 Run locally (Node 20+): `cd parallax_app && npm install && npm run dev` → http://localhost:5173. Tests: `npm test`. Checks used during development: `parallax_app/scripts/goals/`.
 
+## Use of AI (Super Intelligence) tools
+- **Code and text:** written with Claude (Anthropic) through Claude Code as a coding and writing assistant: the web app, live-data functions, Kaggle notebooks, tests, manual and video builder. Commits it helped with carry a `Co-Authored-By: Claude` line. Every number shown comes from our own Kaggle run (`metrics.json`), not from the AI.
+- **Model experiment:** Qwen2.5-7B-Instruct (open model, run offline in Notebook B) proposed settings for an experimental quantum-circuit model in a side comparison; it was not selected. The fire estimate is a conventional machine-learning model (XGBoost).
+- **Audio:** the narration in both videos is AI-generated (Kokoro-82M text-to-speech). This is stated on the videos' end cards, in the video file metadata and in the video descriptions.
+- **Images:** MODNet (run locally) removed the backgrounds from the team photos in the 240-second video. No AI-generated images are used.
+
 ## Data and credits
-NASA FIRMS active-fire detections (MODIS Collection 6.1; VIIRS 375 m) · NASA EOSDIS GIBS imagery · Blue Marble and night-lights textures (NASA, via the three-globe project) · orbit records from CelesTrak · OpenFreeMap © OpenMapTiles, data © OpenStreetMap contributors · Natural Earth · geoBoundaries (CC BY 3.0 IGO).
+NASA FIRMS active-fire detections (MODIS Collection 6.1; VIIRS 375 m) · NASA EOSDIS GIBS imagery · Blue Marble and night-lights textures (NASA, via the three-globe project) · orbit records from CelesTrak · OpenFreeMap © OpenMapTiles, data © OpenStreetMap contributors · Natural Earth · geoBoundaries (CC BY 3.0 IGO). Video music: "Voltaic" Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0 License, http://creativecommons.org/licenses/by/4.0/
 We acknowledge the use of data and imagery from NASA's Fire Information for Resource Management System (FIRMS), part of NASA's Earth Observing System Data and Information System (EOSDIS).
